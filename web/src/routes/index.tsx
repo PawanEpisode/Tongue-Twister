@@ -1,10 +1,14 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
+import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import { TwisterCard } from '#/components/ui'
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/')({
+  head: () => seo({ title: 'Twister — Say it fast. Say it right.', path: '/' }),
+  component: Home,
+})
 
 const LEVELS = [
   { d: 1, name: 'Easy', emoji: '🌱', blurb: 'Warm-up wobblers' },

@@ -1,0 +1,22 @@
+{
+  "name": "Twister — Tongue Twister Practice",
+  "short_name": "Twister",
+  "description": "Practise classic and modern tongue twisters with live speech feedback, scores, streaks and levels.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0a16",
+  "theme_color": "#0b0a16",
+  "categories": ["education", "games", "entertainment"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Browse twisters", "url": "/twisters", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

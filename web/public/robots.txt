@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /auth/
+
+Sitemap: https://twister.meetpawan.com/sitemap.xml

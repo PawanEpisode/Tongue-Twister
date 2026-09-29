@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import { TwisterCard } from '#/components/ui'
 
@@ -11,6 +12,13 @@ type Search = {
   q?: string
 }
 export const Route = createFileRoute('/twisters/')({
+  head: () =>
+    seo({
+      title: 'Browse tongue twisters — Easy to Insane | Twister',
+      description:
+        'Search 40+ classic and modern tongue twisters. Filter by difficulty, sound family (S, R, TH, P/B…) and origin, then practise out loud.',
+      path: '/twisters',
+    }),
   validateSearch: (s: Record<string, unknown>): Search => ({
     difficulty: s.difficulty ? String(s.difficulty) : undefined,
     category: s.category ? String(s.category) : undefined,

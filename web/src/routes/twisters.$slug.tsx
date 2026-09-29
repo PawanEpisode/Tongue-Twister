@@ -11,8 +11,33 @@ import type { AttemptResult } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { matchedIndexes, scoreAttempt } from '#/lib/scoring'
 import { useSpeech } from '#/lib/speech'
+import { seo } from '#/lib/seo'
 
-export const Route = createFileRoute('/twisters/$slug')({ component: Practice })
+export const Route = createFileRoute('/twisters/$slug')({
+  // Runs on the server for first loads so link-preview scrapers (WhatsApp, iMessage, Slack) get real tags.
+  loader: async ({ params }) => {
+    try {
+      return await api.twister(params.slug)
+    } catch {
+      return null
+    }
+  },
+  head: ({ loaderData, params }) =>
+    seo(
+      loaderData
+        ? {
+            title: `“${loaderData.text}” — ${loaderData.difficulty_label} tongue twister | Twister`,
+            description:
+              `Can you say it fast? Try this ${loaderData.difficulty_label.toLowerCase()} ${loaderData.origin} tongue twister out loud and get an instant score. ${loaderData.tip}`.trim(),
+            path: `/twisters/${params.slug}`,
+          }
+        : {
+            title: 'Tongue twister | Twister',
+            path: `/twisters/${params.slug}`,
+          },
+    ),
+  component: Practice,
+})
 
 type Result = {
   score: number

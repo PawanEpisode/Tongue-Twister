@@ -1,14 +1,21 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '#/lib/auth'
+import { seo } from '#/lib/seo'
 import { supabase } from '#/lib/supabase'
 
-export const Route = createFileRoute('/login')({ component: Login })
+export const Route = createFileRoute('/login')({
+  head: () =>
+    seo({ title: 'Sign in | Twister', path: '/login', noindex: true }),
+  component: Login,
+})
 
 function Login() {
   const nav = useNavigate()
   const { session } = useAuth()
-  useEffect(() => { if (session) nav({ to: '/twisters', replace: true }) }, [session, nav])
+  useEffect(() => {
+    if (session) nav({ to: '/twisters', replace: true })
+  }, [session, nav])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'in' | 'up'>('in')
