@@ -18,14 +18,16 @@ class TwisterFilter(filters.FilterSet):
     category = filters.CharFilter(field_name="category__slug")
     difficulty = filters.NumberFilter()
     origin = filters.CharFilter()
+    min_words = filters.NumberFilter(field_name="word_count", lookup_expr="gte")
+    max_words = filters.NumberFilter(field_name="word_count", lookup_expr="lte")
 
     class Meta:
         model = Twister
-        fields = ["category", "difficulty", "origin"]
+        fields = ["category", "difficulty", "origin", "min_words", "max_words"]
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.annotate(count=Count("twisters", filter=Q(twisters__is_published=True)))
+    queryset = Category.objects.annotate(count=Count("twisters", filter=Q(twisters__is_published=True))).filter(count__gt=0)
     serializer_class = CategorySerializer
     lookup_field = "slug"
     pagination_class = None

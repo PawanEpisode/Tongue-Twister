@@ -4,7 +4,7 @@
       "slug": "hissers",
       "name": "Hissers",
       "emoji": "🐍",
-      "description": "S, SH, Z and CH sounds that love to slip",
+      "description": "S, SH, Z and CH sounds that love to slip and slide",
       "sort_order": 1
     },
     {
@@ -39,7 +39,7 @@
       "slug": "brain-benders",
       "name": "Brain Benders",
       "emoji": "🧠",
-      "description": "Modern mash-ups, tech talk and multi-sound chaos",
+      "description": "Modern mash-ups, tech talk and multi-consonant hurdles",
       "sort_order": 6
     }
   ],
@@ -54,7 +54,8 @@
       "focus_sounds": [
         "s",
         "sh"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "six-sick-sheiks",
@@ -62,12 +63,13 @@
       "category": "hissers",
       "difficulty": 4,
       "origin": "classic",
-      "tip": "Notorious. Slow down on 'sixth sheik's' first.",
+      "tip": "Notorious. Slow down on 'sixth sheik's'.",
       "focus_sounds": [
         "s",
         "sh",
         "th"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "sam-sam-sheep",
@@ -79,7 +81,8 @@
       "focus_sounds": [
         "s",
         "sh"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "snake-slithers",
@@ -91,7 +94,8 @@
       "focus_sounds": [
         "s",
         "sl"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "chester-cheetah",
@@ -102,7 +106,8 @@
       "tip": "Front-load the CH with a tiny stop.",
       "focus_sounds": [
         "ch"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "zebra-zoo",
@@ -113,7 +118,8 @@
       "tip": "Buzz the Z — feel your throat vibrate.",
       "focus_sounds": [
         "z"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "peter-piper",
@@ -124,18 +130,8 @@
       "tip": "Pop the P with a puff of air.",
       "focus_sounds": [
         "p"
-      ]
-    },
-    {
-      "slug": "betty-botter",
-      "text": "Betty Botter bought some butter, but she said the butter's bitter.",
-      "category": "poppers",
-      "difficulty": 3,
-      "origin": "classic",
-      "tip": "Keep B soft and voiced; don't turn it into P.",
-      "focus_sounds": [
-        "b"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "big-black-bug",
@@ -146,7 +142,8 @@
       "tip": "Short, punchy B bursts.",
       "focus_sounds": [
         "b"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "toy-boat",
@@ -158,7 +155,8 @@
       "focus_sounds": [
         "t",
         "b"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "crisp-crusts",
@@ -170,7 +168,8 @@
       "focus_sounds": [
         "k",
         "cr"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "cooks-cook",
@@ -183,7 +182,8 @@
         "k",
         "cl",
         "cr"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "data-dot",
@@ -194,377 +194,2729 @@
       "tip": "Light tongue taps on the roof of the mouth.",
       "focus_sounds": [
         "t"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "red-lorry",
-      "text": "Red lorry, yellow lorry.",
+      "slug": "pad-kid-poured",
+      "text": "Pad kid poured curd pulled cod.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "MIT researchers call this world's hardest short phrase.",
+      "focus_sounds": [
+        "p",
+        "k",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "red-lorry-yellow-lorry",
+      "text": "Red lorry, yellow lorry, red lorry, yellow lorry.",
       "category": "rollers",
       "difficulty": 3,
       "origin": "classic",
-      "tip": "The British classic. R to L, over and over.",
+      "tip": "Switch smoothly between tip-curl R and flat L.",
       "focus_sounds": [
         "r",
         "l"
-      ]
-    },
-    {
-      "slug": "rubber-baby",
-      "text": "Rubber baby buggy bumpers.",
-      "category": "rollers",
-      "difficulty": 2,
-      "origin": "classic",
-      "tip": "Mind the R–B–B rhythm.",
-      "focus_sounds": [
-        "r",
-        "b"
-      ]
-    },
-    {
-      "slug": "round-rugged",
-      "text": "The ragged rascal ran round the rugged rock.",
-      "category": "rollers",
-      "difficulty": 2,
-      "origin": "classic",
-      "tip": "Curl the tongue back for R, don't roll it.",
-      "focus_sounds": [
-        "r"
-      ]
-    },
-    {
-      "slug": "lesser-leather",
-      "text": "Lesser leather never weathered wetter weather better.",
-      "category": "rollers",
-      "difficulty": 3,
-      "origin": "classic",
-      "tip": "W and L both sit close — stay crisp.",
-      "focus_sounds": [
-        "l",
-        "w",
-        "th"
-      ]
-    },
-    {
-      "slug": "lily-lolly",
-      "text": "Lily's lovely lollipop lasts longer.",
-      "category": "rollers",
-      "difficulty": 1,
-      "origin": "modern",
-      "tip": "Tongue tip to the ridge for every L.",
-      "focus_sounds": [
-        "l"
-      ]
+      ],
+      "is_published": true
     },
     {
       "slug": "truly-rural",
-      "text": "Truly rural Irish wristwatches are rarely repaired.",
+      "text": "Truly rural, truly rural, truly rural.",
       "category": "rollers",
-      "difficulty": 4,
-      "origin": "modern",
-      "tip": "R after T, W, and R again — go slow first.",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Curl the tongue back for R, forward for L.",
+      "focus_sounds": [
+        "r",
+        "l"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rory-raw",
+      "text": "Raw roaring lions roar round red rocks.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep the vocal cords buzzing continuously.",
+      "focus_sounds": [
+        "r"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rolling-red-wagons",
+      "text": "Rolling red wagons roll rapidly round roads.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Maintain steady cadence on the R roll.",
       "focus_sounds": [
         "r",
         "w"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "i-scream",
-      "text": "I scream, you scream, we all scream for ice cream.",
-      "category": "vowel-vortex",
-      "difficulty": 1,
-      "origin": "classic",
-      "tip": "Smooth vowels, sharp S–K clusters.",
-      "focus_sounds": [
-        "ee",
-        "s",
-        "k"
-      ]
-    },
-    {
-      "slug": "how-much-wood",
-      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood?",
-      "category": "vowel-vortex",
+      "slug": "red-leather-yellow-leather",
+      "text": "Red leather, yellow leather, red leather, yellow leather.",
+      "category": "th-tangles",
       "difficulty": 3,
       "origin": "classic",
-      "tip": "Don't let 'wood' and 'would' merge.",
+      "tip": "Flick the tongue forward for TH, pull back for R.",
       "focus_sounds": [
-        "w",
-        "ch",
-        "uh"
-      ]
+        "l",
+        "r",
+        "th"
+      ],
+      "is_published": true
     },
     {
-      "slug": "fuzzy-wuzzy",
-      "text": "Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair. Fuzzy Wuzzy wasn't fuzzy, was he?",
-      "category": "vowel-vortex",
+      "slug": "three-free-throws",
+      "text": "Three free throws, three free throws.",
+      "category": "th-tangles",
       "difficulty": 2,
-      "origin": "classic",
-      "tip": "Keep the W and Z buzzing.",
+      "origin": "modern",
+      "tip": "Bite lower lip slightly for F, tongue between teeth for TH.",
       "focus_sounds": [
+        "th",
         "f",
-        "w",
-        "z"
-      ]
+        "r"
+      ],
+      "is_published": true
     },
     {
-      "slug": "moose-goose",
-      "text": "A loose goose chased a moose through the juice-soaked woods.",
-      "category": "vowel-vortex",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "Hold the OO vowel evenly.",
-      "focus_sounds": [
-        "oo",
-        "s"
-      ]
-    },
-    {
-      "slug": "owl-out",
-      "text": "Our proud owl found loud clouds around the town.",
-      "category": "vowel-vortex",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "Open jaw for OW each time.",
-      "focus_sounds": [
-        "ow"
-      ]
-    },
-    {
-      "slug": "thirty-three",
-      "text": "Thirty-three thirsty thieves thought thick thoughts.",
-      "category": "th-tangles",
-      "difficulty": 3,
-      "origin": "classic",
-      "tip": "Tongue tip between the teeth, blow softly.",
-      "focus_sounds": [
-        "th"
-      ]
-    },
-    {
-      "slug": "this-that",
-      "text": "This is the thing that those three thinkers thought.",
-      "category": "th-tangles",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "Voiced TH (this) vs unvoiced (thing).",
-      "focus_sounds": [
-        "th"
-      ]
-    },
-    {
-      "slug": "fresh-fish",
-      "text": "Fresh French fried fly fritters.",
+      "slug": "thick-thistle",
+      "text": "Thirty thirsty thieves thought thrilling thoughts.",
       "category": "th-tangles",
       "difficulty": 2,
       "origin": "classic",
-      "tip": "Upper teeth on lower lip for F.",
+      "tip": "Keep the tongue tip feather-light on TH.",
+      "focus_sounds": [
+        "th"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fresh-fried-fish",
+      "text": "Fresh fried fish, fresh fried fish.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Snap the upper teeth down on the lower lip.",
       "focus_sounds": [
         "f",
         "fr"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "vincent-vowed",
-      "text": "Vincent vowed vengeance very vehemently.",
+      "slug": "vivid-velvet",
+      "text": "Five vivid violet vases vanished.",
       "category": "th-tangles",
       "difficulty": 2,
-      "origin": "classic",
-      "tip": "Vibrate the V — teeth on lip.",
+      "origin": "modern",
+      "tip": "Buzz the V using upper teeth on the lower lip.",
       "focus_sounds": [
         "v"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "thin-sticks",
-      "text": "Thin sticks, thick bricks.",
-      "category": "th-tangles",
-      "difficulty": 1,
+      "slug": "unique-new-york",
+      "text": "Unique New York, unique New York.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
       "origin": "classic",
-      "tip": "Quick TH-to-K switch.",
+      "tip": "Pronounce both syllables of unique crisp and distinct.",
       "focus_sounds": [
-        "th",
+        "j",
+        "u",
+        "n",
         "k"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "theophilus",
-      "text": "Theophilus Thistle, the successful thistle sifter, sifted a sieve of unsifted thistles.",
-      "category": "th-tangles",
-      "difficulty": 4,
+      "slug": "are-our-oars",
+      "text": "Are our oars oak or our oars ash?",
+      "category": "vowel-vortex",
+      "difficulty": 3,
       "origin": "classic",
-      "tip": "Long one. Chunk it into three breaths.",
+      "tip": "Vowels blur easily — shape each diphthong carefully.",
       "focus_sounds": [
-        "th",
-        "s",
-        "f"
-      ]
+        "o",
+        "a"
+      ],
+      "is_published": true
     },
     {
-      "slug": "brain-bender-one",
-      "text": "Unique New York, unique New York, you know you need unique New York.",
-      "category": "brain-benders",
-      "difficulty": 3,
-      "origin": "modern",
-      "tip": "Y–N–Y is the trap: glide, then nasal.",
-      "focus_sounds": [
-        "y",
-        "n"
-      ]
-    },
-    {
-      "slug": "cloud-server",
-      "text": "Cloud servers crash constantly unless cache clusters cleverly clear.",
-      "category": "brain-benders",
-      "difficulty": 4,
-      "origin": "modern",
-      "tip": "Great for devs: CL–KR–K clusters everywhere.",
-      "focus_sounds": [
-        "cl",
-        "k",
-        "s"
-      ]
-    },
-    {
-      "slug": "pixel-perfect",
-      "text": "Pixel-perfect prototypes prompt polished product pitches.",
-      "category": "brain-benders",
-      "difficulty": 3,
-      "origin": "modern",
-      "tip": "Six P's — pop them evenly.",
-      "focus_sounds": [
-        "p"
-      ]
-    },
-    {
-      "slug": "blue-bluetooth",
-      "text": "Blue Bluetooth buds blast bubbly beats.",
-      "category": "brain-benders",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "B–L blends without adding an extra vowel.",
-      "focus_sounds": [
-        "b",
-        "bl"
-      ]
-    },
-    {
-      "slug": "streaming-screens",
-      "text": "Streaming screens scroll shrinking short-form scenes.",
-      "category": "brain-benders",
-      "difficulty": 4,
-      "origin": "modern",
-      "tip": "Triple consonant clusters: STR, SCR, SHR.",
-      "focus_sounds": [
-        "str",
-        "scr",
-        "shr"
-      ]
-    },
-    {
-      "slug": "quick-kiwi",
-      "text": "Quick kiwis quietly quit quacking quarrels.",
-      "category": "brain-benders",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "KW blend — keep it a single sound.",
-      "focus_sounds": [
-        "kw"
-      ]
-    },
-    {
-      "slug": "unicycle",
-      "text": "Unicyclists universally use uniquely useful units.",
-      "category": "brain-benders",
-      "difficulty": 3,
-      "origin": "modern",
-      "tip": "YOU–N– repeats. Keep the Y glide clean.",
-      "focus_sounds": [
-        "y",
-        "n"
-      ]
-    },
-    {
-      "slug": "toy-tester",
-      "text": "Twelve twins twirled twenty twisting twigs.",
-      "category": "brain-benders",
-      "difficulty": 3,
-      "origin": "modern",
-      "tip": "TW is a tight blend — lips round fast.",
-      "focus_sounds": [
-        "tw"
-      ]
-    },
-    {
-      "slug": "eleven-elephants",
-      "text": "Eleven elegant elephants eagerly eat eight enormous eclairs.",
+      "slug": "ed-had-edited",
+      "text": "Ed had edited it, Ed had edited it.",
       "category": "vowel-vortex",
       "difficulty": 3,
       "origin": "modern",
-      "tip": "Short E repeated — keep it crisp not lazy.",
+      "tip": "Articulate the alveolar D and T tap neatly.",
       "focus_sounds": [
-        "e"
-      ]
+        "d",
+        "t"
+      ],
+      "is_published": true
     },
     {
-      "slug": "sixth-sheikhs-sister",
-      "text": "Sally saw seven silly sailors sail seven small ships.",
-      "category": "hissers",
+      "slug": "willies-weary",
+      "text": "Willie's really weary, Willie's really weary.",
+      "category": "vowel-vortex",
       "difficulty": 2,
-      "origin": "modern",
-      "tip": "S–S–S–SH rhythm; breathe between clauses.",
+      "origin": "classic",
+      "tip": "Round lips for W, drop tension for the vowel.",
       "focus_sounds": [
-        "s",
-        "sh"
-      ]
-    },
-    {
-      "slug": "gobbling-gorgeous",
-      "text": "Gobbling gorgeous grapes gave Gary gassy giggles.",
-      "category": "poppers",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "Hard G — back of the tongue.",
-      "focus_sounds": [
-        "g"
-      ]
-    },
-    {
-      "slug": "crazy-cranes",
-      "text": "Crazy cranes crawl across crooked cracks.",
-      "category": "rollers",
-      "difficulty": 2,
-      "origin": "modern",
-      "tip": "CR clusters again — tongue prep before K.",
-      "focus_sounds": [
-        "cr",
+        "w",
         "r"
-      ]
+      ],
+      "is_published": true
     },
     {
-      "slug": "world-word",
-      "text": "Which wristwatch is a Swiss wristwatch?",
+      "slug": "irish-wristwatch",
+      "text": "Irish wristwatch, Swiss wristwatch.",
       "category": "brain-benders",
       "difficulty": 4,
       "origin": "classic",
-      "tip": "Notorious: W, R, S, CH, SW all together.",
+      "tip": "Radio host nightmare — separate SH from S and CH.",
       "focus_sounds": [
-        "w",
-        "r",
-        "sw"
-      ]
+        "sh",
+        "s",
+        "ch"
+      ],
+      "is_published": true
     },
     {
-      "slug": "mixed-biscuits",
-      "text": "Mix biscuits, mix biscuits, mixed biscuits.",
+      "slug": "flash-message",
+      "text": "Flash message, flash message, flash message.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Speed-run test — SH quickly transitions into M.",
+      "focus_sounds": [
+        "fl",
+        "sh",
+        "m"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "self-service-server",
+      "text": "Self-service server setups stall systematically.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Sibilant density is high; pace each syllable.",
+      "focus_sounds": [
+        "s",
+        "v"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "stupid-superstition",
+      "text": "Stupid superstition, stupid superstition, stupid superstition.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Snap the ST cluster without swallowing the vowels.",
+      "focus_sounds": [
+        "st",
+        "sp"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "crypto-click",
+      "text": "Quick crypto clicks cracked quantum code.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "High-speed modern tech alliteration.",
+      "focus_sounds": [
+        "k",
+        "kr",
+        "kw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "she-sees-cheese",
+      "text": "She sees cheese, she sees cheese.",
+      "category": "hissers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Contrast the soft SH with the crisp S and Z.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "z"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "good-blood-bad-blood",
+      "text": "Good blood, bad blood, good blood, bad blood.",
       "category": "poppers",
       "difficulty": 3,
       "origin": "classic",
-      "tip": "Watch mix/mixed at the boundary.",
+      "tip": "Watch the vowel shifts between good and bad.",
+      "focus_sounds": [
+        "b",
+        "l",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "peggy-babcock",
+      "text": "Peggy Babcock, Peggy Babcock, Peggy Babcock.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Alternates front bilabial P/B and velar G/K.",
+      "focus_sounds": [
+        "p",
+        "g",
+        "b",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "thieves-seize-skis",
+      "text": "Thieves seize skis, thieves seize skis.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Transitions rapidly from TH to voiced Z and SK.",
+      "focus_sounds": [
+        "th",
+        "z",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "clean-clams",
+      "text": "Clean clams crammed in clean cans.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Crisp K and L blend into nasal M and N.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "m"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "dust-is-a-must",
+      "text": "Dust is a must for a crust.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Simple rhythmic rhyme for kids and beginners.",
+      "focus_sounds": [
+        "d",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "real-rock-wall",
+      "text": "Real rock wall, real rock wall.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Prevents lazy R and L tongue coordination.",
+      "focus_sounds": [
+        "r",
+        "l",
+        "w"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "twelve-twins",
+      "text": "Twelve twins twirled twelve twigs.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Pucker lips tightly on TW before relaxing.",
+      "focus_sounds": [
+        "tw",
+        "w"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fat-frogs",
+      "text": "Fat frogs flying past fast.",
+      "category": "th-tangles",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Fun, bouncy F and FR labiodental workout.",
+      "focus_sounds": [
+        "f",
+        "fr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "double-bubble-gum",
+      "text": "Double bubble gum bubbles double.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Bouncy bilabial popping B sounds.",
+      "focus_sounds": [
+        "b",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "mixed-biscuits",
+      "text": "Mixed biscuits, mixed biscuits, mixed biscuits.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "The KS-T cluster followed by B is notoriously tricky.",
+      "focus_sounds": [
+        "m",
+        "ks",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "pre-shrunk-shirts",
+      "text": "Pre-shrunk silk shirts, pre-shrunk silk shirts.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Don't let shrunk bleed into srunk.",
+      "focus_sounds": [
+        "pr",
+        "shr",
+        "s"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "nine-nice-nurses",
+      "text": "Nine nice night nurses nursing nicely.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Smooth nasal resonance drill on N.",
+      "focus_sounds": [
+        "n",
+        "s"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "red-blood-green-blood",
+      "text": "Red blood, green blood, red blood, green blood.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Color contrast trips the tongue between R and GR.",
+      "focus_sounds": [
+        "bl",
+        "gr",
+        "r"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "quick-kiss",
+      "text": "Quick kiss, quicker kiss, quickest kiss.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "modern",
+      "tip": "Snappy KW plosives and sharp S endings.",
+      "focus_sounds": [
+        "kw",
+        "k",
+        "s"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "freshly-fried-fish",
+      "text": "Freshly fried flying fish flesh.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep the liquid L and R distinct after F.",
+      "focus_sounds": [
+        "fr",
+        "fl",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "black-background",
+      "text": "Black background, brown background, black background.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Articulate the K before moving into the B.",
+      "focus_sounds": [
+        "bl",
+        "br",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "two-tiny-toads",
+      "text": "Two tiny timid toads tried traipsing.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Alveolar T taps followed by TR blend.",
+      "focus_sounds": [
+        "t",
+        "tr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "which-witch",
+      "text": "Which witch wished which wicked wish?",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "W and WH rounding paired with soft SH.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "scissors-sizzle",
+      "text": "Scissors sizzle, thistles sizzle, scissors sizzle.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Alternates dental TH and sibilant S and Z.",
+      "focus_sounds": [
+        "s",
+        "z",
+        "th"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "cheap-ship-trip",
+      "text": "Cheap ship trip, cheap ship trip.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Short, punchy contrasting CH, SH, and TR stops.",
+      "focus_sounds": [
+        "ch",
+        "sh",
+        "tr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "blue-bluebird",
+      "text": "Blue bluebird blinks blindly, blinking blue.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Bilabial BL consonant cluster drill.",
+      "focus_sounds": [
+        "bl",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "greek-grapes",
+      "text": "Greek grapes, great grapes, grand grapes.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Velar GR plosive with crisp P finish.",
+      "focus_sounds": [
+        "gr",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "crisp-chips",
+      "text": "Crisp chips, crispy chips, crisp chips.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "modern",
+      "tip": "Great social video warmup for foodies.",
+      "focus_sounds": [
+        "kr",
+        "ch",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "betty-botter-short",
+      "text": "Betty Botter bought some butter, but she said the butter's bitter. If I put it in my batter, it will make my batter bitter, but a bit of better butter will make my bitter batter better.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Keep B soft and voiced; don't turn it into P.",
+      "focus_sounds": [
+        "b",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "woodchuck-short",
+      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood? He would chuck, he would, as much as he could, and chuck as much wood as a woodchuck would if a woodchuck could chuck wood.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep lips rounded on W and snap the CH shut.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "seashells-extended",
+      "text": "She sells seashells by the seashore. The shells she sells are seashells, I'm sure. For if she sells seashells by the seashore, then I'm sure she sells seashore shells.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Focus on the transition between 'shells she' and 'sells seashore'.",
+      "focus_sounds": [
+        "sh",
+        "s"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "susie-shoeshine",
+      "text": "I saw Susie sitting in a shoeshine shop. Where she shines she sits, and where she sits she shines.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep S on the alveolar ridge and SH on the postalveolar palate.",
+      "focus_sounds": [
+        "s",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "bear-bled-blood",
+      "text": "A big black bug bit a big black bear, and the big black bear bled blood badly, but the big black bear bit the big black bug back!",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Pop the B vigorously without losing vowel clarity.",
+      "focus_sounds": [
+        "b",
+        "l",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "slit-sheet-short",
+      "text": "I slit the sheet, the sheet I slit, and on the slitted sheet I sit. I slit a sheet, a sheet I slit, upon a slitted sheet I sit.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Careful! Pronounce this very precisely on live audio.",
+      "focus_sounds": [
+        "s",
+        "sl",
+        "sh",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "two-witches-watches",
+      "text": "If two witches were watching two watches, which witch would watch which watch, and which watch would that witch watch?",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Keep the W rounding distinct from the CH closure.",
+      "focus_sounds": [
+        "w",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fuzzy-wuzzy",
+      "text": "Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair. Fuzzy Wuzzy wasn't fuzzy, was he? If Fuzzy Wuzzy wasn't fuzzy, why was he called Fuzzy Wuzzy?",
+      "category": "hissers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Buzz the Z cleanly and let the rhyme bounce.",
+      "focus_sounds": [
+        "f",
+        "z",
+        "w"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "denise-fleas",
+      "text": "Denise sees the fleece, Denise sees the fleas. At least Denise could sneeze and feed and freeze the fleas!",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Crisp long E vowels with alternating S and Z sibilants.",
+      "focus_sounds": [
+        "d",
+        "s",
+        "fl",
+        "z"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "luke-luck-lakes",
+      "text": "Luke Luck likes lakes. Luke's duck likes lakes. Luke Luck licks lakes. Luke's duck licks lakes. Duck takes licks in lakes Luke Luck likes.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Tongue tip taps for L and D, velar stop for K.",
+      "focus_sounds": [
+        "l",
+        "k",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "yellow-butter-purple-jelly",
+      "text": "Yellow butter, purple jelly, red jam, black bread. Spread it thick, say it quick! Yellow butter, purple jelly, red jam, black bread. Spread it thicker, say it quicker!",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Rhythmic breakfast cadence with alternating labials and liquids.",
+      "focus_sounds": [
+        "b",
+        "p",
+        "d",
+        "r"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tutor-tooter-short",
+      "text": "A tutor who tooted the flute tried to tutor two tooters to toot. Said the two to the tutor, 'Is it harder to toot or to tutor two tooters to toot?'",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Crisp dental T taps with elongated pure OO vowels.",
+      "focus_sounds": [
+        "t",
+        "u",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "good-cook-cookies",
+      "text": "How many cookies could a good cook cook if a good cook could cook cookies? A good cook could cook as much cookies as a good cook who could cook cookies.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Velar K sounds with rounded short OO vowels.",
       "focus_sounds": [
         "k",
+        "u",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "ice-cream-screams",
+      "text": "I scream, you scream, we all scream for ice cream! Creamy crunchy crispy ice cream cones crave cold crisp caramel cascades.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Punchy consonant clusters SKR and KR.",
+      "focus_sounds": [
+        "skr",
+        "kr",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "cheese-trees-fleas",
+      "text": "Through three cheese trees three free fleas flew. While these fleas flew, freezy breeze blew. Freezy breeze made these three trees freeze. Freezy trees made these trees' cheese freeze.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Complex alternation of TH, CH, FL, and FR blends.",
+      "focus_sounds": [
+        "thr",
+        "ch",
+        "fl",
+        "fr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rory-worrier",
+      "text": "Rory the warrior and Roger the worrier were reared wrongly in a rural brewery. When the brewery burned, Rory rallied the worried warriors rapidly.",
+      "category": "rollers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "World-class liquid R workout — avoid turning R into W.",
+      "focus_sounds": [
+        "r",
+        "w",
+        "l"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "canner-can-can",
+      "text": "Can you can a can as a canner can can a can? If a canner can can a can, anyone can can a can as a canner can can a can.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Fast rhythmic repetition of velar K with short A.",
+      "focus_sounds": [
+        "k",
+        "an"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "silly-sally-sheep",
+      "text": "Silly Sally swiftly shooed seven silly sheep. The seven silly sheep Silly Sally shooed shilly-shallied south into seven shallow shelters.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "High-frequency sibilant shift between S and SH.",
+      "focus_sounds": [
         "s",
+        "sh",
+        "sw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "chews-shoes",
+      "text": "If a dog chews shoes, whose shoes does he choose? Does he choose the shoes he chews, or does he chew the shoes he chooses to choose?",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Front palatal CH vs. postalveolar SH.",
+      "focus_sounds": [
+        "ch",
+        "sh",
+        "z"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "proper-copper-coffee",
+      "text": "Give papa a cup of proper coffee in a copper coffee cup. If proper coffee won't perk in a copper coffee cup, what cup should papa pick?",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Bilabial P and velar K percussive workout.",
+      "focus_sounds": [
+        "p",
+        "k",
+        "f"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "wish-a-wish",
+      "text": "I wish to wish the wish you wish to wish, but if you wish the wish the witch wishes, I won't wish the wish you wish to wish.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Repetitive lip rounding and palatal SH release.",
+      "focus_sounds": [
+        "w",
+        "ish",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "round-rugged-rocks",
+      "text": "Roberta ran rings around the Roman ruins. Round and round the rugged rocks the ragged rascal ran, dodging roaring rolling round stones.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Keep the tongue tip curled back for rich resonant R sounds.",
+      "focus_sounds": [
+        "r",
+        "nd",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "bright-blades-brigadiers",
+      "text": "Brisk brave brigadiers brandished broad bright blades, blunderbusses, and bludgeons, balancing bravely beside breaking billows.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Staccato bilabial plosives with BR and BL clusters.",
+      "focus_sounds": [
+        "br",
+        "bl",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "satin-slippers-celia",
+      "text": "Celia slipped seamlessly into sleek satin slippers, sliding swiftly across shiny cedar floors while singing spirited sweet songs.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Silky, gliding sibilants perfect for audio polish.",
+      "focus_sounds": [
+        "s",
+        "sl",
+        "sw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "copper-coffee-patrons",
+      "text": "A proper copper coffee pot pours perfectly pure piping hot coffee, providing prompt pleasure to particular public patrons.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Crisp P and K pops with formal Victorian diction.",
+      "focus_sounds": [
+        "p",
+        "k",
+        "pr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "thirty-three-thoroughbreds",
+      "text": "Thirty-three thirsty, thundering thoroughbreds thumped through thirty-three thick thorny thickets on Thursday thinking thrilling thoughts.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Unvoiced dental fricative marathon — keep tongue between teeth.",
+      "focus_sounds": [
+        "th",
+        "r"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "swan-swam-sea",
+      "text": "Swan swam over the sea, swim, swan, swim! Swan swam back again, well swum, swan! If swan can swim, so can seven swift swans.",
+      "category": "hissers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Smooth, flowing SW clusters with rhythmic breath control.",
+      "focus_sounds": [
+        "sw",
+        "s",
+        "m"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "nine-nimble-noblemen",
+      "text": "Nine nimble noblemen nibbled nutty nougat, neatly negotiating ninety-nine nautical knots near Newcastle's northern narrows.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Focus nasal airflow through the nose on N and M.",
+      "focus_sounds": [
+        "n",
+        "m",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "selfish-susie-saucers",
+      "text": "Selfish Susie sold several silver shell saucers, secretly saving six shiny shillings for sweet strawberry sodas.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Delicate S and SH balance with alliterative charm.",
+      "focus_sounds": [
+        "s",
+        "sh",
+        "sl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "pirates-prized-pearls",
+      "text": "Pirates prized private purple properties, proudly parading precious pearls, glittering pieces of eight, and polished silver platters.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Energetic bilabial P explosions and crisp R blends.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "doctor-director-dramatic",
+      "text": "Doctor Drake, director of dramatic arts, demonstrated distinct diction drills daily during demanding December dress rehearsals.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Alveolar ridge workout on D and DR stops.",
+      "focus_sounds": [
+        "d",
+        "dr",
         "t"
-      ]
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "slippery-snake-slithered",
+      "text": "A slippery snake slithered smoothly down sunny slopes, seeking sleeping salamanders soaking beside sweet sparkling springs.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Flowing sibilants and SL blends for whispery precision.",
+      "focus_sounds": [
+        "sl",
+        "sn",
+        "sp"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fred-fed-ted",
+      "text": "Fred fed Ted bread, and Ted fed Fred bread. Did Ted feed Fred the fresh bread, or did Fred feed Ted the brown bread?",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Short, punchy vowel rhymes with alternating F, T, and B stops.",
+      "focus_sounds": [
+        "fr",
+        "t",
+        "d",
+        "br"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "greek-grape-goblets",
+      "text": "Great Greek grape growers grind green Greek grapes into glorious glistening goblets of genuine sweet grape juice.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Deep velar throat resonance with GR and GL blends.",
+      "focus_sounds": [
+        "gr",
+        "gl",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "bluebird-black-bread",
+      "text": "The blue bluebird bakes black bread behind brown brick barns before brilliant bright blue butterflies burst by.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Bouncy B, BL, and BR alliterative cadence.",
+      "focus_sounds": [
+        "bl",
+        "b",
+        "br"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "clara-clever-clutter",
+      "text": "Clara cleared clever clownish clutter carefully, creating calm clean corners throughout Clementine's crazy converted cottage.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Crisp KL and KR consonant cluster workout.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "balcony-mimicking",
+      "text": "She stood on the balcony inexplicably mimicking him hiccuping and amicably welcoming whimsical wanderers wandering within.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Rapid shifts between bilabial M, velar K, and rounded W.",
+      "focus_sounds": [
+        "m",
+        "k",
+        "p",
+        "w"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "suction-cups-polished",
+      "text": "Six sticky suction cups slipped silently sideways, sticking sluggishly to polished stainless steel surfaces.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "High friction ST, SK, and SL consonant combinations.",
+      "focus_sounds": [
+        "s",
+        "st",
+        "sl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "woollen-winter-wear",
+      "text": "Willie's woollen winter wear warmly wrapped weary woodchoppers walking westward while whistling wild winter winds wailed.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Continuous lip rounding on W for vocal warmth.",
+      "focus_sounds": [
+        "w",
+        "l",
+        "r"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "juggling-jewels",
+      "text": "The crowd clapped as clever clownish jugglers juggled glittering gold jewels judiciously without jolting just one jar.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Voiced postalveolar affricate J and G sound drill.",
+      "focus_sounds": [
+        "kl",
+        "j",
+        "gl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "twelve-trembling-tortoises",
+      "text": "Twelve tiny trembling tortoises took two trips to town together through terrible torrential tropical thunderstorms.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Alveolar T taps and TR clusters against TH stops.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "french-fried-fillets",
+      "text": "Fresh French fried fish fillets faithfully foster fine flavors for festive family feasts throughout February.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Continuous labiodental fricatives on F, FR, and FL.",
+      "focus_sounds": [
+        "fr",
+        "f",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "shelly-shoe-shop",
+      "text": "Shy Shelly's shiny shoe shop strictly stocks smart spotted suede slippers, sensational silk scarves, and stylish striped socks.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Great speed-run test for fashion and lifestyle voiceovers.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "witch-waterfalls",
+      "text": "Which witch wished which wicked wish while watching white waterfalls winding through whispering western willows?",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Enchanting fairy-tale rhythm balancing W, WH, and CH.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "wh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "baboons-bake-biscuits",
+      "text": "Black baboons bake brown biscuits briskly, balancing bountiful baking bowls behind barking bullfrogs.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Lively animal alliteration heavy on bilabials.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "crispy-crunchy-crusts",
+      "text": "Crispy crunchy salted crusts cause constantly clamoring customers to quickly crave quality culinary creations.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Crisp velar K and KR percussive acoustic drill.",
+      "focus_sounds": [
+        "kr",
+        "k",
+        "kw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "prancing-princes",
+      "text": "Prancing princes praised proud princesses presenting precious pristine pendants picked beside peaceful placid ponds.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Regal, formal PR and PL bilabial stops.",
+      "focus_sounds": [
+        "pr",
+        "p",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "selfish-shell-gatherers",
+      "text": "Seven selfish shell-gatherers sifted sand silently, searching shorelines for seventy shimmering silver shells.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Classic beachcomber tongue twister with alternating S and SH.",
+      "focus_sounds": [
+        "s",
+        "sh",
+        "sf"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "green-goblins-gobble",
+      "text": "Giggling green goblins gobble gooey green grapes greedily, grinning grandly in gloomy garden groves.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Guttural velar G and GR sounds for animation voice acting.",
+      "focus_sounds": [
+        "g",
+        "gr",
+        "gl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "zoologists-zoom-zebras",
+      "text": "Zealous zoologists zoomed past zigzagging zebras, zealously photographing zesty zero-gravity zinc ziggurats.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Electric Z vibration drill with futuristic flair.",
+      "focus_sounds": [
+        "z",
+        "zg",
+        "pr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "daring-divers-dhows",
+      "text": "Daring divers dove deeply down dark damp depths, discovering dazzling diamond-encrusted sunken Dutch dhows.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Deep, resonant alveolar D stops.",
+      "focus_sounds": [
+        "d",
+        "da",
+        "de"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tap-dancing-tigers",
+      "text": "Ten talented tap-dancing tigers tapped twenty tiny copper taps rhythmically upon towering turquoise tables.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Rhythmic, staccato T taps mimicking tap dance shoes.",
+      "focus_sounds": [
+        "t",
+        "tap",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "plucky-plumbers-pipeline",
+      "text": "Plucky plumbers prudently plumbed pristine pipelines, preventing pungent pollutants from polluting precious potable public ponds.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Civic infrastructure tongue twister with heavy PL and PR.",
+      "focus_sounds": [
+        "pl",
+        "pr",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "wily-wizards-whistle",
+      "text": "Wily wizards whistled weird winter melodies, weaving wondrous winding water wheels while watchful wood elves waited.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Mystical fantasy alliteration on W and WH.",
+      "focus_sounds": [
+        "w",
+        "wi",
+        "wu"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "slimy-slugs-slide",
+      "text": "Slick slimy slugs slowly slide south, seeking sweet succulent seedlings soaked in sparkling spring showers.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Slow-motion articulation drill on SL and S.",
+      "focus_sounds": [
+        "sl",
+        "s",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "brave-bright-banners",
+      "text": "Brave bright banners billowed boldly before blazing battlements, bearing brisk blue badges belonging to blooming barons.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Heraldic medieval trumpet-like B and BR sounds.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "finicky-photographers",
+      "text": "Finicky photographers frantically focused festive framing flashes, formulating fabulous flamboyant fashionable footage.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Snappy F, FR, and FL labiodentals for content creators.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "greedy-gray-geese",
+      "text": "Greedy gray geese grazing peacefully on gorgeous garden grasslands grew grumpy guarding golden grain garnishes.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Velar G plosives and rolling GR blends.",
+      "focus_sounds": [
+        "gr",
+        "g",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "chimney-sweepers-sing",
+      "text": "Cheery chimney sweepers cheerily swept soot from seven soot-stained chimneys, singing soothing songs softly.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Contrasting postalveolar CH with alveolar SW and S.",
+      "focus_sounds": [
+        "ch",
+        "s",
+        "sw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "crystalline-crescents",
+      "text": "Crisp clear crystalline crescents cast curious crimson reflections across calm coastal coves come twilight.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Atmospheric KR, KL, and K stops for voiceover aesthetics.",
+      "focus_sounds": [
+        "kr",
+        "kl",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "nocturnal-newts-navigate",
+      "text": "Nine nimble nocturnal newts navigated narrow muddy nooks, nibbling nutritious nettle noodles nightly.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Rapid nasal N progression requiring crisp tongue taps.",
+      "focus_sounds": [
+        "n",
+        "nj",
+        "kt"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fiery-dragons-flight",
+      "text": "Fierce fiery dragons flew far forward, furiously formulating fiery fireworks for frantic forest festivals.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "High-energy fantasy voice warmup on F and FR.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "sneaky-snakes-slid",
+      "text": "Six slick sneaky snakes slid stealthily beside seven sleeping sheep, softly seeking savory snacks silently.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Pure stealth sibilance — S, SN, and SL control.",
+      "focus_sounds": [
+        "s",
+        "sn",
+        "sl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "baker-bobs-bagels",
+      "text": "Baker Bob baked brown bagels beside booming brick ovens before busy buyers bought bundles.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Everyday bakery rhythm on B and BL stops.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "ba"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "quantum-quarks-quiver",
+      "text": "Quirky quantum quarks quiver quickly, questioning quintessential quantum calculations quite quietly.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Sci-fi brain-bender on the rare KW consonant sound.",
+      "focus_sounds": [
+        "kw",
+        "k",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "peter-piper-prologue",
+      "text": "Peter Piper picked a peck of pickled peppers. A peck of pickled peppers Peter Piper picked. If Peter Piper picked a peck of pickled peppers, where's the peck of pickled peppers Peter Piper picked? Now Peter Piper's cousin, Piper Peter, picked another peck of pickled peppers from the pickled pepper patch. Together, Peter Piper and Piper Peter packed plenty of pickled pepper packets into proper plastic pails, proving that persistent pickled pepper pickers pick pure perfection promptly without panic.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Maintain crisp breath bursts on every single P; don't let lips grow fatigued.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pl",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "betty-botter-batter-break",
+      "text": "Betty Botter bought some butter, but she said the butter's bitter. If I put it in my batter, it will make my batter bitter, but a bit of better butter will make my bitter batter better. So 'twas better Betty Botter bought a bit of better butter to make her bitter batter better! But alas, when Betty beat the batter with the better butter, the batter broke the baker's bowl, and bitter batter bounced broadly across Betty Botter's bright blue basement boards.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Alternate between voiced B explosions and alveolar T taps without slurring.",
+      "focus_sounds": [
+        "b",
+        "bt",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "woodchuck-wilderness-debate",
+      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood? A woodchuck would chuck all the wood he could chuck, if a woodchuck could chuck wood. Furthermore, if forty frantic woodchucks chucked forty fat cords of cedar wood through frosty forest woods, would each frantic woodchuck chuck wood with wondrous vigor, or would every weary woodchuck wonder why wacky woodland woodsmen watch woodchucks chuck wood while whistling wild western tunes from dawn until dusk?",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep lip rounding tight on W and snap the CH shut at the end of each pulse.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "k",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "seashell-shoreline-ballad",
+      "text": "She sells seashells on the seashore. The shells she sells are seashells, I'm sure. For if she sells seashells on the seashore, then I'm sure she sells seashore shells. Beside her stand, Simon seeks shiny snail shells, softly sorting seventy slender specimens while Sally sweeps salty seashore silt. Should seaside strollers stop and select several sun-bleached shell souvenirs, Sarah says she shall swiftly share sweet stories of sunken Spanish sailing ships stranded beneath silent stormy seas.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Master the high-speed contrast between alveolar S and postalveolar SH.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "sl",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "flute-tutor-conservatory",
+      "text": "A tutor who tooted the flute tried to tutor two tooters to toot. Said the two to the tutor, 'Is it harder to toot or to tutor two tooters to toot?' Said the tutor in turn to the tooters, 'To tutor two tooters to toot is far harder to toot than to toot, but if two tooters learn to toot truly, then the tutor who tooted the flute has tutored two tooters to toot triumphant tunes.'",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Taps of the tongue tip on the alveolar ridge paired with sustained OO vowels.",
+      "focus_sounds": [
+        "t",
+        "u",
+        "tr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "sheet-slitter-silk-parlor",
+      "text": "I slit the sheet, the sheet I slit, and on the slitted sheet I sit. I slit a sheet, a sheet I slit, upon a slitted sheet I sit. The sheet slitter sits upon the sheets he slit, sliding silky slitted sheets swiftly sideways. Six silly sheet slitters swiftly slit sixty fine silk sheets, strictly singing spirited sonnets while slitting sheets. Slit the sheet smoothly, sheet slitter, lest sliding scissors snag subtle silken strands!",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Extreme caution required: enunciate the SL and SH clusters distinctly to avoid slip-ups.",
+      "focus_sounds": [
+        "s",
+        "sl",
+        "sh",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "harry-hunting-hares",
+      "text": "There once was a hunter named Harry who hunted hairy hares through heavy heather. Harry had hundreds of hairy hares hidden in his hunting hut. But his honest brother Howard hated hunting hairy hares; Howard harbored hungry hound dogs that howled heartrendingly whenever heavy hail hit Harry's humble home. So Harry halted hunting hairy hares, hoping Howard's howling hounds would happily hush and harbor wholesome harmony in their hearty highland hamlet.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Focus on clear glottal H aspirations without running out of air.",
+      "focus_sounds": [
+        "h",
+        "r",
+        "nd"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "brigadiers-brass-bastions",
+      "text": "Brave brigadiers brandished broad bright brass blades while booming batteries battered barren bastions beyond British borders. Behind bulkheads, bold bluejackets bundled black blasting powder barrels bravely, bracing against blisteringly brisk bitter blizzards. When bugles bleated briskly, battalions bounded broadly beneath billowing banners, breaching battered battlements and banishing bitter barbarous brigands back beyond boundless barren borderlands without blemishing bright bronze bravery.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Powerful bilabial plosives — project from the diaphragm with full vocal resonance.",
+      "focus_sounds": [
+        "br",
+        "bl",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "doctor-drakes-rehearsal",
+      "text": "Doctor Drake directed dramatic diction drills during demanding December dress rehearsals. Daily, determined drama students demonstrated distinctly dramatic dialog, dodging dubious dialect dilemmas. 'Do develop dynamic delivery, dear dancers!' demanded Doctor Drake. 'Don't deliver dull, drab descriptions; demonstrate daring, dazzling drama!' Doubting debaters diligently deduced Drake's directives, diligently delivering delightful dramatic deeds despite daunting December deadlines.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Rapid alveolar D taps; keep the tongue agile and avoid sluggish consonant transitions.",
+      "focus_sounds": [
+        "d",
+        "dr",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "christophers-culinary-cafe",
+      "text": "Crisp crimson apples crackle cheerily beside creamy coconut custard cups. Chef Christopher crafted classic culinary concoctions, carefully chopping crunchy carrots, crumbling crispy crackers, and caramelizing candied chestnuts. Curious customers constantly crowded Christopher's cozy country cafe, clamoring for crunchy cookies, creamy coffees, and cinnamon crepes. Christopher smiled calmly, creating customized confectionary courses containing clean, crisp, craveable culinary craftsmanship that completely captivated connoisseurs.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Crisp back-of-the-throat velar K sounds paired with rhythmic ASMR-like cadence.",
+      "focus_sounds": [
+        "kr",
+        "k",
+        "ch",
+        "kl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "susies-strawberry-sundas",
+      "text": "Susie's special sweet shop strictly sells sensational strawberry sundaes, sparkling soda siphons, and soft sugar sprinkles. Seven smiling schoolboys sprinted swiftly south toward Susie's shop, spending shiny silver shillings on succulent sweets. Susie smilingly served sixty sweet sundaes, swirling scrumptious strawberry sauce skillfully. 'Save some sugary snacks for Saturday!' shouted Susie, seeing several satisfied schoolboys swiftly savoring spiced sponge sweetmeats.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Continuous sibilant endurance workout; keep breath smooth and hisses uniform.",
+      "focus_sounds": [
+        "s",
+        "sw",
+        "sp",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "thirty-three-thinkers-theses",
+      "text": "Thirty-three thankful thoughtful thinkers thought thrilling thoughts throughout thirty-three thunderous Thursdays. They thought that theoretical thermodynamics thrilled thoroughbred theorists, while thirty-three thousand thorny thistles threatened their thick leather throttles. 'Thus thinkers think!' thoroughly thundered Theodore, thrusting thirty thrilling theses through the thick wooden threshold to thwart threatening thieves trailing thirty-three paces behind their thankful thinking team.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "The benchmark dental fricative drill; place tongue lightly between incisors for TH.",
+      "focus_sounds": [
+        "th",
+        "thr",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "witches-walnut-waffles",
+      "text": "Which witch wished which wicked wish while wandering through whispering western woods? When Winnie the white witch wished for warm walnut waffles, Wanda the wicked witch wished for weird wooden whistles. Both witches watched windy willow branches wave wildly, wondering whether Winnie's waffles would war with Wanda's whistles. Without warning, whirling winter winds whipped west, whisking waffles and wooden whistles wholly away into wild watery waterfalls.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Lively lip gymnastics on W and WH; keep vowels rounded and forward-focused.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "wh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "phoenix-frost-fjords",
+      "text": "Furious flaming phoenixes flew far beyond frosty frozen fjords, fiercely flashing fiery feathers forward. Five fearless falconers followed flying phoenixes, filming fascinating fiery flights from fog-filled forest foothills. 'Find fierce flames!' shouted fearless Frederick, feeding fine fresh fish to fatigued flying falcons. Finally, flaming fiery phoenixes found formidable fortress frontiers, forming fiery figures fulfilling fabulous fairy folklore forever.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Crisp labiodental friction on F, FL, and FR blends.",
+      "focus_sounds": [
+        "f",
+        "fl",
+        "fr",
+        "fj"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "grandfather-gregory-gooseberries",
+      "text": "Greedy gray groundhogs greedily grabbed golden green grain growing gracefully along grandfather's glorious green garden groves. Grandfather grumbled gravely, grabbing great garden groovers to guard glistening green gooseberries. 'Go, grumpy groundhogs!' growled grandfather, glaring gratefully as grandmother greeted gray groundhogs with great grinning gestures, giving grain graciously so green gardens could grow grandly without greedy groundhog grievances.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Guttural velar stop workout on G, GR, and GL; excellent for throat relaxation.",
+      "focus_sounds": [
+        "gr",
+        "g",
+        "dr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "carnival-conjurers-crescents",
+      "text": "Clever clownish conjurers captivated cheering crowds, courageously catching curved carved crystal crescents. Continuously chuckling, crazy clowns choreographed complex comic clapping routines, creating chaotic cheerful commotion across crowded country carnivals. Concurrently, curious children cheered cleanly carved wooden carousels circling closely, catching colorful cotton candy clouds comfortably while celebrating carefree carnival celebrations cheerfully.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Clean articulation of hard C and K plosives with joyful circus energy.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "k",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "timber-wolves-tortoises",
+      "text": "Twelve twin timber wolves trotted through thick tangled timberland, tracking two timid tortoises towards tranquil tarns. The trembling tortoises turned toward towering trees, trusting thick thorny thickets to thwart travelling timber wolves. 'Tarry today!' tipped tiny Timothy Tortoise, tapping twin tree trunks together. Truly, tracking timber wolves turned tiredly toward timber trails, turning their twin tracks toward distant towering tundra territories.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "High-frequency alveolar T, TR, and TW stops; keep consonants snappy and brisk.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw",
+        "th"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "sophias-sunset-serenade",
+      "text": "Sensational seaside sunsets sparked sweeping silken shadows across sandy shoreline slopes. Silently strolling, Sophia sought shimmering starfish, softly singing sentimental serenades beside sparkling surf. Suddenly, seventy swift seagulls swooped downward, sweeping silver sprats straight from shallow salt-water sandbars. Sophia smiled serenely, snapping stunning sunset scenes showcasing supreme seaside splendor smoothly for spectacular social stories.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Silky, flowing sibilants crafted for Instagram voiceovers and narration reels.",
+      "focus_sounds": [
+        "s",
+        "sw",
+        "sn",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "polar-penguins-pilchards",
+      "text": "Plucky proud penguins paraded promptly past polar pathways, patronizing polished perilous pebble plateaus. Peter Penguin patiently prompted practical principles to prepare perky penguin chicks for precarious pelagic plunges. 'Paddle properly, practice precision, and protect precious pink plumage!' pleaded Peter. Promptly, pleasing penguin packs plunge positively into polar ponds, pursuing plentiful plump pilchards peacefully.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Popping bilabial P explosions and PL blends; fun, bouncy cadence.",
+      "focus_sounds": [
+        "p",
+        "pl",
+        "pr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "victorian-apothecary-potions",
+      "text": "A proper proud apothecary packed potent powdery potions promptly into polished purple porcelain pots. 'Provide patients pristine pure products!' pledged Peter the polite apothecary, performing precise powdered preparations without polluting precious plants. Particular physicians praised Peter's powerful potions, promoting practical procedures and prescribing prepared prescriptions pleasantly to prosperous people pursuing positive physical purity.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Aristocratic theatrical articulation drill focusing on P, PR, and PT.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pt"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "whistling-woodmen-wildwoods",
+      "text": "Merry whistling woodmen walked westward through whispering wildwoods, wielding well-weighted wooden wedges. When winter winds wailed wrathfully, wise weary woodsmen warmed waterproof woollen wear beside weathered weeping willows. 'Work well, woodsmen, while winter waits!' whispered Walter, wrapping warm woollen wrappers wisely without wasting warm walnut wood which wooden walls warranted. Practice this daily to maintain rich lip flexibility and resonant breath support.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Round lips into an 'O' shape on W sounds and maintain deep diaphragmatic support.",
+      "focus_sounds": [
+        "w",
+        "r",
+        "l"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "beatrice-butter-biscuits",
+      "text": "Brisk bakers baked brown butter biscuits beneath burning bakery braziers before bright morning beams broke boldly. Busy Beatrice blended batter beautifully, beating bountiful butter blocks before balancing brittle biscuit baskets. 'Bake better biscuits briskly!' bellowed master baker Barnaby, bringing browned bread bundles to bustling banquet buffets brimming with berry beverages. Articulate each bilabial stop crisply to build effortless vocal speed.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Lively bakery narrative drill rich in B and BR consonant clusters.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "schooner-spanish-silver",
+      "text": "Swift sailing skippers steered sturdy schooners skillfully through stormy southern straits, spotting sunken Spanish silver ships stranded beneath swirling salt surges. Strong sea swells shook wooden spars, so sea captains shouted sharp spoken signals, sailing safely toward sunny sheltered straits without snapping single staysail sheets. Recite this seafaring tale clearly to master complex sibilant consonant blends.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Maritime adventure tongue twister dense in SK, ST, and SW clusters.",
+      "focus_sounds": [
+        "sk",
+        "st",
+        "sw",
+        "sp"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tailorbird-taut-tapestries",
+      "text": "Ten tiny tailorbirds tirelessly tailored thirty-two tough textile tents, tacking taut thread tightly through thick twill tariffs. Terrified termites tried tearing tiny tailorbird threads, trusting terrible timber tricks to topple tender tapestries. Thanks to tenacious teamwork, tidy tailorbirds trapped trailing termites, triumphantly tying tight twine throughout today's towering textiles. Enunciate every dental tap cleanly without swallowing final consonants.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Charming alliterative tale designed to sharpen front-of-mouth tongue agility.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "leopard-lagoon-lullaby",
+      "text": "Lively leaping leopards learned lovely lyrical lullabies, lounging lazily beneath lush lime-scented lemon laurels. Little leopard Lily looked lovingly upon laughing lynxes leaping lightly along leafy lagoons. 'Listen to lingering laughter!' whispered Leopold Leopard, licking luscious lemon leaves while lovely lingering light illuminated lively leopard lands. Let the tongue rest naturally behind top teeth for fluid liquid L tones.",
+      "category": "rollers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Smooth and melodic liquid L drill; excellent for vocal relaxation and diction warmup.",
+      "focus_sounds": [
+        "l",
+        "lj",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fiddler-forest-fandango",
+      "text": "Fidgety fiddlers furiously fingered fine fragile fiddle strings, forging fabulous frantic folk melodies for festive forest fairs. Fifty fascinated fellows followed fiery fiddle flourishes, feverishly foot-tapping fast fantastic folk fandangos. 'Fiddle faster, fearless fiddler!' frequent fans figured, finding frantic fiddle harmonies foster fierce festive feelings forever. Focus on sharp upper-teeth to lower-lip contact on every F sound.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "High-tempo theatrical rhythm drill that tests breath capacity and lip agility.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "chipmunks-crunchy-chestnuts",
+      "text": "Chilly shivering chipmunks cheerily chewed crunchy chestnut chips, chucking charred chestnut casings closely into carved cedar crevices. Charles Chipmunk cheerfully chatted with Charlie, checking colossal chestnut collections cautiously. 'Choose crisp chestnuts carefully, Charles!' cautioned Charlie Chipmunk, chuckling cheerily as chilling cloudbursts cleared completely. Practice popping the CH affricate forward with clean vocal stops.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Playful woodland rhyme balancing palatal CH and velar CR consonant stops.",
+      "focus_sounds": [
+        "ch",
+        "sh",
+        "kr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "grasshoppers-golden-gladiolus",
+      "text": "Glittering golden grasshoppers gracefully glided across glowing green grasslands, gathering golden grain grains greedily. Gentle garden giants guarded glorious gladiolus gardens, genuinely greeting glad gleaming grasshoppers. 'Glide gently, golden grasshopper!' giggled generous Grace, guiding glancing grasshoppers gracefully toward golden gladiolus grounds. Keep the throat open and soft palate raised for radiant resonance.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Enchanting nature voiceover script featuring cascading GL and GR alliteration.",
+      "focus_sounds": [
+        "gl",
+        "gr",
+        "g"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "nordic-naval-navigation",
+      "text": "Nine nimble navigating sailors neatly knotted ninety-nine nautical nylon knots, navigating nocturnal northern navigation channels cautiously. Nighttime navigators noticed novel Northern lights neon glows noblely nourishing Nordic skies. 'Nod northward, noble navigator!' whispered Nathan, noting nine nimble naval nets nicely negotiated navigating narrow oceanic pathways. Hum the N gently to feel buzzing vibration in the nasal bridge.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Nasal resonance and alveolar agility workout centered on crisp N sounds.",
+      "focus_sounds": [
+        "n",
+        "na",
+        "kt"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "cedar-carpentry-craft",
+      "text": "Clever craftspeople carved curved cedar chairs, cleanly creating comfortable cushions covered in colorful crushed cotton. Clara crafted charming classical cradles, carefully cutting cedar corners correctly. Customers commended Clara's clean carpentry, cheerily commissioning colossal carved cupboards celebrating creative craftsmanship completely. Hit the hard C sounds with crisp precision to prevent lazy slurring.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Artisanal woodworking alliteration crafted for aesthetic video audio tracks.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rugged-runners-roundabout",
+      "text": "Rustic rugged runners ran rapidly round roundabouts, racing resolute red rovers rolling rubber rims relentlessly. Rory recognized red rovers readily, roaring rally reminders right regarding rocky ravine roads. 'Run rapidly, rugged runners!' rallied Robert, recording record racing results right round rugged road race routes. Curl your tongue tip upward and backward without touching the dental ridge.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Marathon sports commentary vocal drill emphasizing rolling and retroflex R.",
+      "focus_sounds": [
+        "r",
+        "ra",
+        "nd"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "princess-penelope-pastries",
+      "text": "Prudent proud princes preferred pretty pink porcelain platters presenting plump pickled plums. Princess Penelope patronized prestigious pastry producers, preparing powdered puff pastries properly. Polite patrons praised Penelope's pleasant party, happily picking pristine powdered pastries presented proudly upon pretty porcelain. Pop the P sharply from the lips with crisp release and poised delivery.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Regal courtly high-tea alliteration emphasizing popping P and PR clusters.",
+      "focus_sounds": [
+        "pr",
+        "p",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "walrus-winter-waltz",
+      "text": "Whimsical wandering walruses whistled weird wild winter waltzes while swimming westward within wide winding waters. Walter Walrus watched waves washing white whalebone wharves, wondering whether windy weather would worsen. With wide whistles, warm walrus welcoming waves woke wandering white whales warmly. Shape your lips into an expressive circle to articulate pure W and WH sounds.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Whimsical marine mammal tongue twister emphasizing rounded labial vowels.",
+      "focus_sounds": [
+        "w",
+        "wo",
+        "wi"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "silversmith-shoreline-shields",
+      "text": "Shining shimmering shells showed sheer brilliance beside shady sea shores where smart silversmiths shaped shiny silver spoons. Samuel silversmith smoothed sixty shimmering silver shields skillfully, singing spirited sonnets so sweet silver sounded supremely sharp. Maintain strict separation between high-frequency S hiss and deep SH hush. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Silversmith workshop articulation benchmark that challenges sibilant separation.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "sm",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "thistlethwaites-thicket-thrushes",
+      "text": "Thirsty thirsty thistles thrived throughout thirty thick thorny tracts where thirteen thrilled thrushes thridded thriftily. Theodore Thistlethwaite thoughtfully thanked thirteen thrushes, thinking their thrilling throat tones throttled thirty thirsty thorny thistles thoroughly. Keep your jaw loose and tongue light to master this rapid dental-fricative run. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Intense botanical and avian tongue twister testing stamina on voiceless TH.",
+      "focus_sounds": [
+        "th",
+        "thr",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "spotted-spring-spaniels",
+      "text": "Splendid spotted spring spaniels sprang swiftly sideways, snatching sparkling silver spinners splashing smoothly across sunny streams. Stephen stopped, signaling smiling spaniels slowly. 'Stay, splendid spaniels, stay!' shouted Stephen, stroking silky spotted spaniel shoulders soft as spring silk. Keep each consonant in the SP and SPR clusters distinct without dropping letters.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Energetic canine agility tongue twister dense in sparkling SP and SPR blends.",
+      "focus_sounds": [
+        "sp",
+        "spr",
+        "sn",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "kitchen-cooks-cauliflower",
+      "text": "Careful kitchen cooks cooked creamy cauliflower casserole, crumbling crunchy cheddar crusts cleanly across copper cooking cauldrons. Chloe cautioned careless kitchen cooks, checking boiling clam chowder cauldrons cautiously lest scorching creamy chowder curdle clumsy catering crew creations. Ensure clean consonant stops at the rear palate on every K and KR. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Culinary show voiceover drill designed to sharpen rhythm and velar articulation.",
+      "focus_sounds": [
+        "k",
+        "kr",
+        "kl",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "bouncing-bunnies-briars",
+      "text": "Brave bouncing bunnies bounded briskly behind blooming blackberry briars, balancing baskets brimming with bright blue blueberries. Benjamin Bunny begged brother Barnaby: 'Bring bountiful blueberry baskets back before bitter badger bandits burglarize bunny burrows!' Keep your lips springy and bouncy to effortlessly pronounce repeated B sounds. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Delightful storybook animal sprint challenge focusing on bouncy bilabials.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "detectives-dossier-driveway",
+      "text": "Dashing dapper detectives diligently deduced dark doubtful deeds, documenting delicate details down dubious dusty driveways. Daniel Drake displayed discreet detective discipline, discovering dropped documents disclosed double-dealing diplomats directly deceiving domestic defense departments. Deliver this passage with sharp alveolar precision and dramatic cadence. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Film-noir crime drama voiceover drill with rapid-fire alveolar D stops.",
+      "focus_sounds": [
+        "d",
+        "da",
+        "di",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "purple-parrots-pumpkin",
+      "text": "Proud purple parrots pecked powdery pumpkin pastry puddings pleasantly placed upon pretty porch platforms. Polly Parrot praised Percy's powdery pastry, politely prompting perky parrot pals to partake promptly in pumpkin pudding pleasures. Pop each P cleanly off your lips with controlled breath pressure. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Tropical aviary dessert tongue twister that tests rapid bilabial plosives.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "siberian-snowy-summits",
+      "text": "Silent silvery snowy summits soared serenely skyward, separating secluded Siberian settlements from stormy sea shores. Seven solitary snowboarders slid smoothly southward, slicing fresh soft snow slopes skillfully without stumbling upon steep sunken stones. Glide effortlessly across the soft S and SL sibilants for a cool aesthetic sound. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Ethereal alpine winter landscape script tailored for travel creators and reels.",
+      "focus_sounds": [
+        "s",
+        "sn",
+        "sl",
+        "sm"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tiger-twins-tropical",
+      "text": "Timid tiger twins tip-toed toward towering teak trees, tracing tiny turtle tracks through tropical thickets. Timmy Tiger tapped brother Tommy: 'Trust today's trail, Tommy!' Together, tiger twins trotted through tall timber, triumphantly tracking two tranquil tortoises. Tap the tongue tip firmly against the roof of the mouth on each T.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Cute jungle safari adventure rhyme focusing on snappy alveolar T taps.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fighting-falconers-fjords",
+      "text": "Fierce fighting falconers forged fine feathered flight formations, fearlessly facing furious freezing frost storms. Frank formulated formidable flight forms, flying favorite fierce falcons far forward to find fleeting fowl feeding beside frozen forest fjords. Keep upper teeth aligned with the lower lip to generate crisp F friction. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Epic fantasy battle training narration drill loaded with challenging F clusters.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "musical-mermaids-megalodon",
+      "text": "Merry musical mermaids made melodic music moving miraculously through mystical marine minerals. Marina Mermaid manufactured matching mother-of-pearl medals, managing magical marine melodies making magnificent monstrous megalodons move mild and mellow. Close lips gently on M sounds to build rich, warm vocal resonance. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Mystical ocean fantasy voiceover designed to cultivate soothing nasal resonance.",
+      "focus_sounds": [
+        "m",
+        "me",
+        "mi",
+        "l"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "crawling-crabs-cliffs",
+      "text": "Crafty crawling crabs crept cautiously closer, claiming crispy crunchy clams cracked cleanly along rocky coastal cliffs. Callum Crab cautioned clumsy crabs: 'Creep carefully, cousin crabs, lest careless crabs crash crazily into crushing churning current crests!' Articulate the hard C and crackling CR clusters with theatrical flair. Practice this classical articulation drill repeatedly to build flawless pronunciation and vocal stamina.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Tidepool comedy tongue twister with crackling velar stops and seaside rhythm.",
+      "focus_sounds": [
+        "kr",
+        "kl",
+        "k",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "peter-piper-epic-legend",
+      "text": "Peter Piper picked a peck of pickled peppers. A peck of pickled peppers Peter Piper picked. If Peter Piper picked a peck of pickled peppers, where's the peck of pickled peppers Peter Piper picked? Everyone in the village pondered Peter's curious pepper predicament. Peter's prudent parent, Patriarch Piper, pondered purposefully: 'Did prudent Peter pack pickled peppers into plastic packets, or did playful Peter place pickled peppers upon pretty porch pantries?' Presently, pretty Polly Piper pointed playfully past Peter's picturesque poultry pens. 'Presto!' pronounced Polly, 'Peter's picked pickled peppers reside peaceably packed within pristine porcelain pails!' Pleased villagers praised Peter Piper's proud pickled pepper picking prowess, proposing pleasant picnics packed with peppery pickles, potato pies, and pungent peppered pastries. The persistent pepper pickers pledged proudly to provide plentiful pickled provisions perpetually.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "The benchmark articulation marathon: maintain breath support and crisp bilabial pops throughout.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pl",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "betty-botters-bakery-catastrophe",
+      "text": "Betty Botter bought some butter, but she said the butter's bitter. If I put it in my batter, it will make my batter bitter, but a bit of better butter will make my bitter batter better. So Betty Botter bought a bit of better butter to make her bitter batter better. When Betty blended that brand of better butter into her bitter batter, behold! The bitter batter became better than before! But bad luck befell Betty's bakery, because bold barnyard bullfrogs barged boldly beneath Betty's basement beams, bumping Betty's big butter bowls! Bitter butter, batter, and buttermilk bounced broadly between bleached birch benches, blanketing Betty's best black boots. 'Bother!' bellowed Betty Botter, brush in hand, bravely battling bushels of batter before breakfast. Brilliant bakers praised Betty's bountiful boldness, buying buckets of better butter biscuits before bedtime.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Continuous bilabial workout; control your tongue to prevent B from slipping into P or V.",
+      "focus_sounds": [
+        "b",
+        "bt",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "woodchuck-forestry-expedition",
+      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood? He would chuck, he would, as much as he could, and chuck as much wood as a woodchuck would if a woodchuck could chuck wood. But suppose six stout woodchucks stood silently within shadowy cedar woods, surveying sixty cords of seasoned spruce wood. Would stout woodchucks skillfully shift seasoned spruce, or would weary woodchucks wish woodsmen would wondrously withdraw wooden wheelbarrows? Woodland warden Walter warned woodchucks: 'Whoever chucks wood without watching wet winter weather will weep when wild western whirlwinds whistle through weeping willows!' Whereupon watchful woodchucks wisely wrapped warm woollen waistcoats, working willingly while whispering wondrous woodland wisdom without wearying. Ultimately, Walter watched wholesale wagonloads of well-carved wood weave westwards where wide wooden windmills waited welcomingly.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Sustain lip rounding on W, keep consonants forward, and manage breath across long sentence arcs.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "k",
+        "d"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "mary-annings-seashore-odyssey",
+      "text": "She sells seashells on the seashore. The shells she sells are seashells, I'm sure. For if she sells seashells on the seashore, then I'm sure she sells seashore shells. Stand beside Sarah's seaside shelter and survey seventy splendid specimens: spiral sundial shells, smooth silver scallop shells, shimmering striped strombus shells, and sharp spiny sea-urchin shells. Seaside strollers stop, asking: 'Should selective shoppers seek simple shore shells or spend silver shillings on Sarah's sweetest submerged souvenirs?' Sarah smiles sincerely, stating she shall safely stow selected seashells into stout seaweed sacks. Should stormy south winds sweep sea shores, Sarah swiftly secures sea-shell stands, singing soft sea shanties until sparkling sunshine settles serenely across shimmering sand dunes. Satisfied sightseers still speak of Sarah's seashells spanning several sensational sunny seasons.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Distinguish crisp alveolar S from postalveolar SH without breathless rushing.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "st",
+        "sl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tutors-conservatory-duel",
+      "text": "A tutor who tooted the flute tried to tutor two tooters to toot. Said the two to the tutor: 'Is it harder to toot or to tutor two tooters to toot?' Said the tutor: 'To toot your true tune through the flute is a tribute to talent, but tutoring two tricky tooters to toot true timber tunes takes totally titanic tolerance!' Together, the two tooters tried tooting twin trumpets, trembling slightly, till traditional tunes twisted into totally terrifying cacophonies. 'Tame those tongues!' taxed the tireless tutor, tapping twenty tempo tempos together. Towards twilight, both tooters tooted triumphant triplets, transforming temporary trivial trouble into true tonal perfection that thrilled throughout town. Townsfolk applauded the tutor's tenacious teaching, toasting talented tooters treating the town to timeless triumphs.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Rapid alveolar T bursts and pure vowels; essential for brass and woodwind vocal warmup.",
+      "focus_sounds": [
+        "t",
+        "u",
+        "tr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "silk-slit-catastrophe",
+      "text": "I slit the sheet, the sheet I slit, and on the slitted sheet I sit. I slit a sheet, a sheet I slit, upon a slitted sheet I sit. Six sophisticated sheet slitters sat solemnly slitting seventy sheets of Scottish scarlet silk. 'Should sharp scissors shear silken sheets slowly, or should skilled sheet slitters swiftly slit soft sheets?' asked Simon the senior sheet slitter. Samuel, swinging stainless steel shears, stated: 'Skilled sheet slitters strictly slit sheets smoothly, so seamless silk stays straight!' Suddenly, seven sneaky silver squirrels scrambled through open shop sills, snatching sliced sheet strips. Sheet slitters shrieked, scattering stainless scissors sideways across slippery slitted silk, scrambling swiftly to save seventy scarlet sheets from silly squirrel sabotage. Skilled seamstresses soon stitched salvageable silk seamlessly.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Maximum speech caution required; articulate every consonant cluster with meticulous precision.",
+      "focus_sounds": [
+        "s",
+        "sl",
+        "sh",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rodericks-roan-rovers",
+      "text": "There lived a wise old warrior named Roderick who reared rugged red rovers along rocky riverbanks. Roderick's restless rovers ran round remote Roman ruins, roaring righteously whenever rival rogue raiders rode near. 'Ready ride!' roared Roderick, reaching for royal red robes while ringing resonant iron rally rings. Resolute riders rapidly responded, riding robust roan rovers through raging rainstorms and rough rocky ravines. When rogue raiders retreated right round rugged ridges, Roderick rewarded resilient riders with roasted rib roasts, red currant rolls, and refreshing red root beverages, regaling relieved residents with remarkable recollections of royal frontier victories throughout rural realms. Reliable records reveal Roderick's rovers remained revered rulers regardless of turbulent rainstorms.",
+      "category": "rollers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "The ultimate rhotic consonant endurance drill; prevents lazy tongue tip curling on repeated R sounds.",
+      "focus_sounds": [
+        "r",
+        "ra",
+        "ro",
+        "ru"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "doctor-drakes-drama-debut",
+      "text": "Doctor Drake, demanding director of dramatic arts, directed daunting diction drills daily during damp December dress rehearsals. 'Delightful diction demands distinct discipline!' demonstrated Drake, directing dozens of dedicated drama students. 'Deliver deep dramatic dialog; don't dangle doubtful dialects, dear dancers!' Daring debutantes diligently practiced difficult dialogues, dodging daunting dilemmas during dramatic duel demonstrations. Despite dire distractions—dropping draperies, dimming dynamos, and deafening drumbeats—Drake's determined department delivered dazzling dramatic distinctions. During December's definitive debut, discerning drama devotees declared Drake's daring dancers displayed descriptive dexterity deserving decadent decorative diplomas and delightful standing ovations. Delighted directors dined together, discussing dramatic developments destined to define dazzling future theatrical decades.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Alveolar stop mastery: tap D crisply and keep jaw tension completely eliminated.",
+      "focus_sounds": [
+        "d",
+        "dr",
+        "da",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "brass-bastion-bombardiers",
+      "text": "Brisk brave brigadiers brandished broad bright brass blades before blazing battlements, battling barbarous border bandits boldly. Behind barbed barricades, bombardiers braced big brass bombards, blasting bitter bullets beyond barren boundaries. 'Bound bravely forward!' bellowed Brigadier Bartholomew, banner billowing beneath bitter blizzards. Brave battalions broke barbarian barricades, banishing bloodthirsty brigands back beyond boundless barren badlands. By breakfast, bright blue banners beamed brightly above battered bastions. Basking beneath blissful blue skies, brave brigadiers brewed boiling black broth, baking brittle barley biscuits and boasting bountiful bravery between broad brotherhood bands. Beloved brass bands blasted booming bugle blasts, broadcast broadly beyond border bastions. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Diaphragmatic power drill focusing on explosive bilabial plosives BR, BL, and B.",
+      "focus_sounds": [
+        "br",
+        "bl",
+        "b"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "theodores-thermodynamic-theorems",
+      "text": "Thirty-three thoughtful thinkers thoughtfully theorized theoretical thermodynamics throughout thirty-three thunderous Thursdays. Theodore Thistlethwaite, the thickset third thinker, thought that thorough theoretical thought thrives through thoughtful thematic theses. 'Think thoroughly!' thundered Theodore, thrusting thirteen thorny thermodynamic theorems through thirty thick mahogany threshold panels. 'Those thirty-three thieves threaten theorem thirty-three!' yelled thrilling Thaddeus, thinking thirteen threatened thinkers throttled thirty thick thorny thistles successfully. Through thickness and through thinness, thirty-three thinkers thank their thrilling thorough theoretical thinker thoughts, triumphantly thrusting thoroughly thought-out theories throughout thriving philosophical theater thrills. Theological theorists thanked Theodore warmly for throwing truthful light upon thoroughly thrilling thermodynamic thinking. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "The world's most demanding dental fricative marathon; places immense focus on tongue tip precision.",
+      "focus_sounds": [
+        "th",
+        "thr",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "christophers-culinary-chronicles",
+      "text": "Chef Christopher cooked crisp crunchy creations in cozy country kitchens, carefully crafting culinary confections capturing customer compliments constantly. Christopher chopped crisp carrots, crumbled creamy cheeses, and candied crunchy chestnuts carefully into copper cauldrons. 'Cook cleanly and correctly!' commanded Christopher, creating colossal chocolate caramel cakes crowned with crispy coconut curls. Crowds of connoisseurs curiously consumed Christopher's catered creations, commenting cheerfully: 'Can capable cooks constantly create comparable crunchy crisp culinary concoctions?' Christopher credited careful cooking craftsmanship, continuing to compose classic culinary courses comprising clean, crunchy, comforting components completely captivating cosmopolitan communities. Celebrated culinary critics chronicled Christopher's classic creations, celebrating crisp culinary craftsmanship continuously. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "High-frequency velar K and KR stops designed for rhythmic pacing and clear acoustic projection.",
+      "focus_sounds": [
+        "kr",
+        "k",
+        "ch",
+        "kl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "susies-seaside-soda-fountain",
+      "text": "Susie's sensational seaside sweet shop strictly sells splendid strawberry sodas, sparkling sarsaparilla, and soft sugary shortbread. Sixty smiling schoolchildren strolled southward toward Susie's shop, spending shiny silver shillings on succulent sweets. Susie smilingly served sixty sumptuous sundaes, swirling sweet strawberry syrups skillfully into sparkling soda siphons. 'Savor sweets slowly, sensible scholars!' suggested Susie, seeing several schoolchildren swiftly swallowing strawberry sponge slices. Suddenly, soft summer sea breezes swept silken shop curtains sideways, scattering sugary silver sprinkles across smooth sandalwood shelves. Schoolchildren shrieked cheerfully, supporting sweet Susie while sweeping sugary sprinkles swiftly into sparkling storage saucers. Soon, sixty satisfied scholars skipped southward, singing sweet songs celebrating Susie's sensational shop.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Endurance sibilant drill with delicate transitions across S, SW, and SP consonant clusters.",
+      "focus_sounds": [
+        "s",
+        "sw",
+        "sp",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "falconers-of-frozen-fjords",
+      "text": "Fierce fiery dragons flew far forward from frosty frozen fjords, fiercely flashing fiery flames across formidable fortress frontiers. Five fearless falconers followed fiery flights faithfully, finding fragile forest foliage threatened by furious fiery flares. 'Fight fearless flames!' shouted Frederick, focusing focused falcon flights firmly forward. Furious falcons flapped feathered fringes furiously, fighting fiery fumes until freezing fog fully forestalled ferocious flames. Finally, fiery dragons foolishly forfeited ferocious fighting, fleeing far from forest fortresses forever. Falconers fraternized fraternally, feasting on fresh fried fish fillets and firmly fostering friendship across free frontier territories. Forest folk forever formatted festive folk festivals honoring fearless falconers faithfully flying forward. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Continuous labiodental friction on F, FL, and FR; builds strong breath capacity.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fl",
+        "fj"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "grandfather-gregorys-groves",
+      "text": "Grandfather Gregory guarded glorious golden gooseberry gardens gracefully, gathering glistening green grapes growing generously along sunny garden grottos. Greedy gray groundhogs gazed greedily upon grandfather's gooseberries, gathering gradually to gouge golden grain. 'Go, greedy groundhogs!' grumbled grandfather Gregory, gripping great green garden groovers. But gentle grandmother Gladys greeted grumpy groundhogs graciously, giving good generous grain portions gracefully. Grateful groundhogs gorged gratefully on grandmother's grain, gladly guaranteeing grandfather's glorious gooseberry garden grew grandly without greedy groundhog grievances grabbing green garden gains. Generous gardeners greeted gathering guests gratefully, gifting glorious golden gooseberries gracefully to grateful growing generations. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Throat resonance and velar plosives on G, GR, and GL; excellent for opening up the throat.",
+      "focus_sounds": [
+        "gr",
+        "gl",
+        "g"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "country-carnival-conjurors",
+      "text": "Clever circus conjurers captivated cheering crowds constantly, choreographing comical chaotic clown comedies cleanly. Crazy clowns carrying colorful crystal cups curved crazily across crowded country carnival courses. Concurrently, charismatic contortionists coiled cleverly beneath towering crimson canopies, catching circular copper crescents cast by cheerful jugglers. Children cheered delightfully, clutching crunchy cotton candy cones while celebrating creative carnival craftsmanship. 'Clap cheerily!' cried charismatic ringmasters, closing captivating carnival celebrations with cascade fireworks crackling continuously across clear country constellations until midnight chimed calmly. Capable clowns collected colorful carnival costumes, concluding completely captivating celebrations comfortably. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Snappy hard C and K consonant bursts paired with theatrical projection.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "k",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "timberland-tortoise-trail",
+      "text": "Twelve twin timber wolves travelled through tangled timberland, tracking two tiny timid tortoises toward tranquil tarns. Trembling tortoises tucked tiny toes beneath tough tortoise shells, trusting thick tangled thistles to thwart twin wolves. 'Tarry today, brother!' tapped tiny Tommy Tortoise, testing tough timber thorns. Tracking timber wolves turned tiredly toward towering timber trails, tiring of tedious tortoise tracking tasks. Then triumphant tiny tortoises tiptoed toward turquoise tarns, thankfully tasting tender tropical tulip tops together while twin wolves trudged through trackless tundra territories. Timely triumph thrilled the tiny tortoises, totally terminating their terrified timberland tribulations. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Tongue tip tap endurance on T, TR, and TW consonant clusters.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw",
+        "th"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "golden-hour-seaside-soliloquy",
+      "text": "Sensational seaside sunsets sparked sweeping silken shadows across sparkling sandy shores where soft summer breezes sighed serenely. Sophia strolled slowly beside swirling seafoam, seeking stunning sea glass shards scattered smoothly upon sunlit shores. Seventy silvery seagulls soared swiftly skyward, swooping smartly to snatch silvery sprats swimming through shallow sea salt shelves. Sophia smiled sincerely, snapping seventy splendid sunset scenes showing seaside serenity. 'Such spectacular scenery!' sighed Sophia, strolling safely toward sunny seaside suites while stars sparkled softly across silent shimmering skies. Serene silence settled seamlessly across sweeping sea strands, soothing sleepy sailors softly sleeping. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Silky, flowing vocal passage designed for high-end audio voiceovers and content narration.",
+      "focus_sounds": [
+        "s",
+        "sw",
+        "sn",
+        "sh"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "penguin-polar-plunge-academy",
+      "text": "Proud polar penguins paraded politely past perilous pebble plateaus, preparing perky penguin fledglings for prompt pelagic plunges. Papa Penguin patiently taught practical paddling postures: 'Paddle properly, maintain poise, and protect plump plumage!' Promptly, pleasing penguin packs plunged positively into polar pools, pursuing plentiful plump pilchards peacefully. Predators prowled perilously nearby, but prompt penguin formations prevented predatory perils. Pleased parents praised perfect paddling performances, presenting precious picked prawns to proud playful penguin pups preening pleasingly upon protected polar pebbles. Playful penguin packs paddled peacefully past picturesque polar panoramas, praising practical parental principles perpetually. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Bilabial plosives popping workout; builds rhythmic speed and articulatory precision on P and PL.",
+      "focus_sounds": [
+        "p",
+        "pl",
+        "pr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "victorian-apothecarys-compendium",
+      "text": "A proper proud apothecary packed potent powdered potions promptly into polished purple porcelain pots. 'Provide patients pristine pure products!' pledged Peter the polite apothecary, performing precise powdered preparations without polluting precious plants. Particular physicians praised Peter's powerful potions, promoting practical procedures and prescribing prepared prescriptions pleasantly to prosperous people pursuing positive physical purity. Patients praised Peter's powdered preparations, proclaiming profound permanent pain prevention. Peter pleased everyone, packing purple pots punctually each post day, protecting precious formulas properly and prioritizing patient prosperity positively throughout provincial parishes perpetually. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Formal Victorian prose filled with heavy P, PR, and PT consonant clusters.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pt"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "whispering-wildwoods-woodsmen",
+      "text": "Merry whistling woodmen walked westward through whispering wildwoods, wielding well-weighted wooden wedges. When winter winds wailed wrathfully, wise weary woodsmen warmed waterproof woollen wear beside weathered weeping willows. 'Work well, woodsmen, while winter waits!' whispered Walter, wrapping warm woollen wrappers wisely without wasting warm walnut wood which wooden walls warranted. Woodland wildcats watched woodmen working willingly, waiting where winding waterways wound westward toward warm woodland windmills welcoming weary wandering woodsmen warmly. Winter waned while working woodmen whistled wholesome woodland waltzes without wearing weary worries. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Deep vocal resonance and rounded lips workout on W, WH, and liquid consonants.",
+      "focus_sounds": [
+        "w",
+        "r",
+        "l"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "barnabys-bountiful-bakery",
+      "text": "Brisk bakers baked brown butter biscuits beneath burning bakery braziers before bright morning beams broke boldly. Busy Beatrice blended batter beautifully, beating bountiful butter blocks before balancing brittle biscuit baskets. 'Bake better biscuits briskly!' bellowed master baker Barnaby, bringing browned bread bundles to bustling banquet buffets brimming with berry beverages. Banqueters boasted Barnaby's baking beat best bakeries, buying bountiful boxes of browned butter biscuits before breakfast bells began booming broadly. Bright baked biscuit batches brought bustling business back to Barnaby's booming bakery broadcast. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Explosive bilabials and cheerful rhythmic pacing across repeated B and BR syllables.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "spanish-silver-schooner-legend",
+      "text": "Swift sailing skippers steered sturdy schooners skillfully through stormy southern straits, spotting sunken Spanish silver ships stranded beneath swirling salt surges. Strong sea swells shook wooden spars, so sea captains shouted sharp spoken signals, sailing safely toward sunny sheltered straits without snapping single staysail sheets. Sailors secured salt-soaked sails safely, singing soulful sea songs while stowing salvaged silver ingots securely beneath strong sandalwood storage sheds. Stalwart seafarers celebrated safe sailing, sharing succulent seafood suppers silently beneath starry southern skies while stormy seas subsided. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Maritime seafaring ballad testing consonant cluster stamina on SK, ST, and SW.",
+      "focus_sounds": [
+        "sk",
+        "st",
+        "sw",
+        "sp"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "tailorbird-tribal-tapestry",
+      "text": "Ten tiny tailorbirds tirelessly tailored thirty-two tough textile tents, tacking taut thread tightly through thick twill tariffs. Terrified termites tried tearing tiny tailorbird threads, trusting terrible timber tricks to topple tender tapestries. Thanks to tenacious teamwork, tidy tailorbirds trapped trailing termites, triumphantly tying tight twine throughout today's towering textiles. Tidy tailorbird tribes treated tireless teammates to tender termite tarts, toasting triumphantly together throughout tomorrow's twilight. Talented tailorbirds taught younger tailorbird tribes tough textile techniques, preserving timeless timberland traditions. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Precision tongue workout testing snappy front-of-mouth articulation on T, TR, and TW.",
+      "focus_sounds": [
+        "t",
+        "tr",
+        "tw"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "leopard-lagoon-lyrical-lullaby",
+      "text": "Lively leaping leopards learned lovely lyrical lullabies, lounging lazily beneath lush lime-scented lemon laurels. Little leopard Lily looked lovingly upon laughing lynxes leaping lightly along leafy lagoons. 'Listen to lingering laughter!' whispered Leopold Leopard, licking luscious lemon leaves while lovely lingering light illuminated lively leopard lands. Loitering lemurs listened politely, laying little lime leaves lovingly along lily pads lining lonely lagoons. Lazy lizards lingered listening, letting lovely lullabies lull long sleepless nights into luminous lightness. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Fluid liquid L consonant workout; exceptional for freeing up tongue tension and jaw stiffness.",
+      "focus_sounds": [
+        "l",
+        "lj",
+        "p"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "fiddlers-flamboyant-fandango",
+      "text": "Fidgety fiddlers furiously fingered fine fragile fiddle strings, forging fabulous frantic folk melodies for festive forest fairs. Fifty fascinated fellows followed fiery fiddle flourishes, feverishly foot-tapping fast fantastic folk fandangos. 'Fiddle faster, fearless fiddler!' frequent fans figured, finding frantic fiddle harmonies foster fierce festive feelings forever. Finally, fatigued fiddlers finished fine furious fandangos, smiling fondly at festive friends filling forest floors. Fresh festive food flowed freely, feeding famous fiddlers celebrating flourishing folk fraternities. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "High-speed labiodental friction drill; tests diaphragm breath capacity under high tempo.",
+      "focus_sounds": [
+        "f",
+        "fr",
+        "fl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "chipmunks-colossal-chestnut-cache",
+      "text": "Chilly shivering chipmunks cheerily chewed crunchy chestnut chips, chucking charred chestnut casings closely into carved cedar crevices. Charles Chipmunk cheerfully chatted with Charlie, checking colossal chestnut collections cautiously. 'Choose crisp chestnuts carefully, Charles!' cautioned Charlie Chipmunk, chuckling cheerily as chilling cloudbursts cleared completely. Contented chipmunks cuddled comfortably, celebrating colossal cold-weather chestnut caches cheerily until charming spring cherry blossoms appeared. Cheerful chipmunk children chirped charmingly, chewing crispy chestnut chips comfortably. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Contrast palatal affricate CH with rear velar stop K and KR smoothly.",
+      "focus_sounds": [
+        "ch",
+        "sh",
+        "kr"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "golden-grasshopper-gladiolus-grove",
+      "text": "Glittering golden grasshoppers gracefully glided across glowing green grasslands, gathering golden grain grains greedily. Gentle garden giants guarded glorious gladiolus gardens, genuinely greeting glad gleaming grasshoppers. 'Glide gently, golden grasshopper!' giggled generous Grace, guiding glancing grasshoppers gracefully toward golden gladiolus grounds. Glorious golden grasshoppers grazed gratefully, generating gorgeous gentle garden melodies glowing graciously through green garden groves. Gracious gardening groups gathered gladly, greeting glittering golden grasshoppers gratefully. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Melodic velar stops and liquid L/R blends suited for ASMR and poetic narration.",
+      "focus_sounds": [
+        "gl",
+        "gr",
+        "g"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "nordic-nocturnal-navigation-network",
+      "text": "Nine nimble navigating sailors neatly knotted ninety-nine nautical nylon knots, navigating nocturnal northern navigation channels cautiously. Nighttime navigators noticed novel Northern lights neon glows noblely nourishing Nordic skies. 'Nod northward, noble navigator!' whispered Nathan, noting nine nimble naval nets nicely negotiated navigating narrow oceanic pathways. Noble naval navigators nestled near newly navigate nooks, nourishing novel dreams of northern navigation. Numerous neighboring nations noted noble navigation nets navigating northern nautical nodes neatly. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "vowel-vortex",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Resonant nasal N practice; cultivates clear mask resonance for voice actors.",
+      "focus_sounds": [
+        "n",
+        "na",
+        "kt"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "clara-cedar-craft-conservatory",
+      "text": "Clever craftspeople carved curved cedar chairs, cleanly creating comfortable cushions covered in colorful crushed cotton. Clara crafted charming classical cradles, carefully cutting cedar corners correctly. Customers commended Clara's clean carpentry, cheerily commissioning colossal carved cupboards celebrating creative craftsmanship completely. Confident carpenters continued constructing classy cedar creations, conveying celebrated carpentry capabilities calmly across country communities. Clara's customized carpentry captured countless customer compliments continuously. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Crisp hard C and K consonant clusters designed for rhythm and vocal stamina.",
+      "focus_sounds": [
+        "kl",
+        "kr",
+        "k"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "rugged-road-racing-rally",
+      "text": "Rustic rugged runners ran rapidly round roundabouts, racing resolute red rovers rolling rubber rims relentlessly. Rory recognized red rovers readily, roaring rally reminders right regarding rocky ravine roads. 'Run rapidly, rugged runners!' rallied Robert, recording record racing results right round rugged road race routes. Relentless runners reached rocky ridges reliably, raising red rally ribbons respectfully while celebrating righteous road race records. Resolute racers rested right beside roaring river rapids, recounting remarkable rally runs respectfully. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "rollers",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Speed and stamina workout for the tongue tip; prevents slurring on repetitive R consonants.",
+      "focus_sounds": [
+        "r",
+        "ra",
+        "nd"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "princess-penelopes-porcelain-picnic",
+      "text": "Prudent proud princes preferred pretty pink porcelain platters presenting plump pickled plums. Princess Penelope patronized prestigious pastry producers, preparing powdered puff pastries properly. Polite patrons praised Penelope's pleasant party, happily picking pristine powdered pastries presented proudly upon pretty porcelain. Pleased partygoers politely praised Penelope's palace pastries, prolonging pleasant party pleasures past peaceful picturesque pearl pale twilights. Proud princes presented Penelope pure polished pearl pendants pleasantly. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Aristocratic diction drill packed with popping bilabial P explosions and soft vowels.",
+      "focus_sounds": [
+        "pr",
+        "p",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "walrus-waves-whispering-waters",
+      "text": "Whimsical wandering walruses whistled weird wild winter waltzes while swimming westward within wide winding waters. Walter Walrus watched waves washing white whalebone wharves, wondering whether windy weather would worsen. With wide whistles, warm walrus welcoming waves woke wandering white whales warmly. Wise white whales waved wondrous whale flippers westward, whistling with walruses warmly across widespread water expanses. Wonderful wildlife welcomed warmer western waters willingly while watching whimsical winter waterfalls. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Breath support and pure lip-rounding gymnastics on W, WH, and open vowels.",
+      "focus_sounds": [
+        "w",
+        "wo",
+        "wi"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "samuel-silversmiths-sacred-shields",
+      "text": "Shining shimmering shells showed sheer brilliance beside shady sea shores where smart silversmiths shaped shiny silver spoons. Samuel silversmith smoothed sixty shimmering silver shields skillfully, singing spirited sonnets so sweet silver sounded supremely sharp. Special shop showcases shone splendidly, showing sixty shaped silver shields shining seamlessly side-by-side beside seashore sands. Seaside sightseers stopped swiftly, smiling serenely while securing shimmering silver souvenirs. Skilled silversmiths shared sparkling silver secrets smoothly. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Precision sibilant contrast; keeps S and SH cleanly partitioned across sixty shields.",
+      "focus_sounds": [
+        "sh",
+        "s",
+        "sm",
+        "sk"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "thistlethwaites-thirty-thrushes",
+      "text": "Thirsty thirsty thistles thrived throughout thirty thick thorny tracts where thirteen thrilled thrushes thridded thriftily. Theodore Thistlethwaite thoughtfully thanked thirteen thrushes, thinking their thrilling throat tones throttled thirty thirsty thorny thistles thoroughly. The thirteen thrushes thridded through thorny tracts, thrilling thirty thankful theoretical thinkers thoroughly throughout thunderous Thursdays. Thankful theorists threw thousands of thoughtful thanks towards Theodore's thriving thorny thistle tracts triumphantly. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Unforgiving dental-fricative workout; pushes articulation stamina on voiceless TH.",
+      "focus_sounds": [
+        "th",
+        "thr",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "stephens-splendid-spring-spaniels",
+      "text": "Splendid spotted spring spaniels sprang swiftly sideways, snatching sparkling silver spinners splashing smoothly across sunny streams. Stephen stopped, signaling smiling spaniels slowly. 'Stay, splendid spaniels, stay!' shouted Stephen, stroking silky spotted spaniel shoulders soft as spring silk. Satisfied spaniels sat silently seeing sparkling streams sweep southward, sniffing sweet spring spruce scents serenely. Smiling spectators shared stories, singing sweet serenades praising Stephen's splendid spotted spaniels. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "High-frequency SP, SPR, and ST consonant clusters requiring crisp tongue coordination.",
+      "focus_sounds": [
+        "sp",
+        "spr",
+        "sn",
+        "st"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "chloes-cauliflower-casserole-catering",
+      "text": "Careful kitchen cooks cooked creamy cauliflower casserole, crumbling crunchy cheddar crusts cleanly across copper cooking cauldrons. Chloe cautioned careless kitchen cooks, checking boiling clam chowder cauldrons cautiously lest scorching creamy chowder curdle clumsy catering crew creations. Clam chowder connoisseurs complimented Chloe's catering crew continuously, celebrating creamy cauliflower casseroles cheerily. Capable culinary colleagues collaborated calmly, crafting custom courses captivating country catering clients completely. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Velar consonant bursts and quick vowels; great for chefs, voice artists, and broadcasters.",
+      "focus_sounds": [
+        "k",
+        "kr",
+        "kl",
+        "ch"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "barnaby-bunnies-blueberry-briar",
+      "text": "Brave bouncing bunnies bounded briskly behind blooming blackberry briars, balancing baskets brimming with bright blue blueberries. Benjamin Bunny begged brother Barnaby: 'Bring bountiful blueberry baskets back before bitter badger bandits burglarize bunny burrows!' Brave Barnaby bolted briskly, bringing bountiful blueberry baskets back before badger bandits breached beautiful bunny burrows. Blissful bunnies banqueted brightly, biting bountiful blueberries beneath blooming birch branches. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Charming storybook alliteration focusing on bouncy bilabials B and BR.",
+      "focus_sounds": [
+        "b",
+        "br",
+        "bl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "daniel-drakes-diplomatic-dossier",
+      "text": "Dashing dapper detectives diligently deduced dark doubtful deeds, documenting delicate details down dubious dusty driveways. Daniel Drake displayed discreet detective discipline, discovering dropped documents disclosed double-dealing diplomats directly deceiving domestic defense departments. Dedicated detectives documented dubious diplomacy diligently, defeating dangerous deceptive designs decisively. Discerning delegates distinguished Daniel's determined duty, delivering deserved decorations during distinguished dinner discussions. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Alveolar stop drill modeled after dramatic classic mystery narration.",
+      "focus_sounds": [
+        "d",
+        "da",
+        "di",
+        "t"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "percy-parrots-pumpkin-pastry",
+      "text": "Proud purple parrots pecked powdery pumpkin pastry puddings pleasantly placed upon pretty porch platforms. Polly Parrot praised Percy's powdery pastry, politely prompting perky parrot pals to partake promptly in pumpkin pudding pleasures. Plentiful pleasant parrots perched peacefully, praising precious pumpkin pastries proudly past picturesque purple panoramas. Pleased public patrons photographed perky parrots peckish for pleasant powdered pumpkin pastries perpetually. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Bilabial popping marathon; builds mouth agility and crisp vocal projection.",
+      "focus_sounds": [
+        "p",
+        "pr",
+        "pl"
+      ],
+      "is_published": true
+    },
+    {
+      "slug": "siberian-snowboarders-summit-sweep",
+      "text": "Silent silvery snowy summits soared serenely skyward, separating secluded Siberian settlements from stormy sea shores. Seven solitary snowboarders slid smoothly southward, slicing fresh soft snow slopes skillfully without stumbling upon steep sunken stones. Sunlight sparkled splendidly upon soaring snow summits, shedding serene silvery splendors sweeping silently southward. Snowboarders stopped serenely, sharing steaming sweet soups safely sheltered inside sturdy spruce shacks. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction. Every aspiring broadcaster, orator, and voice performer should practice reciting this challenging passage smoothly to cultivate remarkable breath control and razor-sharp diction.",
+      "category": "hissers",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Whispery, serene sibilant endurance passage crafted for creative visual storytelling.",
+      "focus_sounds": [
+        "s",
+        "sn",
+        "sl",
+        "sm"
+      ],
+      "is_published": true
     }
   ]
 }

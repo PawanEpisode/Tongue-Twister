@@ -52,3 +52,37 @@ def test_attempt_flow_awards_xp_and_streak(seeded):
     assert r.data["accuracy"] == 1.0 and r.data["personal_best"] is True
     assert r.data["profile"]["current_streak"] == 1 and r.data["profile"]["xp"] > 0
     assert c.get("/api/v1/me/").data["total_attempts"] == 1
+
+
+def test_marathons_seeded_and_filterable(seeded):
+    r = APIClient().get("/api/v1/twisters/?min_words=100")
+    assert r.status_code == 200 and r.data["count"] >= 30
+    assert all(t["word_count"] >= 100 for t in r.data["results"])
+
+
+def test_import_command_validates_and_imports(db, tmp_path):
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+
+    good = tmp_path / "good.csv"
+    good.write_text("text,difficulty,category,origin,tip,focus_sounds\nRed lorry yellow lorry,hard,newcat,classic,tip,r|l\n")
+    with pytest.raises(CommandError):
+        call_command("import_twisters", str(good))  # unknown category
+    call_command("import_twisters", str(good), "--dry-run", "--create-categories")
+    from twisters.models import Twister
+    assert Twister.objects.count() == 0
+    call_command("import_twisters", str(good), "--create-categories")
+    assert Twister.objects.get().focus_sounds == ["r", "l"]
+    bad = tmp_path / "bad.csv"
+    bad.write_text("text,difficulty\nHello world,spicy\n")
+    with pytest.raises(CommandError):
+        call_command("import_twisters", str(bad))
+
+
+def test_seed_is_205_and_prune_unpublishes_extras(seeded):
+    from twisters.models import Twister
+    assert Twister.objects.filter(is_published=True).count() == 205
+    Twister.objects.create(slug="legacy-extra", text="Extra one", difficulty=1)
+    call_command("seed_twisters", "--prune")
+    assert Twister.objects.get(slug="legacy-extra").is_published is False
+    assert Twister.objects.filter(is_published=True).count() == 205

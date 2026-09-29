@@ -37,8 +37,8 @@ class TwisterSerializer(serializers.ModelSerializer):
 
 class AttemptCreateSerializer(serializers.Serializer):
     twister = serializers.SlugRelatedField(slug_field="slug", queryset=Twister.objects.filter(is_published=True))
-    transcript = serializers.CharField(allow_blank=True, max_length=1000)
-    duration_ms = serializers.IntegerField(min_value=300, max_value=120_000)
+    transcript = serializers.CharField(allow_blank=True, max_length=3000)
+    duration_ms = serializers.IntegerField(min_value=300, max_value=300_000)
 
 
 class AttemptSerializer(serializers.ModelSerializer):

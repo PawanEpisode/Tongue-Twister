@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Lottie from '#/components/ClientLottie'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AudioVisualizer from '#/components/AudioVisualizer'
 import pulse from '#/assets/lottie/pulse.json'
 import ResultCard from '#/components/ResultCard'
 import { DifficultyBadge } from '#/components/ui'
@@ -57,11 +58,11 @@ function Practice() {
     queryKey: ['twister', slug],
     queryFn: () => api.twister(slug),
   })
-  const speech = useSpeech()
   const [result, setResult] = useState<Result | null>(null)
   const [typed, setTyped] = useState('')
+  const [showGo, setShowGo] = useState(false)
   const typedStart = useRef(0)
-  const wasListening = useRef(false)
+  const currentRef = useRef<HTMLSpanElement | null>(null)
 
   const submit = useMutation({
     mutationFn: api.submitAttempt,
@@ -91,20 +92,63 @@ function Practice() {
     } else setResult(scoreAttempt(t.text, spoken, ms, t.difficulty))
   }
 
-  useEffect(() => {
-    if (wasListening.current && !speech.listening)
-      finish(speech.transcript, speech.durationMs)
-    wasListening.current = speech.listening
-  }, [speech.listening])
+  const speech = useSpeech({
+    onFinish: ({ transcript, durationMs }) => finish(transcript, durationMs),
+  })
+  const isLong = (t?.word_count ?? 0) > 30
 
-  const live = speech.listening ? speech.transcript : typed || speech.transcript
-  const hits = useMemo(() => (t ? matchedIndexes(t.text, live) : []), [t, live])
+  // Flash "GO!" the moment the mic is truly capturing, so users never start talking too early.
+  useEffect(() => {
+    if (speech.status !== 'live') return
+    setShowGo(true)
+    const id = setTimeout(() => setShowGo(false), 900)
+    return () => clearTimeout(id)
+  }, [speech.status])
+
+  const spoken =
+    speech.status !== 'idle' ? speech.transcript : typed || speech.transcript
+  const hits = useMemo(
+    () => (t ? matchedIndexes(t.text, spoken) : []),
+    [t, spoken],
+  )
+  const matched = hits.filter(Boolean).length
+  const currentIdx = hits.findIndex((h) => !h)
   const targetWords = t?.text.split(/\s+/) ?? []
+
+  // Auto-finish: everything matched, or the speaker went quiet after saying something.
+  useEffect(() => {
+    if (speech.status !== 'live' || !hits.length) return
+    if (matched === hits.length) {
+      const id = setTimeout(speech.stop, 600)
+      return () => clearTimeout(id)
+    }
+    if (speech.transcript) {
+      const id = setTimeout(speech.stop, isLong ? 4500 : 2800)
+      return () => clearTimeout(id)
+    }
+  }, [
+    speech.status,
+    speech.transcript,
+    speech.stop,
+    matched,
+    hits.length,
+    isLong,
+  ])
+
+  // Keep the current word in view for long passages.
+  useEffect(() => {
+    if (isLong)
+      currentRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'smooth',
+      })
+  }, [currentIdx, isLong])
 
   const retry = () => {
     setResult(null)
     setTyped('')
-    speech.setTranscript('')
+    typedStart.current = 0
+    speech.reset()
   }
   const next = async () => {
     const page = await api.twisters({ difficulty: String(t?.difficulty ?? 1) })
@@ -115,6 +159,16 @@ function Practice() {
   }
 
   if (!t) return <p className="text-white/50">Loading…</p>
+
+  const arming = speech.status === 'arming'
+  const live = speech.status === 'live'
+  const textSize =
+    t.word_count <= 12
+      ? 'text-3xl md:text-5xl'
+      : t.word_count <= 30
+        ? 'text-2xl md:text-4xl'
+        : 'text-lg md:text-2xl'
+
   return (
     <div className="mx-auto max-w-3xl text-center">
       <div className="mb-6 flex items-center justify-center gap-3">
@@ -122,6 +176,11 @@ function Practice() {
         <span className="text-xs uppercase tracking-widest text-white/40">
           {t.origin}
         </span>
+        {isLong && (
+          <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-white/60">
+            {t.word_count} words
+          </span>
+        )}
       </div>
       <AnimatePresence mode="wait">
         {result ? (
@@ -133,53 +192,101 @@ function Practice() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <p className="font-display text-3xl font-bold leading-snug md:text-5xl">
-              {targetWords.map((w, i) => (
-                <motion.span
-                  key={i}
-                  animate={{
-                    color: hits[i] ? '#a3f75b' : '#ecebff',
-                    scale: hits[i] ? 1.06 : 1,
-                  }}
-                  className="mr-3 inline-block"
-                >
-                  {w}
-                </motion.span>
-              ))}
-            </p>
-            {t.tip && <p className="mt-5 text-sm text-white/50">💡 {t.tip}</p>}
+            <div
+              className={
+                isLong
+                  ? 'max-h-[42vh] overflow-y-auto rounded-2xl border border-line/60 bg-panel/40 p-5 text-left'
+                  : ''
+              }
+            >
+              <p
+                className={`font-display font-bold leading-snug ${textSize} ${isLong ? 'leading-relaxed' : ''} ${arming ? 'opacity-60' : ''}`}
+              >
+                {targetWords.map((w, i) => (
+                  <motion.span
+                    key={i}
+                    ref={i === currentIdx ? currentRef : undefined}
+                    animate={{
+                      color: hits[i] ? '#a3f75b' : '#ecebff',
+                      scale: hits[i] ? 1.04 : 1,
+                    }}
+                    className={`mr-2.5 inline-block rounded-md px-0.5 transition-colors ${live && i === currentIdx ? 'bg-brand/25 underline decoration-brand decoration-2 underline-offset-4' : ''}`}
+                  >
+                    {w}
+                  </motion.span>
+                ))}
+              </p>
+            </div>
+            {t.tip && !live && (
+              <p className="mt-5 text-sm text-white/50">💡 {t.tip}</p>
+            )}
 
-            <div className="relative mx-auto mt-10 h-40 w-40">
-              {speech.listening && (
+            {live && (
+              <div className="mx-auto mt-5 h-1.5 max-w-md overflow-hidden rounded-full bg-panel">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-brand to-pink"
+                  animate={{
+                    width: `${(matched / Math.max(1, hits.length)) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="relative mx-auto mt-8 h-64 w-64">
+              {arming && (
                 <Lottie
                   animationData={pulse}
                   loop
                   className="absolute inset-0 h-full w-full"
                 />
               )}
+              {live && (
+                <AudioVisualizer
+                  analyser={speech.analyser}
+                  className="absolute inset-0 h-full w-full"
+                />
+              )}
+              <AnimatePresence>
+                {showGo && (
+                  <motion.div
+                    key="go"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1.15, opacity: 1 }}
+                    exit={{ scale: 1.6, opacity: 0 }}
+                    className="pointer-events-none absolute inset-0 z-10 grid place-items-center font-display text-5xl font-extrabold text-lime drop-shadow-[0_0_24px_rgba(163,247,91,.7)]"
+                  >
+                    GO!
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.06 }}
-                disabled={!speech.supported}
-                onClick={speech.listening ? speech.stop : speech.start}
-                aria-label={speech.listening ? 'Stop' : 'Start speaking'}
-                className={`absolute inset-6 grid place-items-center rounded-full text-4xl shadow-xl disabled:opacity-40 ${speech.listening ? 'bg-pink shadow-pink/40' : 'bg-brand shadow-brand/40'}`}
+                whileHover={{ scale: 1.05 }}
+                disabled={!speech.supported || arming}
+                onClick={live ? speech.stop : speech.start}
+                aria-label={live ? 'Stop' : 'Start speaking'}
+                className={`absolute inset-[72px] grid place-items-center rounded-full text-3xl shadow-xl disabled:cursor-wait ${live ? 'bg-pink shadow-pink/40' : 'bg-brand shadow-brand/40'} ${arming ? 'opacity-70' : ''}`}
               >
-                {speech.listening ? '⏹' : '🎤'}
+                {live ? '⏹' : arming ? '…' : '🎤'}
               </motion.button>
             </div>
-            <p className="mt-2 text-sm text-white/60">
-              {speech.listening
-                ? 'Listening… tap to finish'
-                : speech.supported
-                  ? 'Tap the mic and say it as fast as you can'
-                  : 'Speech recognition isn’t supported in this browser — type it below'}
+
+            <p className="mt-1 text-sm text-white/60" aria-live="polite">
+              {arming
+                ? 'Getting your mic ready… wait for GO!'
+                : live
+                  ? speech.transcript
+                    ? 'Keep going — I’ll stop when you finish'
+                    : 'Listening… say it now'
+                  : speech.supported
+                    ? 'Tap the mic, wait for GO!, then say it as fast as you can'
+                    : 'Speech recognition isn’t supported in this browser — type it below'}
             </p>
             {speech.error && (
               <p className="mt-2 text-sm text-pink">{speech.error}</p>
             )}
-            {speech.listening && (
-              <p className="mx-auto mt-4 max-w-xl text-white/40">
+            {live && speech.transcript && (
+              <p className="mx-auto mt-3 max-w-xl text-sm text-white/40">
                 “{speech.transcript}”
               </p>
             )}
@@ -207,7 +314,7 @@ function Practice() {
               </form>
             )}
             {!session && (
-              <p className="mt-10 text-xs text-white/35">
+              <p className="mt-8 text-xs text-white/35">
                 Playing as guest — sign in to save scores, streaks and XP.
               </p>
             )}
