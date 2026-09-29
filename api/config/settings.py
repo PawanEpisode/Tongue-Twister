@@ -9,12 +9,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def env(name: str, default: str = "") -> str:
+    """os.getenv that tolerates surrounding whitespace/quotes (Vercel keeps quotes literally)."""
+    return os.getenv(name, default).strip().strip("\"'").strip()
+
+
 def env_list(name: str, default: str = "") -> list[str]:
-    return [v.strip() for v in os.getenv(name, default).split(",") if v.strip()]
+    return [v.strip() for v in env(name, default).split(",") if v.strip()]
 
 
-DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-insecure-change-me" if DEBUG else "")
+def env_origins(name: str, default: str = "") -> list[str]:
+    """Origins must be scheme://host[:port] with no path or trailing slash; normalise common typos."""
+    out = []
+    for v in env_list(name, default):
+        v = v.strip("\"'").rstrip("/")
+        if "://" in v:
+            scheme, rest = v.split("://", 1)
+            v = f"{scheme}://{rest.split('/', 1)[0]}"
+        out.append(v)
+    return out
+
+
+DEBUG = env("DJANGO_DEBUG", "0") == "1"
+SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me" if DEBUG else "")
 if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG=0")
 
@@ -66,11 +83,10 @@ TEMPLATES = [
 
 # Supabase Postgres in prod (use the *pooler* URL on serverless), sqlite locally.
 DATABASES = {
-    "default": dj_database_url.config(
-        env="DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=0 if os.getenv("VERCEL") else 60,
-        ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "0") == "1",
+    "default": dj_database_url.parse(
+        env("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=0 if env("VERCEL") else 60,
+        ssl_require=env("DATABASE_SSL_REQUIRE", "0") == "1",
     )
 }
 if DATABASES["default"]["ENGINE"].endswith("postgresql"):
@@ -91,9 +107,9 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+CORS_ALLOWED_ORIGINS = env_origins("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
 CORS_ALLOW_CREDENTIALS = False
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = env_origins("CSRF_TRUSTED_ORIGINS", "")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["twisters.auth.SupabaseJWTAuthentication"],
@@ -113,12 +129,12 @@ SPECTACULAR_SETTINGS = {"TITLE": "Twister API", "VERSION": "0.1.0", "SERVE_INCLU
 
 # Supabase auth (JWT verification). Provide SUPABASE_URL (JWKS, asymmetric keys)
 # and/or SUPABASE_JWT_SECRET (legacy HS256 secret).
-SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
-SUPABASE_JWT_AUDIENCE = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
+SUPABASE_URL = env("SUPABASE_URL", "").rstrip("/")
+SUPABASE_JWT_SECRET = env("SUPABASE_JWT_SECRET", "")
+SUPABASE_JWT_AUDIENCE = env("SUPABASE_JWT_AUDIENCE", "authenticated")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = os.getenv("DJANGO_SSL_REDIRECT", "0") == "1"
+    SECURE_SSL_REDIRECT = env("DJANGO_SSL_REDIRECT", "0") == "1"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

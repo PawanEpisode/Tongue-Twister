@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as TwistersIndexRouteImport } from './routes/twisters.index'
 import { Route as TwistersSlugRouteImport } from './routes/twisters.$slug'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TwistersIndexRoute = TwistersIndexRouteImport.update({
@@ -38,12 +44,14 @@ const TwistersSlugRoute = TwistersSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters/': typeof TwistersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters': typeof TwistersIndexRoute
 }
@@ -51,20 +59,29 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters/': typeof TwistersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/twisters/$slug' | '/twisters/'
+  fullPaths:
+    '/' | '/login' | '/auth/callback' | '/twisters/$slug' | '/twisters/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/twisters/$slug' | '/twisters'
-  id: '__root__' | '/' | '/login' | '/twisters/$slug' | '/twisters/'
+  to: '/' | '/login' | '/auth/callback' | '/twisters/$slug' | '/twisters'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/auth/callback'
+    | '/twisters/$slug'
+    | '/twisters/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   TwistersSlugRoute: typeof TwistersSlugRoute
   TwistersIndexRoute: typeof TwistersIndexRoute
 }
@@ -83,6 +100,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/twisters/': {
@@ -105,6 +129,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   TwistersSlugRoute: TwistersSlugRoute,
   TwistersIndexRoute: TwistersIndexRoute,
 }

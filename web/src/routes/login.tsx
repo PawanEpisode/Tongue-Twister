@@ -1,11 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '#/lib/auth'
 import { supabase } from '#/lib/supabase'
 
 export const Route = createFileRoute('/login')({ component: Login })
 
 function Login() {
   const nav = useNavigate()
+  const { session } = useAuth()
+  useEffect(() => { if (session) nav({ to: '/twisters', replace: true }) }, [session, nav])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'in' | 'up'>('in')
@@ -33,7 +36,7 @@ function Login() {
   const google = () =>
     supabase!.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
   const input =
     'glass w-full rounded-xl px-4 py-3 outline-none focus:border-brand'
