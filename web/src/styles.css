@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0b0a16;
+  --color-panel: #15132a;
+  --color-line: #2a2650;
+  --color-brand: #8b6bff;
+  --color-pink: #f973c0;
+  --color-cyan: #38d9f5;
+  --color-lime: #a3f75b;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-gradient: gradient 8s ease infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+}
+@keyframes gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: #ecebff;
+  background: var(--color-ink);
+  background-image:
+    radial-gradient(
+      60rem 40rem at 10% -10%,
+      rgb(139 107 255 / 0.22),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 35rem at 100% 0%,
+      rgb(249 115 192 / 0.16),
+      transparent 60%
+    );
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.text-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--color-brand),
+    var(--color-pink),
+    var(--color-cyan),
+    var(--color-brand)
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-gradient);
+}
+.glass {
+  background: rgb(21 19 42 / 0.7);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(14px);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

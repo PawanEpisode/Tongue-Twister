@@ -1,0 +1,570 @@
+{
+  "categories": [
+    {
+      "slug": "hissers",
+      "name": "Hissers",
+      "emoji": "🐍",
+      "description": "S, SH, Z and CH sounds that love to slip",
+      "sort_order": 1
+    },
+    {
+      "slug": "poppers",
+      "name": "Poppers",
+      "emoji": "💥",
+      "description": "Crisp P, B, T, K and D bursts",
+      "sort_order": 2
+    },
+    {
+      "slug": "rollers",
+      "name": "Rollers",
+      "emoji": "🌀",
+      "description": "R and L sounds that tie your tongue in knots",
+      "sort_order": 3
+    },
+    {
+      "slug": "th-tangles",
+      "name": "TH Tangles",
+      "emoji": "👅",
+      "description": "Voiced and unvoiced TH, plus F and V",
+      "sort_order": 4
+    },
+    {
+      "slug": "vowel-vortex",
+      "name": "Vowel Vortex",
+      "emoji": "🌪️",
+      "description": "Vowel-heavy loops that blur together",
+      "sort_order": 5
+    },
+    {
+      "slug": "brain-benders",
+      "name": "Brain Benders",
+      "emoji": "🧠",
+      "description": "Modern mash-ups, tech talk and multi-sound chaos",
+      "sort_order": 6
+    }
+  ],
+  "twisters": [
+    {
+      "slug": "she-sells-seashells",
+      "text": "She sells seashells by the seashore.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep S and SH distinct — hiss, then hush.",
+      "focus_sounds": [
+        "s",
+        "sh"
+      ]
+    },
+    {
+      "slug": "six-sick-sheiks",
+      "text": "The sixth sick sheik's sixth sheep's sick.",
+      "category": "hissers",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Notorious. Slow down on 'sixth sheik's' first.",
+      "focus_sounds": [
+        "s",
+        "sh",
+        "th"
+      ]
+    },
+    {
+      "slug": "sam-sam-sheep",
+      "text": "Sam's shop stocks short spotted socks.",
+      "category": "hissers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Land each S cleanly before the SH.",
+      "focus_sounds": [
+        "s",
+        "sh"
+      ]
+    },
+    {
+      "slug": "snake-slithers",
+      "text": "Six slippery snails slid slowly seaward.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Let the S sounds glide, don't push.",
+      "focus_sounds": [
+        "s",
+        "sl"
+      ]
+    },
+    {
+      "slug": "chester-cheetah",
+      "text": "Chester Cheetah chews chunks of cheddar cheese.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Front-load the CH with a tiny stop.",
+      "focus_sounds": [
+        "ch"
+      ]
+    },
+    {
+      "slug": "zebra-zoo",
+      "text": "Zany zebras zigzag past the zoo's zinnias.",
+      "category": "hissers",
+      "difficulty": 1,
+      "origin": "modern",
+      "tip": "Buzz the Z — feel your throat vibrate.",
+      "focus_sounds": [
+        "z"
+      ]
+    },
+    {
+      "slug": "peter-piper",
+      "text": "Peter Piper picked a peck of pickled peppers.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Pop the P with a puff of air.",
+      "focus_sounds": [
+        "p"
+      ]
+    },
+    {
+      "slug": "betty-botter",
+      "text": "Betty Botter bought some butter, but she said the butter's bitter.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Keep B soft and voiced; don't turn it into P.",
+      "focus_sounds": [
+        "b"
+      ]
+    },
+    {
+      "slug": "big-black-bug",
+      "text": "A big black bug bit a big black bear.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Short, punchy B bursts.",
+      "focus_sounds": [
+        "b"
+      ]
+    },
+    {
+      "slug": "toy-boat",
+      "text": "Toy boat, toy boat, toy boat.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Repeat fast — T and B alternate.",
+      "focus_sounds": [
+        "t",
+        "b"
+      ]
+    },
+    {
+      "slug": "crisp-crusts",
+      "text": "Crisp crusts crackle under Kate's cake knife.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Hit each K from the back of the throat.",
+      "focus_sounds": [
+        "k",
+        "cr"
+      ]
+    },
+    {
+      "slug": "cooks-cook",
+      "text": "How can a clam cram in a clean cream can?",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "The CL and CR clusters are the trap.",
+      "focus_sounds": [
+        "k",
+        "cl",
+        "cr"
+      ]
+    },
+    {
+      "slug": "data-dot",
+      "text": "Ten tiny turtles tap ten tin tubs.",
+      "category": "poppers",
+      "difficulty": 1,
+      "origin": "modern",
+      "tip": "Light tongue taps on the roof of the mouth.",
+      "focus_sounds": [
+        "t"
+      ]
+    },
+    {
+      "slug": "red-lorry",
+      "text": "Red lorry, yellow lorry.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "The British classic. R to L, over and over.",
+      "focus_sounds": [
+        "r",
+        "l"
+      ]
+    },
+    {
+      "slug": "rubber-baby",
+      "text": "Rubber baby buggy bumpers.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Mind the R–B–B rhythm.",
+      "focus_sounds": [
+        "r",
+        "b"
+      ]
+    },
+    {
+      "slug": "round-rugged",
+      "text": "The ragged rascal ran round the rugged rock.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Curl the tongue back for R, don't roll it.",
+      "focus_sounds": [
+        "r"
+      ]
+    },
+    {
+      "slug": "lesser-leather",
+      "text": "Lesser leather never weathered wetter weather better.",
+      "category": "rollers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "W and L both sit close — stay crisp.",
+      "focus_sounds": [
+        "l",
+        "w",
+        "th"
+      ]
+    },
+    {
+      "slug": "lily-lolly",
+      "text": "Lily's lovely lollipop lasts longer.",
+      "category": "rollers",
+      "difficulty": 1,
+      "origin": "modern",
+      "tip": "Tongue tip to the ridge for every L.",
+      "focus_sounds": [
+        "l"
+      ]
+    },
+    {
+      "slug": "truly-rural",
+      "text": "Truly rural Irish wristwatches are rarely repaired.",
+      "category": "rollers",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "R after T, W, and R again — go slow first.",
+      "focus_sounds": [
+        "r",
+        "w"
+      ]
+    },
+    {
+      "slug": "i-scream",
+      "text": "I scream, you scream, we all scream for ice cream.",
+      "category": "vowel-vortex",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Smooth vowels, sharp S–K clusters.",
+      "focus_sounds": [
+        "ee",
+        "s",
+        "k"
+      ]
+    },
+    {
+      "slug": "how-much-wood",
+      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood?",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Don't let 'wood' and 'would' merge.",
+      "focus_sounds": [
+        "w",
+        "ch",
+        "uh"
+      ]
+    },
+    {
+      "slug": "fuzzy-wuzzy",
+      "text": "Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair. Fuzzy Wuzzy wasn't fuzzy, was he?",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Keep the W and Z buzzing.",
+      "focus_sounds": [
+        "f",
+        "w",
+        "z"
+      ]
+    },
+    {
+      "slug": "moose-goose",
+      "text": "A loose goose chased a moose through the juice-soaked woods.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Hold the OO vowel evenly.",
+      "focus_sounds": [
+        "oo",
+        "s"
+      ]
+    },
+    {
+      "slug": "owl-out",
+      "text": "Our proud owl found loud clouds around the town.",
+      "category": "vowel-vortex",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Open jaw for OW each time.",
+      "focus_sounds": [
+        "ow"
+      ]
+    },
+    {
+      "slug": "thirty-three",
+      "text": "Thirty-three thirsty thieves thought thick thoughts.",
+      "category": "th-tangles",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Tongue tip between the teeth, blow softly.",
+      "focus_sounds": [
+        "th"
+      ]
+    },
+    {
+      "slug": "this-that",
+      "text": "This is the thing that those three thinkers thought.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Voiced TH (this) vs unvoiced (thing).",
+      "focus_sounds": [
+        "th"
+      ]
+    },
+    {
+      "slug": "fresh-fish",
+      "text": "Fresh French fried fly fritters.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Upper teeth on lower lip for F.",
+      "focus_sounds": [
+        "f",
+        "fr"
+      ]
+    },
+    {
+      "slug": "vincent-vowed",
+      "text": "Vincent vowed vengeance very vehemently.",
+      "category": "th-tangles",
+      "difficulty": 2,
+      "origin": "classic",
+      "tip": "Vibrate the V — teeth on lip.",
+      "focus_sounds": [
+        "v"
+      ]
+    },
+    {
+      "slug": "thin-sticks",
+      "text": "Thin sticks, thick bricks.",
+      "category": "th-tangles",
+      "difficulty": 1,
+      "origin": "classic",
+      "tip": "Quick TH-to-K switch.",
+      "focus_sounds": [
+        "th",
+        "k"
+      ]
+    },
+    {
+      "slug": "theophilus",
+      "text": "Theophilus Thistle, the successful thistle sifter, sifted a sieve of unsifted thistles.",
+      "category": "th-tangles",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Long one. Chunk it into three breaths.",
+      "focus_sounds": [
+        "th",
+        "s",
+        "f"
+      ]
+    },
+    {
+      "slug": "brain-bender-one",
+      "text": "Unique New York, unique New York, you know you need unique New York.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Y–N–Y is the trap: glide, then nasal.",
+      "focus_sounds": [
+        "y",
+        "n"
+      ]
+    },
+    {
+      "slug": "cloud-server",
+      "text": "Cloud servers crash constantly unless cache clusters cleverly clear.",
+      "category": "brain-benders",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Great for devs: CL–KR–K clusters everywhere.",
+      "focus_sounds": [
+        "cl",
+        "k",
+        "s"
+      ]
+    },
+    {
+      "slug": "pixel-perfect",
+      "text": "Pixel-perfect prototypes prompt polished product pitches.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Six P's — pop them evenly.",
+      "focus_sounds": [
+        "p"
+      ]
+    },
+    {
+      "slug": "blue-bluetooth",
+      "text": "Blue Bluetooth buds blast bubbly beats.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "B–L blends without adding an extra vowel.",
+      "focus_sounds": [
+        "b",
+        "bl"
+      ]
+    },
+    {
+      "slug": "streaming-screens",
+      "text": "Streaming screens scroll shrinking short-form scenes.",
+      "category": "brain-benders",
+      "difficulty": 4,
+      "origin": "modern",
+      "tip": "Triple consonant clusters: STR, SCR, SHR.",
+      "focus_sounds": [
+        "str",
+        "scr",
+        "shr"
+      ]
+    },
+    {
+      "slug": "quick-kiwi",
+      "text": "Quick kiwis quietly quit quacking quarrels.",
+      "category": "brain-benders",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "KW blend — keep it a single sound.",
+      "focus_sounds": [
+        "kw"
+      ]
+    },
+    {
+      "slug": "unicycle",
+      "text": "Unicyclists universally use uniquely useful units.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "YOU–N– repeats. Keep the Y glide clean.",
+      "focus_sounds": [
+        "y",
+        "n"
+      ]
+    },
+    {
+      "slug": "toy-tester",
+      "text": "Twelve twins twirled twenty twisting twigs.",
+      "category": "brain-benders",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "TW is a tight blend — lips round fast.",
+      "focus_sounds": [
+        "tw"
+      ]
+    },
+    {
+      "slug": "eleven-elephants",
+      "text": "Eleven elegant elephants eagerly eat eight enormous eclairs.",
+      "category": "vowel-vortex",
+      "difficulty": 3,
+      "origin": "modern",
+      "tip": "Short E repeated — keep it crisp not lazy.",
+      "focus_sounds": [
+        "e"
+      ]
+    },
+    {
+      "slug": "sixth-sheikhs-sister",
+      "text": "Sally saw seven silly sailors sail seven small ships.",
+      "category": "hissers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "S–S–S–SH rhythm; breathe between clauses.",
+      "focus_sounds": [
+        "s",
+        "sh"
+      ]
+    },
+    {
+      "slug": "gobbling-gorgeous",
+      "text": "Gobbling gorgeous grapes gave Gary gassy giggles.",
+      "category": "poppers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "Hard G — back of the tongue.",
+      "focus_sounds": [
+        "g"
+      ]
+    },
+    {
+      "slug": "crazy-cranes",
+      "text": "Crazy cranes crawl across crooked cracks.",
+      "category": "rollers",
+      "difficulty": 2,
+      "origin": "modern",
+      "tip": "CR clusters again — tongue prep before K.",
+      "focus_sounds": [
+        "cr",
+        "r"
+      ]
+    },
+    {
+      "slug": "world-word",
+      "text": "Which wristwatch is a Swiss wristwatch?",
+      "category": "brain-benders",
+      "difficulty": 4,
+      "origin": "classic",
+      "tip": "Notorious: W, R, S, CH, SW all together.",
+      "focus_sounds": [
+        "w",
+        "r",
+        "sw"
+      ]
+    },
+    {
+      "slug": "mixed-biscuits",
+      "text": "Mix biscuits, mix biscuits, mixed biscuits.",
+      "category": "poppers",
+      "difficulty": 3,
+      "origin": "classic",
+      "tip": "Watch mix/mixed at the boundary.",
+      "focus_sounds": [
+        "k",
+        "s",
+        "t"
+      ]
+    }
+  ]
+}
