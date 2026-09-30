@@ -64,6 +64,8 @@ export type Preferences = {
   dyslexia_font: boolean
   high_contrast: boolean
   metronome: boolean
+  /** 0–1 */
+  metronome_volume: number
   listen_first: boolean
   tts_voice: string
   tts_rate: number

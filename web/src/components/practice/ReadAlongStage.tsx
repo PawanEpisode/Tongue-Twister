@@ -1,10 +1,12 @@
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef } from 'react'
 import type { DisplayStyle, Preferences } from '#/lib/api'
+import { PREFERENCE_RANGES } from '#/lib/preferences'
 import { splitLines } from '#/lib/readAlong/text'
 import { fractionAt } from '#/lib/readAlong/timeline'
 import type { Timeline } from '#/lib/readAlong/timeline'
 import type { FrameListener } from '#/lib/readAlong/useReadAlong'
+import { usePinchZoom } from '#/lib/usePinchZoom'
 
 type Look = Pick<
   Preferences,
@@ -24,6 +26,8 @@ type Props = {
   onSeek: (i: number) => void
   /** Long-press on a word: begin reading from there. */
   onStartFrom: (i: number) => void
+  /** Pinch / ctrl+wheel on the text. */
+  onFontScale: (scale: number) => void
   /** Struggling device: fall back to word-step, no smooth motion. */
   degraded: boolean
   focus: boolean
@@ -66,6 +70,7 @@ export default function ReadAlongStage({
   subscribe,
   onSeek,
   onStartFrom,
+  onFontScale,
   degraded,
   focus,
 }: Props) {
@@ -78,6 +83,7 @@ export default function ReadAlongStage({
   }>({ fired: false })
   const box = useRef<HTMLDivElement>(null)
   const track = useRef<HTMLDivElement>(null)
+  usePinchZoom(box, look.font_scale, PREFERENCE_RANGES.font_scale, onFontScale)
   const els = useRef<(HTMLElement | null)[]>([])
   const lines = useMemo(() => splitLines(timeline.tokens), [timeline.tokens])
   const lineOf = (i: number) => lines.findIndex((l) => l.includes(i))
@@ -142,7 +148,7 @@ export default function ReadAlongStage({
   return (
     <div
       ref={box}
-      className={`relative min-h-64 rounded-2xl ${focus ? 'h-[70vh]' : 'h-[42vh]'} border border-line/60 bg-panel/40 p-5 ${style === 'scroll' ? 'overflow-hidden' : 'overflow-y-auto'} ${look.mirror_text ? '-scale-x-100' : ''}`}
+      className={`relative min-h-64 touch-pan-y rounded-2xl ${focus ? 'h-[70vh]' : 'h-[42vh]'} border border-line/60 bg-panel/40 p-5 ${style === 'scroll' ? 'overflow-hidden' : 'overflow-y-auto'} ${look.mirror_text ? '-scale-x-100' : ''}`}
       style={{
         fontSize: `${baseRem(timeline.tokens.length) * look.font_scale}rem`,
         fontFamily: look.dyslexia_font ? 'var(--font-dyslexic)' : undefined,

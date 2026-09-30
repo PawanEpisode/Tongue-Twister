@@ -29,6 +29,7 @@ erDiagram
         boolean listen_first
         varchar tts_voice "nullable, voiceURI"
         real tts_rate "0.5..1.5"
+        real metronome_volume "0..1, default 0.5"
         varchar accent_lang "en-US en-GB en-IN en-AU"
         boolean reduce_motion
         boolean dyslexia_font
@@ -136,7 +137,7 @@ erDiagram
 | Guest → account (D12) | `SyncBatch` idempotency (`UNIQUE(profile_id, client_batch_id)`) |
 
 ## Constraints & indexes
-- `UserPreference`: CHECKs `wpm BETWEEN 40 AND 300`, `threshold_pct BETWEEN 20 AND 60`, `loop_count BETWEEN 0 AND 10`, `countdown_s BETWEEN 0 AND 5`, `tts_rate BETWEEN 0.5 AND 1.5`, `font_scale BETWEEN 0.8 AND 2.0`.
+- `UserPreference`: CHECKs `wpm BETWEEN 40 AND 300`, `threshold_pct BETWEEN 20 AND 60`, `loop_count BETWEEN 0 AND 10`, `countdown_s BETWEEN 0 AND 5`, `tts_rate BETWEEN 0.5 AND 1.5`, `metronome_volume BETWEEN 0 AND 1`, `font_scale BETWEEN 0.8 AND 2.0`.
 - `PracticeSession`: `UNIQUE(profile_id, client_session_id)`; idx `(profile_id, started_at DESC)`, `(twister_id, mode)`.
 - `SyncBatch`: `UNIQUE(profile_id, client_batch_id)`.
 - Sessions are **append-mostly**; Read-along heartbeats update `active_ms` at most every 15 s and on pause/end (keeps write volume low).

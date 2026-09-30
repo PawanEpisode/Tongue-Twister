@@ -169,6 +169,7 @@ PREFERENCE_RANGES: dict[str, tuple[float, float]] = {
     "loop_count": (0, 10),  # 0 = loop forever
     "countdown_s": (0, 5),
     "tts_rate": (0.5, 1.5),
+    "metronome_volume": (0.0, 1.0),
 }
 
 
@@ -193,6 +194,7 @@ class UserPreference(models.Model):
     mirror_text = models.BooleanField(default=False)
     punctuation_pauses = models.BooleanField(default=True)
     metronome = models.BooleanField(default=False)
+    metronome_volume = models.FloatField(default=0.5, validators=_bounded("metronome_volume"))
     listen_first = models.BooleanField(default=False)
     tts_voice = models.CharField(max_length=200, blank=True, help_text="Device-specific voiceURI; empty = default")
     tts_rate = models.FloatField(default=1.0, validators=_bounded("tts_rate"))

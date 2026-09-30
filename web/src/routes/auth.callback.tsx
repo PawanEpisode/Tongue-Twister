@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { seo } from '#/lib/seo'
 import { useAuth } from '#/lib/auth'
+import { returnTo } from '#/lib/returnTo'
 
 export const Route = createFileRoute('/auth/callback')({
   head: () =>
@@ -18,7 +19,7 @@ function Callback() {
   const { session, loading } = useAuth()
   const nav = useNavigate()
   useEffect(() => {
-    if (!loading && session) nav({ to: '/twisters', replace: true })
+    if (!loading && session) void nav({ href: returnTo.take(), replace: true })
   }, [loading, session, nav])
 
   if (!loading && !session)

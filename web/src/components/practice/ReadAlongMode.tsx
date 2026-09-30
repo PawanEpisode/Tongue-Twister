@@ -15,6 +15,7 @@ import { useFullscreen } from '#/lib/useFullscreen'
 import { useHotkeys } from '#/lib/useHotkeys'
 import { usePracticeSession } from '#/lib/usePracticeSession'
 import { usePracticeLock } from '#/lib/tabLock'
+import { LeaveConfirm, useLeaveGuard } from '#/lib/useLeaveGuard'
 import ReadAlongControls from './ReadAlongControls'
 import type { ControlHandlers, NumberKey, ToggleKey } from './ReadAlongControls'
 import ReadAlongStage from './ReadAlongStage'
@@ -25,12 +26,13 @@ const HEARTBEAT_MS = 15_000 // keeps session write volume low (ERD 06a)
 const LADDER_STEP = 10
 const LADDER_TARGET = 160
 const FONT_STEP = 0.1
+const LEAVE_CONFIRM_AFTER_MS = 10_000 // quitting sooner than this loses nothing worth asking about
 const SHORTCUTS: [string, string][] = [
   ['Space', 'Play / pause'],
   ['R', 'Restart'],
   ['← →', 'Back / forward one word'],
   ['↑ ↓', 'Speed ±5 WPM'],
-  ['[ ]', 'Text size'],
+  ['[ ]  or pinch', 'Text size'],
   ['L', 'Listen to a model reading'],
   ['F', 'Focus mode (fullscreen)'],
   ['M', 'Mirror text'],
@@ -49,6 +51,7 @@ const NUMBER_FIELD = {
   fontScale: 'font_scale',
   thresholdPct: 'threshold_pct',
   countdownS: 'countdown_s',
+  metronomeVolume: 'metronome_volume',
 } as const satisfies Record<NumberKey, keyof typeof PREFERENCE_RANGES>
 
 const clampTo = (key: keyof typeof PREFERENCE_RANGES, n: number) =>
@@ -164,6 +167,7 @@ export default function ReadAlongMode({
   })
   const metronome = useMetronome({
     enabled: prefs.metronome,
+    volume: prefs.metronome_volume,
     index: engine.index,
     running: status === 'running',
   })
@@ -203,6 +207,12 @@ export default function ReadAlongMode({
     }
     engine.start()
   }
+  const leave = useLeaveGuard(
+    () =>
+      !listening &&
+      (status === 'running' || status === 'paused') &&
+      engine.getStats().activeMs > LEAVE_CONFIRM_AFTER_MS,
+  )
   const toggle = () => (running ? engine.pause() : start())
   const startFrom = (i: number) => {
     engine.seek(i)
@@ -303,6 +313,7 @@ export default function ReadAlongMode({
           subscribe={engine.subscribe}
           onSeek={engine.seek}
           onStartFrom={startFrom}
+          onFontScale={(n) => update({ font_scale: n })}
         />
         {status === 'countdown' && (
           <div
@@ -313,6 +324,11 @@ export default function ReadAlongMode({
           </div>
         )}
       </div>
+      <LeaveConfirm
+        open={leave.status === 'blocked'}
+        onStay={() => leave.reset?.()}
+        onLeave={() => leave.proceed?.()}
+      />
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
@@ -389,6 +405,7 @@ export default function ReadAlongMode({
               fontScale: prefs.font_scale,
               thresholdPct: prefs.threshold_pct,
               countdownS: prefs.countdown_s,
+              metronomeVolume: prefs.metronome_volume,
             },
             toggles: {
               punctuationPauses: prefs.punctuation_pauses,

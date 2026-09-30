@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '#/lib/auth'
 import { api } from '#/lib/api'
@@ -6,6 +6,7 @@ import { supabase } from '#/lib/supabase'
 
 export default function Header() {
   const { session, loading } = useAuth()
+  const here = useRouterState({ select: (s) => s.location.href })
   const { data: me } = useQuery({
     queryKey: ['me'],
     queryFn: api.me,
@@ -76,6 +77,7 @@ export default function Header() {
           ) : (
             <Link
               to="/login"
+              search={{ redirect: here }}
               className="rounded-full bg-brand px-4 py-1.5 font-semibold text-white hover:opacity-90"
             >
               Sign in

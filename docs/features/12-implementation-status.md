@@ -29,7 +29,8 @@ Last audited: 2026-09-30. Update this table in the same PR that ships a slice.
 | Tab lock (`BroadcastChannel`, heartbeat + stale expiry) for Read-along and Speak | ✅ |
 | `useMediaPermissions` + `PermissionNotice` (denied/unavailable/in-use, stops re-prompting after 2 denials) wired into Speak | ✅ |
 | Side panel (best, attempts, sparkline, focus sounds) via `GET /twisters/{slug}/history/`; next/previous in Browse context (same-level random fallback); share (native sheet / copy link) | ✅ |
-| Touch pinch-to-zoom text, metronome volume slider, confirm-before-leaving when > 10 s into a run, sign-in mid-session snapshot restore (transcript) | ⬜ minor / deferred |
+| Touch pinch-to-zoom text (also trackpad pinch), metronome volume slider (`metronome_volume`), confirm-before-leaving when > 10 s into a run, sign-in round-trip returns to the twister and restores the typed answer | ✅ |
+| Listen first: best-available natural voice per accent (ranked, novelty/robotic voices dropped), calm 0.8–1.0 speech rate | ✅ |
 | `POST /attempts/sync/` offline queue for *signed-in* users, idempotent `POST /attempts/` | ⬜ 06b |
 
 ## Decisions taken while implementing (docs corrected accordingly)

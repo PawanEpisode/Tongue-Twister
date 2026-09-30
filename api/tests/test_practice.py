@@ -42,7 +42,8 @@ def test_preferences_defaults_and_partial_update(user):
 
 
 @pytest.mark.parametrize("field,value", [("wpm", 39), ("wpm", 301), ("threshold_pct", 61), ("font_scale", 2.1),
-                                          ("loop_count", 11), ("default_mode", "karaoke"), ("tts_rate", 2)])
+                                          ("loop_count", 11), ("default_mode", "karaoke"), ("tts_rate", 2),
+                                          ("metronome_volume", 1.5), ("metronome_volume", -0.1)])
 def test_preferences_reject_out_of_range(user, field, value):
     c, _ = user
     assert c.patch("/api/v1/me/preferences/", {field: value}, format="json").status_code == 400

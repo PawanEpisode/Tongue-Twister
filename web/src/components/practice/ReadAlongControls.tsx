@@ -27,13 +27,16 @@ export const TOGGLES = [
 ] as const
 export type ToggleKey = (typeof TOGGLES)[number][0]
 
-export type NumberKey = 'loops' | 'fontScale' | 'thresholdPct' | 'countdownS'
+export type NumberKey =
+  'loops' | 'fontScale' | 'thresholdPct' | 'countdownS' | 'metronomeVolume'
 const NUMBERS: {
   key: NumberKey
   label: string
   range: keyof typeof PREFERENCE_RANGES
   step: number
   slider: boolean
+  /** Only meaningful while this toggle is on. */
+  needs?: ToggleKey
 }[] = [
   {
     key: 'loops',
@@ -48,6 +51,14 @@ const NUMBERS: {
     range: 'countdown_s',
     step: 1,
     slider: false,
+  },
+  {
+    key: 'metronomeVolume',
+    label: 'Metronome volume',
+    range: 'metronome_volume',
+    step: 0.05,
+    slider: true,
+    needs: 'metronome',
   },
   {
     key: 'fontScale',
@@ -165,7 +176,7 @@ export default function ReadAlongControls({
           Settings
         </summary>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {NUMBERS.map(({ key, label, range, step, slider }) => (
+          {NUMBERS.map(({ key, label, range, step, slider, needs }) => (
             <Field key={key} label={label}>
               <input
                 type={slider ? 'range' : 'number'}
@@ -173,6 +184,7 @@ export default function ReadAlongControls({
                 max={PREFERENCE_RANGES[range][1]}
                 step={step}
                 value={v.numbers[key]}
+                disabled={!!needs && !v.toggles[needs]}
                 onChange={(e) => h.onNumber(key, Number(e.target.value))}
                 className={slider ? 'accent-brand' : `w-16 ${input}`}
               />
@@ -196,7 +208,7 @@ export default function ReadAlongControls({
                 onChange={(e) => h.onVoice(e.target.value)}
                 className={`max-w-44 ${input}`}
               >
-                <option value="">Default</option>
+                <option value="">Recommended</option>
                 {v.voices.map((voice) => (
                   <option key={voice.voiceURI} value={voice.voiceURI}>
                     {voice.name}

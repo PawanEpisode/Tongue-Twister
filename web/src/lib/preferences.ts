@@ -11,6 +11,7 @@ export const PREFERENCE_RANGES = {
   loop_count: [0, 10],
   countdown_s: [0, 5],
   tts_rate: [0.5, 1.5],
+  metronome_volume: [0, 1],
 } as const
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -28,6 +29,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   dyslexia_font: false,
   high_contrast: false,
   metronome: false,
+  metronome_volume: 0.5,
   listen_first: false,
   tts_voice: '',
   tts_rate: 1,

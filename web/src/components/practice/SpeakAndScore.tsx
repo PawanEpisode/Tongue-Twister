@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link, useRouterState } from '@tanstack/react-router'
 import Lottie from '#/components/ClientLottie'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -11,6 +12,7 @@ import { useAuth } from '#/lib/auth'
 import { matchedIndexes, scoreAttempt } from '#/lib/scoring'
 import { useSpeech } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
+import { draft } from '#/lib/draft'
 import { guestQueue } from '#/lib/syncQueue'
 import { usePracticeLock } from '#/lib/tabLock'
 import { useMediaPermissions } from '#/lib/useMediaPermissions'
@@ -37,6 +39,7 @@ export default function SpeakAndScore({
   const mic = useMediaPermissions('microphone')
   const qc = useQueryClient()
   const { session } = useAuth()
+  const here = useRouterState({ select: (st) => st.location.href })
   const [result, setResult] = useState<Result | null>(null)
   const [typed, setTyped] = useState('')
   const [showGo, setShowGo] = useState(false)
@@ -60,6 +63,7 @@ export default function SpeakAndScore({
 
   const finish = (spoken: string, ms: number) => {
     if (!t || !spoken.trim()) return
+    draft.clear(t.slug)
     if (session) {
       submit.mutate(
         { twister: t.slug, transcript: spoken, duration_ms: Math.max(300, ms) },
@@ -78,6 +82,14 @@ export default function SpeakAndScore({
       setResult(scoreAttempt(t.text, spoken, ms, t.difficulty))
     }
   }
+
+  // A typed answer survives a sign-in round-trip (Google redirect) in this tab.
+  useEffect(() => {
+    const saved = draft.read(t.slug)
+    if (!saved) return
+    setTyped(saved)
+    typedStart.current = Date.now()
+  }, [t.slug])
 
   const speech = useSpeech({
     onFinish: ({ transcript, durationMs }) => finish(transcript, durationMs),
@@ -303,6 +315,7 @@ export default function SpeakAndScore({
                   onChange={(e) => {
                     if (!typedStart.current) typedStart.current = Date.now()
                     setTyped(e.target.value)
+                    draft.write(t.slug, e.target.value)
                   }}
                   placeholder="Type the twister…"
                   className="glass w-full rounded-2xl px-5 py-3 outline-none focus:border-brand"
@@ -314,7 +327,15 @@ export default function SpeakAndScore({
             )}
             {!session && (
               <p className="mt-8 text-xs text-white/35">
-                Playing as guest — sign in to save scores, streaks and XP.
+                Playing as guest —{' '}
+                <Link
+                  to="/login"
+                  search={{ redirect: here }}
+                  className="underline"
+                >
+                  sign in
+                </Link>{' '}
+                to save scores, streaks and XP.
               </p>
             )}
           </motion.div>

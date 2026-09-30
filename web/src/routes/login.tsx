@@ -1,20 +1,27 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '#/lib/auth'
+import { returnTo, safePath } from '#/lib/returnTo'
 import { seo } from '#/lib/seo'
 import { supabase } from '#/lib/supabase'
 
 export const Route = createFileRoute('/login')({
   head: () =>
     seo({ title: 'Sign in | Twister', path: '/login', noindex: true }),
+  validateSearch: (s: Record<string, unknown>): { redirect?: string } => ({
+    redirect: safePath(s.redirect),
+  }),
   component: Login,
 })
 
 function Login() {
   const nav = useNavigate()
   const { session } = useAuth()
+  const { redirect } = Route.useSearch()
+  // Remembered up front: Google sign-in leaves the site and comes back through /auth/callback.
+  useEffect(() => returnTo.remember(redirect), [redirect])
   useEffect(() => {
-    if (session) nav({ to: '/twisters', replace: true })
+    if (session) void nav({ href: returnTo.take(), replace: true })
   }, [session, nav])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,7 +45,7 @@ function Login() {
         : await supabase!.auth.signUp({ email, password })
     if (error) setMsg(error.message)
     else if (mode === 'up') setMsg('Check your email to confirm, then sign in.')
-    else nav({ to: '/twisters' })
+    // signed in: the session effect above takes over and navigates
   }
   const google = () =>
     supabase!.auth.signInWithOAuth({
