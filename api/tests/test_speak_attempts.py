@@ -573,3 +573,109 @@ def test_reading_endpoints_need_auth(seeded):
 
     for url in ("/api/v1/me/words/weak/", "/api/v1/me/sounds/", "/api/v1/attempts/"):
         assert APIClient().get(url).status_code in (401, 403)
+
+
+# --- Train / Drill: practising part of a twister ----------------------------------------------------
+
+
+def drill(client, transcript, start=1, end=2, kind="drill", **over):
+    return submit(
+        client, kind=kind, transcript=transcript, segment={"start": start, "end": end}, **over
+    )
+
+
+def test_a_drill_scores_and_records_only_the_practised_words(user):
+    from twisters.models import UserWordStat
+    from twisters.speak import stats
+
+    c, profile = user
+    r = drill(c, "sells", duration_ms=1500)
+    assert r.status_code == 201 and r.data["accuracy"] == 1.0
+    words = {w.word_norm: (w.seen, w.correct) for w in UserWordStat.objects.filter(profile=profile)}
+    assert words == {"sells": (1, 1)}  # nothing is recorded as "missed" for the other words
+    attempt = Attempt.objects.get(pk=r.data["id"])
+    assert attempt.breakdown["words"] == [[1, "correct"]]  # absolute index into the twister
+    stats.rebuild_profile_stats(profile)  # the rebuild path resolves the same word
+    assert {w.word_norm for w in UserWordStat.objects.filter(profile=profile)} == {"sells"}
+
+
+def test_a_drill_mistake_is_a_mistake_and_a_chunk_can_span_words(user):
+    from twisters.models import UserWordStat
+
+    c, profile = user
+    assert drill(c, "shells", start=1, end=2).data["accuracy"] == 0.0
+    assert UserWordStat.objects.get(profile=profile, word_norm="sells").wrong == 1
+    chunk = drill(c, "sells seashells by", start=1, end=4, kind="train")
+    assert chunk.data["accuracy"] == 1.0
+
+
+def test_practice_xp_is_shared_out_by_how_much_of_the_twister_was_practised(user):
+    c, _ = user
+    whole = submit(c, kind="train", duration_ms=4000)
+    part = drill(c, "sells", start=1, end=2, kind="train", duration_ms=800)
+    assert whole.data["xp_awarded"] > part.data["xp_awarded"] >= 0
+
+
+def test_repeating_one_drill_word_is_not_treated_as_score_farming(user):
+    c, _ = user
+    results = [drill(c, "sells", duration_ms=1200) for _ in range(7)]
+    assert not any(r.data["flagged"] for r in results)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"kind": "test"},  # Test attempts are always the whole twister
+        {"segment": {"start": 2, "end": 2}},
+        {"segment": {"start": 3, "end": 2}},
+        {"segment": {"start": 0, "end": 99}},
+        {"engine": "ondevice"},
+    ],
+)
+def test_invalid_segments_are_rejected(user, extra):
+    c, _ = user
+    body = {"kind": "drill", "transcript": "sells", "segment": {"start": 1, "end": 2}, **extra}
+    r = submit(c, **body)
+    assert r.status_code == 400
+
+
+# --- weak words: where to drill them --------------------------------------------------------------
+
+
+def test_weak_words_say_where_to_drill_each_word(user):
+    c, _ = user
+    submit(c, transcript="she shells seashells by the seashore")
+    rows = {r["word"]: r for r in c.get("/api/v1/me/words/weak/").data["results"]}
+    drill_at = rows["sells"]["drill"]
+    assert drill_at["twister"] == SLUG and (drill_at["start"], drill_at["end"]) == (1, 2)
+    assert drill_at["context"][drill_at["context_index"]] == "sells"
+    # ...and that spot is accepted by the drill endpoint
+    r = submit(
+        c, kind="drill", transcript="sells", segment={k: drill_at[k] for k in ("start", "end")}
+    )
+    assert r.status_code == 201
+
+
+def test_words_only_known_from_practice_are_found_via_the_pronunciation_table(user):
+    from twisters.models import Twister, UserWordStat
+
+    c, profile = user
+    twister = Twister.objects.get(slug=SLUG)
+    twister.phonemes = {"seashore": ["S IY SH AO R"]}
+    twister.save()
+    UserWordStat.objects.create(
+        profile=profile, word_norm="seashore", seen=3, wrong=2, weakness=0.6
+    )
+    rows = c.get("/api/v1/me/words/weak/").data["results"]
+    drill_at = rows[0]["drill"]
+    assert (
+        drill_at["twister"] == SLUG and drill_at["context"][drill_at["context_index"]] == "seashore"
+    )
+
+
+def test_a_word_that_cannot_be_placed_has_no_drill_target(user):
+    from twisters.models import UserWordStat
+
+    c, profile = user
+    UserWordStat.objects.create(profile=profile, word_norm="zzyzx", seen=2, wrong=2, weakness=0.9)
+    assert c.get("/api/v1/me/words/weak/").data["results"][0]["drill"] is None

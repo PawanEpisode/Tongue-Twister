@@ -42,11 +42,14 @@ Last audited: 2026-09-30. Update this table in the same PR that ships a slice.
 | TypeScript port `web/src/lib/speak/*`, proven equal by shared vectors (`api/tests/fixtures/speak_vectors.json`) and a data-file parity test | ✅ |
 | `POST /attempts/` (Idempotency-Key, low-confidence 200, anti-cheat flags), `GET/DELETE /attempts/{id}/`, `POST /attempts/sync/`, word feedback | ✅ |
 | `GET /me/words/weak/`, `GET /me/sounds/`, stats rebuildable (`reconcile_speak_stats`) and proven equal to incremental | ✅ |
+| Part-twister attempts: `segment` on `POST /attempts/` (Train / Drill score only the practised words; XP scaled by share) and `drill` targets on `GET /me/words/weak/` | ✅ |
 | Trust ladder, device results validation, nonce/audio-hash replay guard, spot-check jobs, HMAC worker callback, sweeper, device distrust, `accurate_mode` kill switch, `GET /engine/manifest/` | ✅ (server side) |
 | `build_pronunciations [--check]` (overrides → CMUdict → rules; fails on unknown words) | ✅ |
 | Web: live highlighting from the shared scorer, word-by-word mistakes view (glyph + label + colour), "what we heard", "I said it right" feedback, low-confidence retry, offline queue (`attemptQueue` + `AttemptSync`), fluency/pause + confidence capture | ✅ |
+| **Train** tab (chunks → stitched pairs → whole twister, pass at 85 % of words, listen first / slow, saved as `train`), **Word drill** (model voice, respelling, sentence context, help after 3 misses, saved as `drill`), **/practice** page (weak words with due dates, weak sounds, drill weakest 3 / all / one), "Drill your weak words" from the results screen, expandable recent attempts with the word-by-word view, feedback with an optional note | ✅ |
+| Local low-confidence check for guests and offline takes (shared vectors), ASCII-only numeral rules on both sides (fixed API crashes on `❶` and 4 300+ digit runs) | ✅ |
+| CI runs the API suite on Postgres as well as sqlite (`TEST_DATABASE_URL`) | ✅ |
 | On-device neural engine (Tier 1), scoring worker container, model export | ⬜ doc 10 |
-| Train / Word-drill UI, weak-word and weak-sound screens (endpoints ready) | ⬜ 06d |
 | Audio donation feedback (needs `UserConsent`, 06c) — returns `403 consent_required` | ⬜ 06c |
 
 ## Decisions taken while implementing (docs corrected accordingly)
@@ -62,6 +65,10 @@ Last audited: 2026-09-30. Update this table in the same PR that ships a slice.
 - `UserTwisterStats` omits the 06d-only columns (`total_active_ms`, `read_along_ms`, `is_favorite`).
 - `LEADERBOARD_REQUIRE_VERIFIED` and `MASTERY_ALLOW_PROVISIONAL` default to permissive until the scoring worker ships; flip both when it does.
 - `voice_asset_id` / `audio_asset_id` are plain UUIDs until `MediaAsset` (06c).
+- Train chunks are built by the client (3–5 words, punctuation first); server-built chunks stay a 06d idea. "Sounds you swap" stays empty until the accurate engine sends phoneme verdicts.
 - Repeated words are *extras* (a stutter is not collapsed) and the "very short twister ×3" rule is not implemented.
 - The `accurate_mode` flag ships **off**; `speak_v2` is on (migration 0006). Web `DEFAULT_FLAGS` mirrors that.
 - Web tests run in CI (`npm test`); the shared vectors are read straight from `api/tests/fixtures`, so both suites must be changed together.
+
+### Running management commands (`.github/workflows/manage-command.yml`)
+Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.

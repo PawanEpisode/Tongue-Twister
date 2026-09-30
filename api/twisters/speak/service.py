@@ -58,6 +58,8 @@ class Submission:
     transcript: str
     duration_ms: int
     kind: str = AttemptKind.TEST
+    #: Train/Drill only: scoring tokens [start, end) of the twister that were practised.
+    segment: tuple[int, int] | None = None
     long_pause_ms: int = 0
     client_attempt_id: uuid.UUID | None = None
     session: PracticeSession | None = None
@@ -164,12 +166,15 @@ def _phoneme_rows(word_rows: Collection[AttemptWord], reports) -> list[AttemptPh
     return out
 
 
-def _breakdown(evaluation) -> dict:
+def _breakdown(evaluation, offset: int = 0) -> dict:
+    """Per-word statuses for kinds that keep no AttemptWord rows; indexes are into the whole twister."""
     counts = evaluation.score.counts
     return {
         **counts,
         "words": [
-            [w.target_index, w.status] for w in evaluation.words if w.target_index is not None
+            [w.target_index + offset, w.status]
+            for w in evaluation.words
+            if w.target_index is not None
         ],
     }
 
@@ -191,7 +196,9 @@ def _personal_best(
     return previous is None or score > previous
 
 
-def _award(submission: Submission, evaluation, flagged: bool, when, now) -> int | None:
+def _award(
+    submission: Submission, evaluation, flagged: bool, when, now, share: float = 1.0
+) -> int | None:
     """XP for this attempt, or None when it earns no progress at all (no XP, no streak day):
     guest imports (D12), flagged attempts, and offline attempts too old to reward."""
     if flagged or not submission.earns_progress:
@@ -201,7 +208,7 @@ def _award(submission: Submission, evaluation, flagged: bool, when, now) -> int 
     base = legacy.attempt_xp(
         evaluation.score.score, submission.twister.difficulty, evaluation.score.accuracy
     )
-    return round(base * settings.XP_KIND_MULTIPLIER.get(submission.kind, 1.0))
+    return round(base * settings.XP_KIND_MULTIPLIER.get(submission.kind, 1.0) * share)
 
 
 def _check_replay_tokens(profile: Profile, submission: Submission) -> None:
@@ -231,8 +238,13 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
             return replay(existing)
 
     twister = submission.twister
+    tokens = tokenise(twister.text)
+    start, end = submission.segment or (0, len(tokens))
+    share = (
+        (end - start) / len(tokens) if tokens else 1.0
+    )  # a one-word drill earns a one-word share
     evaluation = pipeline.evaluate(
-        twister.text,
+        " ".join(tokens[start:end]) if submission.segment else twister.text,
         submission.transcript,
         duration_ms=submission.duration_ms,
         long_pause_ms=submission.long_pause_ms,
@@ -253,13 +265,15 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
     _check_replay_tokens(profile, submission)
 
     when = submission.occurred_at or now
-    spam = trust.is_transcript_spam(profile, twister.id, submission.transcript, when)
+    spam = submission.kind != AttemptKind.DRILL and trust.is_transcript_spam(
+        profile, twister.id, submission.transcript, when
+    )  # drills repeat one word on purpose
     flagged = bool(evaluation.flags) or spam
     warning = evaluation.flags[0] if evaluation.flags else ("repeated_transcript" if spam else None)
     distrusted = trust.device_distrusted(profile, now)
     score = evaluation.score
     is_best = _personal_best(profile, submission, score.score, when, flagged)
-    xp = _award(submission, evaluation, flagged, when, now)
+    xp = _award(submission, evaluation, flagged, when, now, share)
     gop = [r.acoustic_score for r in reports.values() if r.acoustic_score is not None]
 
     try:
@@ -294,7 +308,9 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
                 verification_status=trust.initial_verification(submission.engine, distrusted),
                 is_personal_best=is_best,
                 flagged=flagged,
-                breakdown={} if submission.kind in PERSISTED_WORDS else _breakdown(evaluation),
+                breakdown={}
+                if submission.kind in PERSISTED_WORDS
+                else _breakdown(evaluation, start),
                 voice_asset_id=submission.voice_asset_id,
             )
     except IntegrityError:

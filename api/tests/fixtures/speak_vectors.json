@@ -115,6 +115,35 @@
     {
       "in": "?!... --",
       "out": []
+    },
+    {
+      "in": "❶ cats ٣",
+      "out": [
+        "❶",
+        "cats",
+        "٣"
+      ]
+    },
+    {
+      "in": "call 1234567 now",
+      "out": [
+        "call",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "now"
+      ]
+    },
+    {
+      "in": "the 1234567th",
+      "out": [
+        "the",
+        "1234567th"
+      ]
     }
   ],
   "classify": [
@@ -698,6 +727,38 @@
           "extra": 4
         }
       }
+    }
+  ],
+  "unscorable": [
+    {
+      "target": "She sells seashells",
+      "spoken": "",
+      "confidence": null,
+      "expect": "no_speech"
+    },
+    {
+      "target": "She sells seashells",
+      "spoken": "um uh",
+      "confidence": 0.9,
+      "expect": "no_speech"
+    },
+    {
+      "target": "She sells seashells",
+      "spoken": "she sells",
+      "confidence": 0.44,
+      "expect": "low_confidence"
+    },
+    {
+      "target": "She sells seashells",
+      "spoken": "she sells",
+      "confidence": 0.45,
+      "expect": null
+    },
+    {
+      "target": "She sells seashells",
+      "spoken": "she sells",
+      "confidence": null,
+      "expect": null
     }
   ]
 }

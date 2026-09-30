@@ -1,10 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
-import Lottie from '#/components/ClientLottie'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import AudioVisualizer from '#/components/AudioVisualizer'
-import pulse from '#/assets/lottie/pulse.json'
 import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -18,19 +15,23 @@ import type {
 import { useAuth } from '#/lib/auth'
 import { attemptQueue, isTransient } from '#/lib/attemptQueue'
 import { useFlag } from '#/lib/flags'
-import { SCORE_VERSION, liveHits, scoreLocally } from '#/lib/scoring'
-import { displayStatuses, displayWords } from '#/lib/speak/display'
+import { SCORE_VERSION, scoreLocally } from '#/lib/scoring'
+import {
+  displayStatuses,
+  displayWords,
+  problemRows,
+  rowsFromApi,
+} from '#/lib/speak/display'
+import { unscorableReason } from '#/lib/speak/score'
 import type { DisplayWord, WordRow } from '#/lib/speak/display'
 import type { WordStatus } from '#/lib/speak/similarity'
-import { useSpeech } from '#/lib/speech'
 import type { SpeechResult } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { draft } from '#/lib/draft'
 import { guestQueue } from '#/lib/syncQueue'
-import { usePracticeLock } from '#/lib/tabLock'
-import { useMediaPermissions } from '#/lib/useMediaPermissions'
+import { useTake } from '#/lib/useTake'
 import { cn } from '#/lib/utils'
-import PermissionNotice from './PermissionNotice'
+import MicStage from './MicStage'
 import WordBreakdown from './WordBreakdown'
 
 type Result = {
@@ -64,14 +65,11 @@ export default function SpeakAndScore({
   onReadAlong: () => void
 }) {
   const twisterNav = useTwisterNavigation(t)
-  const lock = usePracticeLock()
-  const mic = useMediaPermissions('microphone')
   const qc = useQueryClient()
   const { session } = useAuth()
   const here = useRouterState({ select: (st) => st.location.href })
   const [result, setResult] = useState<Result | null>(null)
   const [typed, setTyped] = useState('')
-  const [showGo, setShowGo] = useState(false)
   const typedStart = useRef(0)
   const currentRef = useRef<HTMLSpanElement | null>(null)
 
@@ -79,12 +77,16 @@ export default function SpeakAndScore({
   const [unclear, setUnclear] = useState<string | null>(null)
   const display = useMemo(() => displayWords(t.text), [t.text])
 
-  /** The result screen for a local score: guests, offline, and failed saves. */
+  /**
+   * The result screen for a local score: guests, offline, and failed saves.
+   * Returns false (and asks for another try) when the take is too unclear to score fairly.
+   */
   const showLocal = (
     spoken: string,
     m: { durationMs: number; longPauseMs: number },
+    confidence: number | null | undefined,
     notice?: string,
-  ) => {
+  ): boolean => {
     const local = scoreLocally({
       text: t.text,
       spoken,
@@ -92,6 +94,11 @@ export default function SpeakAndScore({
       focusSounds: t.focus_sounds,
       ...m,
     })
+    const unclearReason = unscorableReason(local.evaluation, confidence)
+    if (unclearReason) {
+      setUnclear(unclearReason)
+      return false
+    }
     setResult({
       score: local.score,
       accuracy: local.accuracy,
@@ -105,6 +112,7 @@ export default function SpeakAndScore({
         rows: local.rows,
       },
     })
+    return true
   }
 
   const submit = useMutation({
@@ -114,12 +122,7 @@ export default function SpeakAndScore({
         setUnclear(r.reason)
         return
       }
-      const rows: WordRow[] | undefined = r.words?.map((w) => ({
-        targetIndex: w.target_index,
-        spoken: w.spoken,
-        status: w.status,
-        reason: w.reason,
-      }))
+      const rows = r.words && rowsFromApi(r.words)
       setResult({
         score: r.score,
         accuracy: r.accuracy,
@@ -154,12 +157,12 @@ export default function SpeakAndScore({
     }
     if (!session) {
       // Guests keep their history on-device; it is imported when they sign up (see GuestSync).
-      guestQueue.addAttempt({
-        twister: t.slug,
-        transcript: spoken,
-        duration_ms: durationMs,
-      })
-      showLocal(spoken, timing)
+      if (showLocal(spoken, timing, meta.confidence))
+        guestQueue.addAttempt({
+          twister: t.slug,
+          transcript: spoken,
+          duration_ms: durationMs,
+        })
       return
     }
     const body: SubmitAttemptBody = {
@@ -185,9 +188,10 @@ export default function SpeakAndScore({
       onError: (err) => {
         // Unreachable or throttled: keep it and replay later (the server de-duplicates on the id).
         if (isTransient(err)) {
-          attemptQueue.add(session.user.id, body)
-          showLocal(spoken, timing, OFFLINE_NOTICE)
-        } else showLocal(spoken, timing, UNSAVED_NOTICE)
+          // Only queue a take the server would have accepted (it rejects unclear ones anyway).
+          if (showLocal(spoken, timing, meta.confidence, OFFLINE_NOTICE))
+            attemptQueue.add(session.user.id, body)
+        } else showLocal(spoken, timing, meta.confidence, UNSAVED_NOTICE)
       },
     })
   }
@@ -200,47 +204,15 @@ export default function SpeakAndScore({
     typedStart.current = Date.now()
   }, [t.slug])
 
-  const speech = useSpeech({
+  const isLong = t.word_count > 30
+  const take = useTake({
+    text: t.text,
+    focusSounds: t.focus_sounds,
+    typed,
+    isLong,
     onFinish: (r) => finish(r.transcript, r.durationMs, r),
   })
-  const isLong = t.word_count > 30
-
-  // Flash "GO!" the moment the mic is truly capturing, so users never start talking too early.
-  useEffect(() => {
-    if (speech.status !== 'live') return
-    setShowGo(true)
-    const id = setTimeout(() => setShowGo(false), 900)
-    return () => clearTimeout(id)
-  }, [speech.status])
-
-  const spoken =
-    speech.status !== 'idle' ? speech.transcript : typed || speech.transcript
-  const hits = useMemo(
-    () => liveHits(t.text, spoken, t.focus_sounds),
-    [t.text, t.focus_sounds, spoken],
-  )
-  const matched = hits.filter(Boolean).length
-  const currentIdx = hits.findIndex((h) => !h)
-
-  // Auto-finish: everything matched, or the speaker went quiet after saying something.
-  useEffect(() => {
-    if (speech.status !== 'live' || !hits.length) return
-    if (matched === hits.length) {
-      const id = setTimeout(speech.stop, 600)
-      return () => clearTimeout(id)
-    }
-    if (speech.transcript) {
-      const id = setTimeout(speech.stop, isLong ? 4500 : 2800)
-      return () => clearTimeout(id)
-    }
-  }, [
-    speech.status,
-    speech.transcript,
-    speech.stop,
-    matched,
-    hits.length,
-    isLong,
-  ])
+  const { speech, hits, matched, currentIdx, arming, live } = take
 
   // Keep the current word in view for long passages.
   useEffect(() => {
@@ -258,19 +230,7 @@ export default function SpeakAndScore({
     typedStart.current = 0
     speech.reset()
   }
-  const startListening = async () => {
-    // Ask only from this tap; skip the extra prompt when access is already known to be granted.
-    if (mic.state === 'granted' || (await mic.requestAccess())) speech.start()
-  }
 
-  // One practising tab at a time.
-  useEffect(() => {
-    if (speech.status === 'idle') lock.release()
-    else lock.claim()
-  }, [speech.status, lock])
-
-  const arming = speech.status === 'arming'
-  const live = speech.status === 'live'
   const textSize =
     t.word_count <= 12
       ? 'text-3xl md:text-5xl'
@@ -299,15 +259,28 @@ export default function SpeakAndScore({
                   {...result.breakdown}
                   onFeedback={
                     result.attemptId
-                      ? async (index) => {
-                          await api.wordFeedback(result.attemptId!, index, {
-                            judged_correct: true,
-                          })
+                      ? async (index, feedback) => {
+                          await api.wordFeedback(
+                            result.attemptId!,
+                            index,
+                            feedback,
+                          )
                         }
                       : undefined
                   }
                 />
               )}
+              {session &&
+                result.breakdown &&
+                problemRows(result.breakdown.rows).length > 0 && (
+                  <Link
+                    to="/practice"
+                    search={{ drill: 1 }}
+                    className="mt-4 inline-block text-sm underline underline-offset-2"
+                  >
+                    Drill your weak words →
+                  </Link>
+                )}
             </ResultCard>
             {twisterNav.failed && (
               <p role="alert" className="mt-4 text-sm text-pink">
@@ -377,80 +350,7 @@ export default function SpeakAndScore({
               </div>
             )}
 
-            <div className="relative mx-auto mt-8 h-64 w-64">
-              {arming && (
-                <Lottie
-                  animationData={pulse}
-                  loop
-                  className="absolute inset-0 h-full w-full"
-                />
-              )}
-              {live && (
-                <AudioVisualizer
-                  analyser={speech.analyser}
-                  className="absolute inset-0 h-full w-full"
-                />
-              )}
-              <AnimatePresence>
-                {showGo && (
-                  <motion.div
-                    key="go"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1.15, opacity: 1 }}
-                    exit={{ scale: 1.6, opacity: 0 }}
-                    className="pointer-events-none absolute inset-0 z-10 grid place-items-center font-display text-5xl font-extrabold text-lime hit-glow"
-                  >
-                    GO!
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.05 }}
-                disabled={
-                  !speech.supported || arming || (lock.blocked && !live)
-                }
-                onClick={live ? speech.stop : () => void startListening()}
-                aria-label={live ? 'Stop' : 'Start speaking'}
-                className={`absolute inset-[72px] grid place-items-center rounded-full text-3xl shadow-xl disabled:cursor-wait ${live ? 'bg-pink text-pink-foreground shadow-pink/40' : 'bg-primary text-primary-foreground shadow-primary/40'} ${arming ? 'opacity-70' : ''}`}
-              >
-                {live ? '⏹' : arming ? '…' : '🎤'}
-              </motion.button>
-            </div>
-
-            <p
-              className="mt-1 text-sm text-muted-foreground"
-              aria-live="polite"
-            >
-              {arming
-                ? 'Getting your mic ready… wait for GO!'
-                : live
-                  ? speech.transcript
-                    ? 'Keep going — I’ll stop when you finish'
-                    : 'Listening… say it now'
-                  : speech.supported
-                    ? 'Tap the mic, wait for GO!, then say it as fast as you can'
-                    : 'Speech recognition isn’t supported in this browser — type it below'}
-            </p>
-            <PermissionNotice
-              state={mic.state}
-              kind="microphone"
-              onRetry={() => void startListening()}
-              onReadAlong={onReadAlong}
-            />
-            {lock.blocked && !live && (
-              <p role="status" className="mt-2 text-sm text-pink">
-                Practice is active in another tab — finish it there first.
-              </p>
-            )}
-            {speech.error && (
-              <p className="mt-2 text-sm text-pink">{speech.error}</p>
-            )}
-            {live && speech.transcript && (
-              <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-                “{speech.transcript}”
-              </p>
-            )}
+            <MicStage take={take} onReadAlong={onReadAlong} />
 
             {!speech.supported && (
               <form

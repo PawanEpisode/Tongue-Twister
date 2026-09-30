@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { align, mergeSplitCompounds } from './align'
 import { tokenise } from './normalise'
-import { evaluate } from './score'
+import { evaluate, unscorableReason } from './score'
 import { classify } from './similarity'
 
 const root = (p: string) => fileURLToPath(new URL(p, import.meta.url))
@@ -23,6 +23,12 @@ type Vectors = {
     spoken: string
     focus?: string[]
     rows: [number | null, number | null, string, string][]
+  }[]
+  unscorable: {
+    target: string
+    spoken: string
+    confidence: number | null
+    expect: string | null
   }[]
   score: {
     target: string
@@ -94,6 +100,13 @@ describe('shared vectors', () => {
       'wpm',
     ] as const)
       expect(score[k]).toBeCloseTo(c.expect[k], 3)
+  })
+})
+
+describe('unscorable vectors', () => {
+  it.each(V.unscorable)('$spoken @ $confidence', (c) => {
+    const e = evaluate(c.target, c.spoken, { durationMs: 2000 })
+    expect(unscorableReason(e, c.confidence)).toBe(c.expect)
   })
 })
 

@@ -8,7 +8,7 @@ import pytest
 from twisters.speak import lexicon, scoring
 from twisters.speak.alignment import SpokenToken, align, merge_split_compounds
 from twisters.speak.normalise import equivalents, homophones, spell_number, tokenise
-from twisters.speak.pipeline import evaluate
+from twisters.speak.pipeline import evaluate, unscorable_reason
 from twisters.speak.similarity import classify, single_edit_span
 
 VECTORS = json.loads((Path(__file__).parent / "fixtures" / "speak_vectors.json").read_text())
@@ -51,6 +51,20 @@ def test_score_vectors(case):
     assert s.focus_gated == want["focus_gated"]
     for key in ("accuracy", "speed", "fluency", "completeness", "wpm"):
         assert getattr(s, key) == pytest.approx(want[key], abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "case", VECTORS["unscorable"], ids=lambda c: f"{c['spoken']!r}@{c['confidence']}"
+)
+def test_unscorable_vectors(case):
+    ev = evaluate(case["target"], case["spoken"], duration_ms=2000)
+    reason = unscorable_reason(ev, confidence=case["confidence"], quality=None)
+    assert reason == case["expect"]
+
+
+@pytest.mark.parametrize("text", ["❶ cats", "9" * 5000, "٣ ٣٣", "1e999 ²³", "1" * 7 + "th"])
+def test_exotic_numerals_never_crash_the_tokeniser(text):
+    assert tokenise(text)  # some tokens, no exception
 
 
 # --- properties the PRD promises --------------------------------------------------------------

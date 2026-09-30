@@ -91,6 +91,7 @@ function Login() {
           className="w-full py-3"
           onClick={google}
         >
+          {/* <GoogleIcon /> */}
           Continue with Google
         </Button>
         {msg && <p className="text-sm text-pink">{msg}</p>}

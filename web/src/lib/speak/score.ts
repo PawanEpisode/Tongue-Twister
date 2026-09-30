@@ -120,3 +120,21 @@ export function compute(
     counts,
   }
 }
+
+/** Mirrors the API's MIN_ENGINE_CONFIDENCE: below this the take is not scored or saved. */
+export const MIN_ENGINE_CONFIDENCE = 0.45
+export type Unscorable = 'no_speech' | 'low_confidence'
+
+/**
+ * Why a take must be answered with "we couldn't hear you clearly" instead of a score.
+ * The device-only checks (audio quality, noise) belong to the server and the neural engine.
+ */
+export function unscorableReason(
+  evaluation: Pick<Evaluation, 'spokenWords'>,
+  confidence?: number | null,
+): Unscorable | null {
+  if (evaluation.spokenWords === 0) return 'no_speech'
+  if (confidence != null && confidence < MIN_ENGINE_CONFIDENCE)
+    return 'low_confidence'
+  return null
+}

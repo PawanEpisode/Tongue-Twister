@@ -27,8 +27,8 @@ const HOMOPHONES = (() => {
 const APOSTROPHES = /[’‘`´]/g
 const SEPARATORS = /[-‐‑‒–—_/\\]/g
 const TOKEN = /[\p{L}\p{N}]+(?:'[\p{L}\p{N}]+)*/gu
-const ORDINAL = /^(\d+)(st|nd|rd|th)$/
-const DIGITS = /^\d+$/
+const ORDINAL = /^([0-9]+)(st|nd|rd|th)$/
+const DIGITS = /^[0-9]+$/
 const MARKS = /\p{M}/gu
 
 const ONES =
@@ -48,6 +48,8 @@ const ORDINAL_IRREGULAR: Record<string, string> = {
   twelve: 'twelfth',
 }
 export const MAX_SPELLED = 999_999
+/** Longer digit runs are read digit by digit, never converted (mirrors the API). */
+export const MAX_NUMERAL_DIGITS = 6
 
 /** Words a recogniser may return for `word` (apostrophes ignored: they're = there). */
 export function homophones(word: string): ReadonlySet<string> {
@@ -90,9 +92,14 @@ function ordinal(n: number): string[] {
 }
 
 function expand(token: string): string[] {
-  if (DIGITS.test(token)) return spellNumber(Number(token))
+  if (DIGITS.test(token))
+    return token.length > MAX_NUMERAL_DIGITS
+      ? [...token].map((d) => ONES[Number(d)])
+      : spellNumber(Number(token))
   const m = ORDINAL.exec(token)
-  return m ? ordinal(Number(m[1])) : [token]
+  return m && m[1].length <= MAX_NUMERAL_DIGITS
+    ? ordinal(Number(m[1]))
+    : [token]
 }
 
 /** Apostrophes at the edges of a token are quote marks, not part of the word. */

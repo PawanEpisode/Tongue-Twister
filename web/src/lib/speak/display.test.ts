@@ -5,6 +5,7 @@ import {
   displayWords,
   extraWords,
   problemRows,
+  rowsFromApi,
   summarise,
 } from './display'
 
@@ -87,5 +88,22 @@ describe('liveHits', () => {
   it('lights words as they are said and never blocks on punctuation-only words', () => {
     expect(liveHits('one — two', 'one')).toEqual([true, true, false])
     expect(liveHits('one — two', 'one two')).toEqual([true, true, true])
+  })
+})
+
+describe('rowsFromApi', () => {
+  it('maps API words so the same views work for saved attempts', () => {
+    const rows = rowsFromApi([
+      { target_index: 0, spoken: 'she', status: 'correct', reason: '' },
+      {
+        target_index: 1,
+        spoken: 'shells',
+        status: 'wrong',
+        reason: 'focus_swap',
+      },
+      { target_index: null, spoken: 'uh', status: 'extra', reason: '' },
+    ])
+    expect(summarise(rows)).toBe('1 of 2 words correct · 1 wrong · 1 extra')
+    expect(problemRows(rows).map((r) => r.reason)).toEqual(['focus_swap'])
   })
 })

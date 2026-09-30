@@ -28,6 +28,22 @@ export type WordRow = {
   reason: WordReason
 }
 
+/** The API's scored words (`target_index`, `spoken`, …) in the UI's shape. */
+export const rowsFromApi = (
+  words: readonly {
+    target_index: number | null
+    spoken: string
+    status: WordStatus
+    reason: WordReason
+  }[],
+): WordRow[] =>
+  words.map((w) => ({
+    targetIndex: w.target_index,
+    spoken: w.spoken,
+    status: w.status,
+    reason: w.reason,
+  }))
+
 export const rowsFromAligned = (aligned: readonly Aligned[]): WordRow[] =>
   aligned.map((a) => ({
     targetIndex: a.targetIndex,

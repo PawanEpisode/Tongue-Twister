@@ -48,6 +48,13 @@ export default function Header() {
             />
           ) : session ? (
             <>
+              <Link
+                to="/practice"
+                className="hover:text-foreground"
+                activeProps={{ className: 'text-foreground' }}
+              >
+                Practice
+              </Link>
               {me && (
                 <span className="hidden rounded-full bg-card px-3 py-1 text-xs sm:inline">
                   🔥 {me.current_streak} · Lv {me.level} · {me.xp} XP

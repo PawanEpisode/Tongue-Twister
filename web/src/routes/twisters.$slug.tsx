@@ -6,6 +6,7 @@ import ReadAlongMode from '#/components/practice/ReadAlongMode'
 import HubHeader from '#/components/practice/HubHeader'
 import SidePanel from '#/components/practice/SidePanel'
 import SpeakAndScore from '#/components/practice/SpeakAndScore'
+import TrainMode from '#/components/practice/TrainMode'
 import { Button } from '#/components/ui/button'
 import { ErrorState, PracticeSkeleton } from '#/components/feedback'
 import { api } from '#/lib/api'
@@ -21,9 +22,11 @@ const MODE_OF: Record<PracticeMode, ModeKey | undefined> = {
   speak_score: 'speak',
   record: 'record',
 }
+// Train is a way of practising speaking, so it is remembered as (and reopens on) Speak & score.
 const PREF_OF: Record<ModeKey, PracticeMode> = {
   read: 'read_along',
   speak: 'speak_score',
+  train: 'speak_score',
   record: 'record',
 }
 const STYLES: DisplayStyle[] = ['word', 'line', 'scroll']
@@ -90,7 +93,9 @@ function PracticeHub() {
   // Built ∩ flagged on. With the hub flag off, only the original Speak flow remains.
   const enabled = BUILT_MODES.filter(
     (m) =>
-      (flags.practice_hub && (m !== 'read' || flags.read_along)) ||
+      (flags.practice_hub &&
+        (m !== 'read' || flags.read_along) &&
+        (m !== 'train' || flags.speak_v2)) ||
       m === 'speak',
   )
   const remembered = MODE_OF[prefs.default_mode]
@@ -99,7 +104,7 @@ function PracticeHub() {
 
   // Switching remembers the choice; the old mode unmounts, which releases mic streams and closes its session.
   const switchMode = (next: ModeKey) => {
-    update({ default_mode: PREF_OF[next] })
+    if (next !== 'train') update({ default_mode: PREF_OF[next] })
     void nav({ search: (s) => ({ ...s, mode: next }), replace: true })
   }
 
@@ -141,6 +146,13 @@ function PracticeHub() {
               prefs={prefs}
               update={update}
               overrides={{ wpm: search.wpm, style: search.style }}
+              onSwitchMode={() => switchMode('speak')}
+            />
+          ) : mode === 'train' ? (
+            <TrainMode
+              key={t.slug}
+              twister={t}
+              prefs={prefs}
               onSwitchMode={() => switchMode('speak')}
             />
           ) : (

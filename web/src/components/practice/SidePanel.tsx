@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import { api } from '#/lib/api'
 import type { Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
+import { displayStatuses, displayWords, rowsFromApi } from '#/lib/speak/display'
+import WordBreakdown from './WordBreakdown'
 
 const W = 120
 const H = 32
@@ -34,6 +37,40 @@ export function Sparkline({ scores }: { scores: number[] }) {
   )
 }
 
+/** One past attempt, word by word. Train and drill takes keep no per-word rows, so there may be none. */
+function AttemptDetailView({ id, twister }: { id: number; twister: Twister }) {
+  const q = useQuery({
+    queryKey: ['attempt', id],
+    queryFn: () => api.attemptDetail(id),
+    staleTime: Infinity, // a saved attempt never changes
+  })
+  const display = useMemo(() => displayWords(twister.text), [twister.text])
+  if (q.isPending) return <p className="mt-3 text-xs">Loading…</p>
+  if (q.isError)
+    return (
+      <p role="alert" className="mt-3 text-xs text-pink">
+        Couldn’t load this attempt.
+      </p>
+    )
+  const rows = rowsFromApi(q.data.words)
+  if (!rows.some((r) => r.targetIndex != null))
+    return (
+      <p className="mt-3 text-xs">
+        No word details were kept for this attempt.
+      </p>
+    )
+  return (
+    <WordBreakdown
+      display={display}
+      statuses={displayStatuses(display, rows)}
+      rows={rows}
+      onFeedback={async (index, feedback) => {
+        await api.wordFeedback(id, index, feedback)
+      }}
+    />
+  )
+}
+
 /** Best score, attempts, tip and focus sounds. Hidden until there is something to show (PRD 01 H5). */
 export default function SidePanel({ twister }: { twister: Twister }) {
   const { session } = useAuth()
@@ -43,6 +80,7 @@ export default function SidePanel({ twister }: { twister: Twister }) {
     enabled: !!session,
   })
   const h = history.data
+  const [openId, setOpenId] = useState<number | null>(null)
   const hasHistory = !!h && h.count > 0
   if (!hasHistory && !twister.focus_sounds.length) return null
 
@@ -68,6 +106,32 @@ export default function SidePanel({ twister }: { twister: Twister }) {
           Focus sounds{' '}
           <b className="text-foreground">{twister.focus_sounds.join(' · ')}</b>
         </span>
+      )}
+      {hasHistory && (
+        <div className="w-full">
+          <p className="text-center text-xs">Recent attempts</p>
+          <ul className="mt-2 flex flex-wrap justify-center gap-2">
+            {h.results.slice(0, 5).map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  aria-expanded={openId === r.id}
+                  onClick={() => setOpenId(openId === r.id ? null : r.id)}
+                  className="rounded-full border border-border px-3 py-1 text-xs hover:bg-card aria-expanded:bg-card aria-expanded:text-foreground"
+                >
+                  {r.score} ·{' '}
+                  {new Date(r.created_at).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {openId != null && (
+            <AttemptDetailView key={openId} id={openId} twister={twister} />
+          )}
+        </div>
       )}
     </aside>
   )

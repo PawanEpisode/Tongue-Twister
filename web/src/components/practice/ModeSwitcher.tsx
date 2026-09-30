@@ -1,10 +1,11 @@
 import type { KeyboardEvent } from 'react'
 
-export type ModeKey = 'read' | 'speak' | 'record'
+export type ModeKey = 'read' | 'speak' | 'train' | 'record'
 
 const MODES: { key: ModeKey; label: string; built: boolean }[] = [
   { key: 'read', label: 'Read along', built: true },
   { key: 'speak', label: 'Speak & score', built: true },
+  { key: 'train', label: 'Train', built: true },
   { key: 'record', label: 'Record', built: false }, // Phase 3
 ]
 /** Modes that exist in this build (feature flags may still switch some off). */

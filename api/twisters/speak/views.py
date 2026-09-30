@@ -31,7 +31,7 @@ from ..models import (
 )
 from ..practice import flags
 from ..throttles import AttemptSyncThrottle, AttemptThrottle, WordFeedbackThrottle
-from . import service, stats
+from . import queries, service, stats
 from .serializers import (
     ACCURATE_MODE_FLAG,
     AttemptDetailSerializer,
@@ -255,6 +255,7 @@ def weak_words(request):
         .order_by("-twister_id")  # global rows (NULL) sort last, so a twister-specific hint wins
         .values_list("word", "respelling")
     )
+    targets = queries.drill_targets(request.user, [r.word_norm for r in rows])
     return Response(
         {
             "results": [
@@ -265,6 +266,7 @@ def weak_words(request):
                     "weakness": round(r.weakness, 3),
                     "next_review_at": r.next_review_at,
                     "respelling": hints.get(r.word_norm, ""),
+                    "drill": targets.get(r.word_norm),
                 }
                 for r in rows
             ]

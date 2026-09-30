@@ -16,7 +16,8 @@ _DATA = Path(__file__).parent / "data" / "equivalents.json"
 _APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'"})
 _SEPARATORS = re.compile(r"[-‐‑‒–—_/\\]")
 _TOKEN = re.compile(r"[^\W_]+(?:'[^\W_]+)*")
-_ORDINAL = re.compile(r"^(\d+)(st|nd|rd|th)$")
+_DIGITS = re.compile(r"^[0-9]+$")  # ASCII only: str.isdigit() also accepts glyphs int() rejects
+_ORDINAL = re.compile(r"^([0-9]+)(st|nd|rd|th)$")
 
 _ONES = (
     "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
@@ -33,6 +34,9 @@ _ORDINAL_IRREGULAR = {
     "twelve": "twelfth",
 }
 MAX_SPELLED = 999_999
+MAX_NUMERAL_DIGITS = (
+    6  # longer runs are read digit by digit, never converted (int() limits, huge inputs)
+)
 
 
 @lru_cache(maxsize=1)
@@ -94,10 +98,12 @@ def _ordinal(n: int) -> list[str]:
 
 
 def _expand(token: str) -> list[str]:
-    if token.isdigit():
+    if _DIGITS.match(token):
+        if len(token) > MAX_NUMERAL_DIGITS:
+            return [_ONES[int(d)] for d in token]
         return spell_number(int(token))
     match = _ORDINAL.match(token)
-    if match:
+    if match and len(match.group(1)) <= MAX_NUMERAL_DIGITS:
         return _ordinal(int(match.group(1)))
     return [token]
 

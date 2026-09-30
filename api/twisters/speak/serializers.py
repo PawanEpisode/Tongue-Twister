@@ -109,6 +109,13 @@ class ClientScoreSerializer(serializers.Serializer):
     score = serializers.IntegerField(min_value=0, max_value=100)
 
 
+class SegmentSerializer(serializers.Serializer):
+    """Which words of the twister were practised: scoring tokens `start` (inclusive) to `end` (exclusive)."""
+
+    start = serializers.IntegerField(min_value=0, max_value=service.pipeline.MAX_SPOKEN_TOKENS)
+    end = serializers.IntegerField(min_value=1, max_value=service.pipeline.MAX_SPOKEN_TOKENS)
+
+
 class AttemptSubmitSerializer(serializers.Serializer):
     client_attempt_id = serializers.UUIDField(required=False, allow_null=True)
     twister = serializers.SlugRelatedField(
@@ -118,6 +125,7 @@ class AttemptSubmitSerializer(serializers.Serializer):
     kind = serializers.ChoiceField(
         choices=[AttemptKind.TEST, AttemptKind.TRAIN, AttemptKind.DRILL], default=AttemptKind.TEST
     )
+    segment = SegmentSerializer(required=False)
     transcript = serializers.CharField(
         allow_blank=True, max_length=service.TEXT_MAX, trim_whitespace=True
     )
@@ -157,6 +165,7 @@ class AttemptSubmitSerializer(serializers.Serializer):
         stt = attrs.get("stt", {})
         engine = attrs.get("engine") or stt.get("engine") or Engine.TEXT_LAYER
         attrs["engine"] = engine
+        self._check_segment(attrs, engine)
         if attrs["long_pause_ms"] > attrs["duration_ms"]:
             raise serializers.ValidationError({"long_pause_ms": "Cannot exceed duration_ms."})
         if engine == Engine.ONDEVICE:
@@ -178,6 +187,21 @@ class AttemptSubmitSerializer(serializers.Serializer):
             except device.DeviceResultError as exc:
                 raise serializers.ValidationError({"words": str(exc)}) from exc
         return attrs
+
+    @staticmethod
+    def _check_segment(attrs, engine) -> None:
+        segment = attrs.get("segment")
+        if not segment:
+            return
+        problem = None
+        if attrs["kind"] not in (AttemptKind.TRAIN, AttemptKind.DRILL):
+            problem = "Only Train and Drill attempts can practise part of a twister."
+        elif engine != Engine.TEXT_LAYER or attrs.get("words"):
+            problem = "Part-twister attempts are scored from text only."
+        elif not segment["start"] < segment["end"] <= len(tokenise(attrs["twister"].text)):
+            problem = "Must be a non-empty range inside the twister's words."
+        if problem:
+            raise serializers.ValidationError({"segment": problem})
 
     @staticmethod
     def _resolve_model(name):
@@ -237,6 +261,7 @@ class AttemptSubmitSerializer(serializers.Serializer):
             transcript=d["transcript"],
             duration_ms=d["duration_ms"],
             kind=d["kind"],
+            segment=(d["segment"]["start"], d["segment"]["end"]) if d.get("segment") else None,
             long_pause_ms=d["long_pause_ms"],
             client_attempt_id=d.get("client_attempt_id"),
             session=session,

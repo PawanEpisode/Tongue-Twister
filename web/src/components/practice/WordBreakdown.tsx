@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FEEDBACK_COMMENT_MAX } from '#/lib/api'
+import type { WordFeedback } from '#/lib/api'
 import { extraWords, problemRows, summarise } from '#/lib/speak/display'
 import type { DisplayWord, WordRow } from '#/lib/speak/display'
 import type { WordStatus } from '#/lib/speak/similarity'
@@ -31,6 +33,11 @@ const LOOK: Record<
   },
 }
 
+export type FeedbackHandler = (
+  targetIndex: number,
+  feedback: WordFeedback,
+) => Promise<void>
+
 const REASON_TEXT = {
   focus_swap: 'the sound this twister trains',
   homophone: 'sounds the same',
@@ -47,7 +54,7 @@ export default function WordBreakdown({
   statuses: readonly (WordStatus | null)[]
   rows: readonly WordRow[]
   /** Present only for saved attempts; called with the word's scoring index. */
-  onFeedback?: (targetIndex: number) => Promise<void>
+  onFeedback?: FeedbackHandler
 }) {
   const problems = problemRows(rows)
   const extras = extraWords(rows)
@@ -115,23 +122,11 @@ function ProblemItem({
 }: {
   row: WordRow
   target: string
-  onFeedback?: (targetIndex: number) => Promise<void>
+  onFeedback?: FeedbackHandler
 }) {
-  const [sent, setSent] = useState<'idle' | 'sending' | 'sent' | 'failed'>(
-    'idle',
-  )
   const look = LOOK[row.status as Exclude<WordStatus, 'extra'>]
-  const send = async () => {
-    setSent('sending')
-    try {
-      await onFeedback!(row.targetIndex!)
-      setSent('sent')
-    } catch {
-      setSent('failed')
-    }
-  }
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-background/60 px-3 py-2">
+    <li className="rounded-xl bg-background/60 px-3 py-2">
       <span>
         <b>{target}</b>{' '}
         {row.status === 'missed' ? (
@@ -148,20 +143,84 @@ function ProblemItem({
           </span>
         )}
       </span>
-      {onFeedback && row.status !== 'missed' && (
-        <button
-          type="button"
-          disabled={sent === 'sending' || sent === 'sent'}
-          onClick={() => void send()}
-          className="rounded-full border border-border px-2.5 py-1 text-xs hover:bg-card disabled:opacity-60"
-        >
-          {sent === 'sent'
-            ? 'Thanks!'
-            : sent === 'failed'
-              ? 'Couldn’t send — retry'
-              : 'I said it right'}
-        </button>
+      {onFeedback && (
+        <FeedbackForm onSend={(fb) => onFeedback(row.targetIndex!, fb)} />
       )}
     </li>
+  )
+}
+
+/** "Was this fair?" — agree, or say you said it right, with an optional short note. */
+function FeedbackForm({
+  onSend,
+}: {
+  onSend: (feedback: WordFeedback) => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>(
+    'idle',
+  )
+  const send = async (judged_correct: boolean) => {
+    setState('sending')
+    try {
+      await onSend({ judged_correct, comment: note.trim() || undefined })
+      setState('sent')
+    } catch {
+      setState('failed')
+    }
+  }
+  if (state === 'sent')
+    return (
+      <p className="mt-1 text-xs text-muted-foreground">
+        Thanks for the feedback!
+      </p>
+    )
+  if (!open)
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-1 text-xs text-muted-foreground underline underline-offset-2"
+      >
+        Was this fair?
+      </button>
+    )
+  const busy = state === 'sending'
+  return (
+    <div className="mt-2 space-y-2">
+      <label className="block text-xs text-muted-foreground">
+        Add a note (optional)
+        <input
+          value={note}
+          maxLength={FEEDBACK_COMMENT_MAX}
+          onChange={(e) => setNote(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground"
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void send(true)} // the verdict was right
+          className="rounded-full border border-border px-2.5 py-1 text-xs hover:bg-card disabled:opacity-60"
+        >
+          Fair
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void send(false)}
+          className="rounded-full border border-border px-2.5 py-1 text-xs hover:bg-card disabled:opacity-60"
+        >
+          I said it right
+        </button>
+      </div>
+      {state === 'failed' && (
+        <p role="alert" className="text-xs text-pink">
+          Couldn’t send — try again.
+        </p>
+      )}
+    </div>
   )
 }

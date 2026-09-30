@@ -38,3 +38,35 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run python -m pytest
+
+  # The same suite on real Postgres: migrations (including the 0005 backfill), constraints, partial
+  # indexes and row locks behave differently from sqlite, and production is Postgres.
+  api-postgres:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: twister
+          POSTGRES_PASSWORD: twister
+          POSTGRES_DB: twister
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U twister"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://twister:twister@localhost:5432/twister
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv venv --python 3.12
+      - run: uv pip install -r requirements-dev.txt
+      - run: uv run python -m pytest

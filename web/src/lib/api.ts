@@ -75,10 +75,13 @@ export type LowConfidenceResult = {
   id: null
   score: null
 }
+/** Practised part of a twister, as scoring-token indexes: [start, end). Train and Drill only. */
+export type Segment = { start: number; end: number }
 export type SubmitAttemptBody = {
   client_attempt_id: string
   twister: string
   kind?: AttemptKind
+  segment?: Segment
   transcript: string
   duration_ms: number
   long_pause_ms?: number
@@ -97,6 +100,12 @@ export type AttemptSyncResult = {
   counts: Record<'created' | 'duplicate' | 'rejected', number>
   profile: Pick<Profile, 'xp' | 'level' | 'current_streak' | 'best_streak'>
 }
+/** Where to drill a word: a twister, the word's position in it, and a few words around it. */
+export type DrillTarget = Segment & {
+  twister: string
+  context: string[]
+  context_index: number
+}
 export type WeakWord = {
   word: string
   seen: number
@@ -104,6 +113,8 @@ export type WeakWord = {
   weakness: number
   next_review_at: string | null
   respelling: string
+  /** null when no published twister contains the word */
+  drill: DrillTarget | null
 }
 export type WeakSound = {
   pair: string
@@ -113,9 +124,20 @@ export type WeakSound = {
   errors: number
   error_rate: number
 }
-export type WordFeedback = {
-  judged_correct?: boolean | null
-  comment?: string
+/** `judged_correct`: the learner agrees the verdict was right. */
+export type WordFeedback = { judged_correct: boolean; comment?: string }
+export const FEEDBACK_COMMENT_MAX = 200
+export type AttemptDetail = {
+  id: number
+  twister: string
+  kind: AttemptKind
+  transcript: string
+  score: number
+  accuracy: number
+  wpm: number
+  created_at: string
+  verification_status: VerificationStatus
+  words: AttemptWord[]
 }
 export type PracticeMode = 'read_along' | 'speak_score' | 'record'
 export type DisplayStyle = 'word' | 'line' | 'scroll'
@@ -263,6 +285,7 @@ export const api = {
     request<{ results: WeakSound[] }>(
       `/me/sounds/${limit ? `?limit=${limit}` : ''}`,
     ).then((r) => r.results),
+  attemptDetail: (id: number) => request<AttemptDetail>(`/attempts/${id}/`),
   wordFeedback: (attemptId: number, index: number, body: WordFeedback) =>
     request<WordFeedback>(`/attempts/${attemptId}/words/${index}/feedback/`, {
       method: 'POST',
