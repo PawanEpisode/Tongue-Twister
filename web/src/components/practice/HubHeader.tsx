@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { useState } from 'react'
 import { DifficultyBadge } from '#/components/ui'
 import { Badge } from '#/components/ui/badge'
@@ -8,6 +9,7 @@ import type { Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { guestQueue } from '#/lib/syncQueue'
+import { cn } from '#/lib/utils'
 import ShareButton from './ShareButton'
 
 /** Difficulty, length, best score, favourite, share and previous/next for the current twister. */
@@ -38,11 +40,11 @@ export default function HubHeader({
       <Button
         type="button"
         variant="ghost"
-        className="px-1 text-lg"
+        className="px-1"
         onClick={() => void previous()}
         aria-label="Previous twister"
       >
-        ←
+        <ChevronLeft className="size-5" aria-hidden />
       </Button>
       <DifficultyBadge level={t.difficulty} />
       <span className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -61,9 +63,15 @@ export default function HubHeader({
         title={
           session ? undefined : 'Saved on this device — sign in to keep it'
         }
-        className="px-1 text-lg"
+        className="px-1"
       >
-        {starred ? '★' : '☆'}
+        <Star
+          className={cn(
+            'size-5',
+            starred ? 'fill-pink text-pink' : 'text-muted-foreground',
+          )}
+          aria-hidden
+        />
       </Button>
       <ShareButton
         title={`“${t.text}” — tongue twister`}
@@ -73,11 +81,11 @@ export default function HubHeader({
       <Button
         type="button"
         variant="ghost"
-        className="px-1 text-lg"
+        className="px-1"
         onClick={() => void next()}
         aria-label="Next twister"
       >
-        →
+        <ChevronRight className="size-5" aria-hidden />
       </Button>
     </div>
   )

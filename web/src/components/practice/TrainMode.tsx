@@ -1,3 +1,4 @@
+import { Check, PartyPopper, Turtle, Volume2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Button } from '#/components/ui/button'
@@ -120,7 +121,10 @@ export default function TrainMode({
   if (finished)
     return (
       <div className="mx-auto max-w-md">
-        <h2 className="text-2xl font-bold">🎉 Training complete</h2>
+        <h2 className="flex items-center justify-center gap-2 text-2xl font-bold">
+          <PartyPopper className="size-6 text-pink" aria-hidden />
+          Training complete
+        </h2>
         <p className="mt-2 text-muted-foreground">
           You worked through all {plan.length} parts.
           {session
@@ -172,9 +176,14 @@ export default function TrainMode({
               scored.passed ? 'text-lime' : 'text-pink',
             )}
           >
-            {scored.passed
-              ? 'Nice — you’ve got this part ✓'
-              : `Not quite yet (${summarise(scored.local.rows)})`}
+            {scored.passed ? (
+              <span className="inline-flex items-center gap-1.5">
+                Nice — you’ve got this part
+                <Check className="size-4" aria-hidden />
+              </span>
+            ) : (
+              `Not quite yet (${summarise(scored.local.rows)})`
+            )}
           </p>
         </>
       ) : (
@@ -208,10 +217,12 @@ export default function TrainMode({
           {voice.supported && !live && (
             <div className="mt-4 flex justify-center gap-2">
               <ListenButton onClick={() => voice.say(step.text, 0.9)}>
-                🔊 Listen
+                <Volume2 className="size-4" aria-hidden />
+                Listen
               </ListenButton>
               <ListenButton onClick={() => voice.say(step.text, 0.6)}>
-                🐢 Slow
+                <Turtle className="size-4" aria-hidden />
+                Slow
               </ListenButton>
             </div>
           )}
@@ -265,7 +276,7 @@ const ListenButton = ({
   <button
     type="button"
     onClick={onClick}
-    className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
+    className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
   >
     {children}
   </button>

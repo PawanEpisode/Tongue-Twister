@@ -1,3 +1,4 @@
+import { Check, Turtle, Volume2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
 import type { DrillTarget, Preferences, WeakWord } from '#/lib/api'
@@ -132,23 +133,29 @@ export default function WordDrill({
           <button
             type="button"
             onClick={() => voice.say(item.word, 1)}
-            className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
           >
-            🔊 Listen
+            <Volume2 className="size-4" aria-hidden />
+            Listen
           </button>
           <button
             type="button"
             onClick={() => voice.say(item.word, 0.6)}
-            className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-card"
           >
-            🐢 Slow
+            <Turtle className="size-4" aria-hidden />
+            Slow
           </button>
         </div>
       )}
 
       {outcome?.kind === 'passed' ? (
-        <p role="status" className="mt-8 text-xl font-semibold text-lime">
-          ✓ That’s it!
+        <p
+          role="status"
+          className="mt-8 flex items-center justify-center gap-2 text-xl font-semibold text-lime"
+        >
+          <Check className="size-5" aria-hidden />
+          That’s it!
         </p>
       ) : (
         <MicStage

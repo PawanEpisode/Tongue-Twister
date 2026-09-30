@@ -1,3 +1,4 @@
+import { CircleCheck } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { formatDuration } from '#/lib/readAlong/timeline'
@@ -20,7 +21,10 @@ export default function ReadAlongSummary(p: Props) {
       variant="glass"
       className="mx-auto mt-6 max-w-md rounded-2xl p-6 text-center"
     >
-      <p className="font-display text-2xl font-bold">✅ Nicely paced.</p>
+      <p className="flex items-center justify-center gap-2 font-display text-2xl font-bold">
+        <CircleCheck className="size-6 text-lime" aria-hidden />
+        Nicely paced.
+      </p>
       <p className="mt-2 text-sm text-muted-foreground">
         {formatDuration(p.activeMs)} · {p.wpm} WPM · {p.passes}{' '}
         {p.passes === 1 ? 'loop' : 'loops'}

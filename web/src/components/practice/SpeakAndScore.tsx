@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Lightbulb } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -336,7 +337,13 @@ export default function SpeakAndScore({
               </p>
             </div>
             {t.tip && !live && (
-              <p className="mt-5 text-sm text-muted-foreground">💡 {t.tip}</p>
+              <p className="mt-5 flex items-start justify-center gap-2 text-sm text-muted-foreground">
+                <Lightbulb
+                  className="mt-0.5 size-4 shrink-0 text-brand"
+                  aria-hidden
+                />
+                {t.tip}
+              </p>
             )}
 
             {live && (

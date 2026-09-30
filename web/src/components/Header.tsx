@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { Flame, Tornado } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
 import { api } from '#/lib/api'
@@ -27,10 +28,10 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3">
         <Link
           to="/"
-          className="font-display text-xl font-extrabold tracking-tight"
+          className="inline-flex items-center gap-1.5 font-display text-xl font-extrabold tracking-tight"
         >
           <span className="text-gradient">Twister</span>
-          <span className="ml-1">🌀</span>
+          <Tornado className="size-5 text-brand" aria-hidden />
         </Link>
         <nav className="flex items-center gap-3 text-sm text-muted-foreground">
           <ThemeMenu />
@@ -56,8 +57,9 @@ export default function Header() {
                 Practice
               </Link>
               {me && (
-                <span className="hidden rounded-full bg-card px-3 py-1 text-xs sm:inline">
-                  🔥 {me.current_streak} · Lv {me.level} · {me.xp} XP
+                <span className="hidden items-center gap-1.5 rounded-full bg-card px-3 py-1 text-xs sm:inline-flex">
+                  <Flame className="size-3.5 text-pink" aria-hidden />
+                  {me.current_streak} · Lv {me.level} · {me.xp} XP
                 </span>
               )}
               <span className="flex items-center gap-2 text-foreground">

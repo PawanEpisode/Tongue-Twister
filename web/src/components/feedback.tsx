@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { CircleAlert, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
@@ -115,9 +116,7 @@ export function ErrorState({
       variant="glass"
       className={`mx-auto flex max-w-lg flex-col items-center rounded-3xl text-center ${compact ? 'p-6' : 'my-10 p-10'}`}
     >
-      <div className="text-4xl" aria-hidden>
-        😵‍💫
-      </div>
+      <CircleAlert className="size-10 text-pink" aria-hidden />
       <h2 className="mt-3 font-display text-xl font-bold">{title}</h2>
       <p className="mt-2 text-sm text-muted-foreground">
         {message ?? friendlyError(error)}
@@ -141,9 +140,7 @@ export function EmptyState({
 }) {
   return (
     <div className="mx-auto my-10 max-w-md text-center">
-      <div className="text-4xl" aria-hidden>
-        🔍
-      </div>
+      <Search className="mx-auto size-10 text-muted-foreground" aria-hidden />
       <h2 className="mt-3 font-display text-xl font-bold">{title}</h2>
       {hint && <p className="mt-2 text-sm text-muted-foreground">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}

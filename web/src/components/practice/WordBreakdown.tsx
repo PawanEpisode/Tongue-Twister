@@ -1,3 +1,5 @@
+import { Check, EqualApproximately, Minus, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { FEEDBACK_COMMENT_MAX } from '#/lib/api'
 import type { WordFeedback } from '#/lib/api'
@@ -12,21 +14,21 @@ import { cn } from '#/lib/utils'
  */
 const LOOK: Record<
   Exclude<WordStatus, 'extra'>,
-  { glyph: string; label: string; className: string }
+  { Icon: LucideIcon; label: string; className: string }
 > = {
-  correct: { glyph: '✓', label: 'correct', className: 'text-lime' },
+  correct: { Icon: Check, label: 'correct', className: 'text-lime' },
   near: {
-    glyph: '≈',
+    Icon: EqualApproximately,
     label: 'close',
     className: 'text-amber-500 underline decoration-dotted underline-offset-4',
   },
   wrong: {
-    glyph: '✗',
+    Icon: X,
     label: 'wrong',
     className: 'text-pink underline decoration-wavy underline-offset-4',
   },
   missed: {
-    glyph: '–',
+    Icon: Minus,
     label: 'missed',
     className:
       'text-muted-foreground line-through decoration-2 underline-offset-4',
@@ -68,8 +70,8 @@ export default function WordBreakdown({
             <span key={i} className={cn('mr-2 inline-block', look?.className)}>
               {look && (
                 <>
-                  <span aria-hidden className="mr-0.5 text-xs">
-                    {look.glyph}
+                  <span aria-hidden className="mr-0.5 inline-flex align-[-2px]">
+                    <look.Icon className="size-3" />
                   </span>
                   <span className="sr-only">{look.label}: </span>
                 </>

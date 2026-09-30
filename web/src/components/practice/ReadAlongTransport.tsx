@@ -1,3 +1,14 @@
+import {
+  Maximize,
+  Minimize,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { formatDuration } from '#/lib/readAlong/timeline'
 import type { EngineStatus } from '#/lib/readAlong/useReadAlong'
@@ -50,7 +61,7 @@ export default function ReadAlongTransport(p: Props) {
           onClick={p.onRestart}
           aria-label="Restart"
         >
-          ⏹
+          <RotateCcw className="size-4" aria-hidden />
         </Button>
         <Button
           type="button"
@@ -59,14 +70,19 @@ export default function ReadAlongTransport(p: Props) {
           onClick={() => p.onStep(-1)}
           aria-label="Back one word"
         >
-          ⏪
+          <SkipBack className="size-4" aria-hidden />
         </Button>
         <Button
           type="button"
-          className="min-w-32 px-6 py-3"
+          className="min-w-32 gap-2 px-6 py-3"
           onClick={p.onToggle}
         >
-          {running ? '⏸ Pause' : p.status === 'paused' ? '▶ Resume' : '▶ Start'}
+          {running ? (
+            <Pause className="size-4 fill-current" aria-hidden />
+          ) : (
+            <Play className="size-4 fill-current" aria-hidden />
+          )}
+          {running ? 'Pause' : p.status === 'paused' ? 'Resume' : 'Start'}
         </Button>
         <Button
           type="button"
@@ -75,12 +91,12 @@ export default function ReadAlongTransport(p: Props) {
           onClick={() => p.onStep(1)}
           aria-label="Forward one word"
         >
-          ⏩
+          <SkipForward className="size-4" aria-hidden />
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="px-4 py-3"
+          className="gap-2 px-4 py-3"
           onClick={p.onListen}
           disabled={p.listenState === 'unavailable'}
           title={
@@ -89,7 +105,12 @@ export default function ReadAlongTransport(p: Props) {
               : 'Hear a model reading'
           }
         >
-          {p.listenState === 'speaking' ? '🔊 Stop' : '🔈 Listen'}
+          {p.listenState === 'speaking' ? (
+            <VolumeX className="size-4" aria-hidden />
+          ) : (
+            <Volume2 className="size-4" aria-hidden />
+          )}
+          {p.listenState === 'speaking' ? 'Stop' : 'Listen'}
         </Button>
         {p.focus.supported && (
           <Button
@@ -100,7 +121,11 @@ export default function ReadAlongTransport(p: Props) {
             aria-pressed={p.focus.active}
             aria-label="Focus mode"
           >
-            ⛶
+            {p.focus.active ? (
+              <Minimize className="size-4" aria-hidden />
+            ) : (
+              <Maximize className="size-4" aria-hidden />
+            )}
           </Button>
         )}
       </div>

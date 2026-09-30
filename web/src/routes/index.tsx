@@ -1,10 +1,13 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { Flame, Lightbulb, Mic, Skull, Sprout, Zap } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
+import { CategoryIcon } from '#/lib/categoryIcons'
 import {
   CategoryCardSkeleton,
   ErrorState,
@@ -16,11 +19,41 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const LEVELS = [
-  { d: 1, name: 'Easy', emoji: '🌱', blurb: 'Warm-up wobblers' },
-  { d: 2, name: 'Medium', emoji: '⚡', blurb: 'Classic crowd pleasers' },
-  { d: 3, name: 'Hard', emoji: '🔥', blurb: 'Real tongue tanglers' },
-  { d: 4, name: 'Insane', emoji: '💀', blurb: 'Only the brave' },
+const LEVELS: {
+  d: 1 | 2 | 3 | 4
+  name: string
+  Icon: LucideIcon
+  className: string
+  blurb: string
+}[] = [
+  {
+    d: 1,
+    name: 'Easy',
+    Icon: Sprout,
+    className: 'text-lime',
+    blurb: 'Warm-up wobblers',
+  },
+  {
+    d: 2,
+    name: 'Medium',
+    Icon: Zap,
+    className: 'text-cyan',
+    blurb: 'Classic crowd pleasers',
+  },
+  {
+    d: 3,
+    name: 'Hard',
+    Icon: Flame,
+    className: 'text-pink',
+    blurb: 'Real tongue tanglers',
+  },
+  {
+    d: 4,
+    name: 'Insane',
+    Icon: Skull,
+    className: 'text-foreground',
+    blurb: 'Only the brave',
+  },
 ]
 
 function Home() {
@@ -56,10 +89,11 @@ function Home() {
               <Button
                 asChild
                 size="lg"
-                className="shadow-lg shadow-primary/30 transition-transform hover:scale-[1.03]"
+                className="gap-2 shadow-lg shadow-primary/30 transition-transform hover:scale-[1.03]"
               >
                 <Link to="/twisters/$slug" params={{ slug: daily.data.slug }}>
-                  🎤 Try today’s twister
+                  <Mic className="size-5" aria-hidden />
+                  Try today’s twister
                 </Link>
               </Button>
             )}
@@ -102,8 +136,12 @@ function Home() {
                   {daily.data.text}
                 </p>
                 {daily.data.tip && (
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    💡 {daily.data.tip}
+                  <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+                    <Lightbulb
+                      className="mt-0.5 size-4 shrink-0 text-brand"
+                      aria-hidden
+                    />
+                    {daily.data.tip}
                   </p>
                 )}
               </>
@@ -129,7 +167,7 @@ function Home() {
                 search={{ difficulty: String(l.d) }}
                 className="glass block rounded-2xl p-5 hover:border-primary/60"
               >
-                <div className="text-3xl">{l.emoji}</div>
+                <l.Icon className={`size-8 ${l.className}`} aria-hidden />
                 <div className="mt-2 font-display text-xl font-bold">
                   {l.name}
                 </div>
@@ -169,7 +207,10 @@ function Home() {
                       search={{ category: c.slug }}
                       className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5 hover:border-primary/60"
                     >
-                      <span className="text-3xl">{c.emoji}</span>
+                      <CategoryIcon
+                        slug={c.slug}
+                        className="size-8 shrink-0 text-brand"
+                      />
                       <span className="min-w-0">
                         <span className="block truncate font-display text-lg font-bold">
                           {c.name}{' '}

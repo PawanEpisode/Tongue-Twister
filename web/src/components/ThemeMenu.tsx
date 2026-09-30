@@ -7,7 +7,13 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import type { ThemePreference } from '#/lib/theme'
-import { THEME_COLORS, THEME_OPTIONS, useTheme } from '#/lib/theme'
+import {
+  DAY_START_HOUR,
+  NIGHT_START_HOUR,
+  THEME_COLORS,
+  THEME_OPTIONS,
+  useTheme,
+} from '#/lib/theme'
 
 const LABELS: Record<ThemePreference, string> = {
   system: 'System',
@@ -15,6 +21,13 @@ const LABELS: Record<ThemePreference, string> = {
   dark: 'Dark',
   reading: 'Reading',
 }
+
+function clockHour(hour: number) {
+  const h = hour % 12 || 12
+  return `${h}:00 ${hour < 12 ? 'am' : 'pm'}`
+}
+
+const SYSTEM_HINT = `Light ${clockHour(DAY_START_HOUR)}–${clockHour(NIGHT_START_HOUR)}, your local time`
 
 function swatchStyle(option: ThemePreference) {
   if (option === 'system') {
@@ -56,7 +69,14 @@ export default function ThemeMenu() {
                 className="size-3 shrink-0 rounded-full border border-border"
                 style={swatchStyle(option)}
               />
-              {LABELS[option]}
+              <span>
+                {LABELS[option]}
+                {option === 'system' && (
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {SYSTEM_HINT}
+                  </span>
+                )}
+              </span>
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

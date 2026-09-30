@@ -9,6 +9,10 @@ import type { ReactNode } from 'react'
 
 export const THEME_STORAGE_KEY = 'twister-theme'
 
+/** Local-time window for the System preference. Light from 7:00 until 19:00, dark otherwise. */
+export const DAY_START_HOUR = 7
+export const NIGHT_START_HOUR = 18
+
 export const THEME_OPTIONS = ['system', 'light', 'dark', 'reading'] as const
 
 export type ThemePreference = (typeof THEME_OPTIONS)[number]
@@ -26,12 +30,33 @@ function isPreference(value: string | null): value is ThemePreference {
   return THEME_OPTIONS.some((option) => option === value)
 }
 
-export function resolveTheme(preference: ThemePreference): ResolvedTheme {
+/** Light during the daytime hours of `date` (the viewer's local timezone). */
+export function themeForLocalTime(date = new Date()): 'light' | 'dark' {
+  const hour = date.getHours()
+  return hour >= DAY_START_HOUR && hour < NIGHT_START_HOUR ? 'light' : 'dark'
+}
+
+/** Milliseconds until the next 7:00 or 19:00 in the viewer's local timezone. */
+export function msUntilNextThemeBoundary(date = new Date()): number {
+  const next = new Date(date)
+  const hour = date.getHours()
+  if (hour < DAY_START_HOUR) {
+    next.setHours(DAY_START_HOUR, 0, 0, 0)
+  } else if (hour < NIGHT_START_HOUR) {
+    next.setHours(NIGHT_START_HOUR, 0, 0, 0)
+  } else {
+    next.setDate(next.getDate() + 1)
+    next.setHours(DAY_START_HOUR, 0, 0, 0)
+  }
+  return Math.max(1_000, next.getTime() - date.getTime())
+}
+
+export function resolveTheme(
+  preference: ThemePreference,
+  now = new Date(),
+): ResolvedTheme {
   if (preference !== 'system') return preference
-  if (typeof window === 'undefined') return 'dark'
-  return window.matchMedia('(prefers-color-scheme: light)').matches
-    ? 'light'
-    : 'dark'
+  return themeForLocalTime(now)
 }
 
 export function applyTheme(preference: ThemePreference): ResolvedTheme {
@@ -48,8 +73,8 @@ export function readAccentColors(): string[] {
   return ACCENT_VARS.map((name) => style.getPropertyValue(name).trim())
 }
 
-/** Runs in <head> before paint. Default is dark, matching the original look. */
-export const themeBootScript = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var p=localStorage.getItem(k)||'dark';if(p!=='light'&&p!=='dark'&&p!=='reading'&&p!=='system')p='dark';var t=p==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):p;document.documentElement.dataset.theme=t;}catch(e){}})();`
+/** Runs in <head> before paint. Default is dark. System follows the local clock, same as themeForLocalTime. */
+export const themeBootScript = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var p=localStorage.getItem(k)||'dark';if(p!=='light'&&p!=='dark'&&p!=='reading'&&p!=='system')p='dark';var t=p;if(p==='system'){var h=new Date().getHours();t=(h>=${DAY_START_HOUR}&&h<${NIGHT_START_HOUR})?'light':'dark';}document.documentElement.dataset.theme=t;}catch(e){}})();`
 
 type ThemeContextValue = {
   preference: ThemePreference
@@ -72,10 +97,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (preference !== 'system') return
-    const media = window.matchMedia('(prefers-color-scheme: light)')
-    const onChange = () => setResolved(applyTheme('system'))
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
+    let timer = 0
+    const apply = () => {
+      window.clearTimeout(timer)
+      setResolved(applyTheme('system'))
+      timer = window.setTimeout(apply, msUntilNextThemeBoundary())
+    }
+    apply()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') apply()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [preference])
 
   const setPreference = useCallback((next: ThemePreference) => {

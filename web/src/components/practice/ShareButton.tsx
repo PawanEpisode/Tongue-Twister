@@ -1,3 +1,4 @@
+import { Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
 
@@ -33,8 +34,10 @@ export default function ShareButton({
       variant="ghost"
       onClick={() => void share()}
       aria-label="Share this twister"
+      className="gap-1.5"
     >
-      ⤴ Share
+      <Share2 className="size-4" aria-hidden />
+      Share
       <span role="status" className="ml-1 text-lime">
         {note}
       </span>

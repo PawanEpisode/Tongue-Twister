@@ -1,3 +1,5 @@
+import { Lock } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import type { MediaKind, PermissionState } from '#/lib/useMediaPermissions'
@@ -7,11 +9,19 @@ const LABEL: Record<MediaKind, string> = {
   camera: 'camera',
 }
 
-function copy(state: PermissionState, kind: MediaKind): string | null {
+function copy(state: PermissionState, kind: MediaKind): ReactNode | null {
   const device = LABEL[kind]
   switch (state) {
     case 'denied':
-      return `Twister can't use your ${device}. Click the 🔒 in the address bar → Site settings → ${kind === 'microphone' ? 'Microphone' : 'Camera'} → Allow, then try again.`
+      return (
+        <>
+          Twister can&apos;t use your {device}. Click the{' '}
+          <Lock className="inline size-3.5 align-[-2px]" aria-hidden /> in the
+          address bar → Site settings →{' '}
+          {kind === 'microphone' ? 'Microphone' : 'Camera'} → Allow, then try
+          again.
+        </>
+      )
     case 'unavailable':
       return `No ${device} found. Plug one in, or practise with Read along instead.`
     case 'in_use':

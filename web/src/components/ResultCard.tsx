@@ -1,5 +1,7 @@
 import Lottie from '#/components/ClientLottie'
 import confetti from 'canvas-confetti'
+import { BicepsFlexed, Flame, PartyPopper, Tornado, Trophy } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
@@ -8,11 +10,11 @@ import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { readAccentColors } from '#/lib/theme'
 
-function grade(score: number) {
-  if (score >= 95) return { label: 'Tongue Titan!', emoji: '🏆' }
-  if (score >= 80) return { label: 'Smooth talker', emoji: '🔥' }
-  if (score >= 60) return { label: 'Getting there', emoji: '💪' }
-  return { label: 'Tangled — try again', emoji: '🌀' }
+function grade(score: number): { label: string; Icon: LucideIcon } {
+  if (score >= 95) return { label: 'Tongue Titan!', Icon: Trophy }
+  if (score >= 80) return { label: 'Smooth talker', Icon: Flame }
+  if (score >= 60) return { label: 'Getting there', Icon: BicepsFlexed }
+  return { label: 'Tangled — try again', Icon: Tornado }
 }
 
 export default function ResultCard({
@@ -126,8 +128,9 @@ export default function ResultCard({
             />
           )}
         </div>
-        <h2 className="mt-4 text-2xl font-bold">
-          {g.emoji} {g.label}
+        <h2 className="mt-4 flex items-center justify-center gap-2 text-2xl font-bold">
+          <g.Icon className="size-6 shrink-0" aria-hidden />
+          {g.label}
         </h2>
         {personalBest && (
           <p className="mt-1 text-sm font-semibold text-lime">
@@ -135,7 +138,10 @@ export default function ResultCard({
           </p>
         )}
         {levelUp && (
-          <p className="mt-1 text-sm font-semibold text-pink">Level up! 🎉</p>
+          <p className="mt-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-pink">
+            <PartyPopper className="size-4" aria-hidden />
+            Level up!
+          </p>
         )}
         <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
           <Stat k="Accuracy" v={`${Math.round(accuracy * 100)}%`} />

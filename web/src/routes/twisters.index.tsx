@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useEffect, useState  } from 'react'
-import type {ComponentProps} from 'react';
+import { useEffect, useState } from 'react'
+import type { ComponentProps } from 'react'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
+import { CategoryIcon } from '#/lib/categoryIcons'
 import { browseContext } from '#/lib/browseContext'
 import { TwisterCard } from '#/components/ui'
 import { Button } from '#/components/ui/button'
@@ -156,9 +157,11 @@ function Browse() {
           <Chip
             key={c.slug}
             on={s.category === c.slug}
+            className="gap-1.5"
             onClick={() => set({ category: c.slug })}
           >
-            {c.emoji} {c.name}
+            <CategoryIcon slug={c.slug} className="size-3.5" />
+            {c.name}
           </Chip>
         ))}
       </div>

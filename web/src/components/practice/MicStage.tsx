@@ -1,3 +1,4 @@
+import { Loader2, Mic, Square } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import pulse from '#/assets/lottie/pulse.json'
 import AudioVisualizer from '#/components/AudioVisualizer'
@@ -53,9 +54,15 @@ export default function MicStage({
           disabled={!speech.supported || arming || (lock.blocked && !live)}
           onClick={live ? speech.stop : () => void startListening()}
           aria-label={live ? 'Stop' : 'Start speaking'}
-          className={`absolute inset-[72px] grid place-items-center rounded-full text-3xl shadow-xl disabled:cursor-wait ${live ? 'bg-pink text-pink-foreground shadow-pink/40' : 'bg-primary text-primary-foreground shadow-primary/40'} ${arming ? 'opacity-70' : ''}`}
+          className={`absolute inset-[72px] grid place-items-center rounded-full shadow-xl disabled:cursor-wait ${live ? 'bg-pink text-pink-foreground shadow-pink/40' : 'bg-primary text-primary-foreground shadow-primary/40'} ${arming ? 'opacity-70' : ''}`}
         >
-          {live ? '⏹' : arming ? '…' : '🎤'}
+          {live ? (
+            <Square className="size-8 fill-current" aria-hidden />
+          ) : arming ? (
+            <Loader2 className="size-8 animate-spin" aria-hidden />
+          ) : (
+            <Mic className="size-8" aria-hidden />
+          )}
         </motion.button>
       </div>
 

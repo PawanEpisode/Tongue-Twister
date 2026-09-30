@@ -1,4 +1,5 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
+import { Check } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { cn } from '#/lib/utils'
 
@@ -39,8 +40,8 @@ export function DropdownMenuRadioItem({
       {...props}
     >
       {children}
-      <DropdownMenuPrimitive.ItemIndicator className="ml-auto text-xs">
-        ✓
+      <DropdownMenuPrimitive.ItemIndicator className="ml-auto">
+        <Check className="size-4" aria-hidden />
       </DropdownMenuPrimitive.ItemIndicator>
     </DropdownMenuPrimitive.RadioItem>
   )
