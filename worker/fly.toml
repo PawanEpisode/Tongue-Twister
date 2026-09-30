@@ -1,0 +1,22 @@
+# fly.toml app configuration file generated for worker-moonlit-waterfall-8666 on 2026-10-01T00:41:44+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'worker-moonlit-waterfall-8666'
+primary_region = 'lhr'
+kill_timeout = 30
+
+[build]
+
+[env]
+  POLL_INTERVAL_S = "15"
+  FFMPEG_THREADS = "1"
+  LOG_LEVEL = "INFO"
+
+[[restart]]
+  policy = "always"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

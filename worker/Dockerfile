@@ -15,7 +15,9 @@ RUN useradd --system --uid 10001 --create-home worker
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-COPY twister_worker ./twister_worker
+# Readable by the non-root user whatever the checkout's file modes are (a 0600 file on the build host
+# would otherwise fail at import with PermissionError).
+COPY --chown=worker:worker --chmod=a+rX twister_worker ./twister_worker
 
 USER worker
 
