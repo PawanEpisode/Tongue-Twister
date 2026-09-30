@@ -4,11 +4,12 @@ import datetime as dt
 import hashlib
 import json
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .. import scoring
-from ..models import Attempt, Favorite, Profile, SyncBatch, SyncKind, Twister, UserPreference
+from ..models import Favorite, Profile, SyncBatch, SyncKind, Twister, UserPreference
+from ..speak import service
 from .serializers import PreferenceSerializer
 
 MAX_ATTEMPTS = 50
@@ -59,40 +60,32 @@ def _import_favorites(profile: Profile, slugs: list[str]) -> int:
 
 def _import_attempts(profile: Profile, items: list[dict], now: dt.datetime) -> tuple[int, int]:
     """Returns (imported, rejected). Guest attempts are re-scored server-side and earn no XP or streak."""
-    seen = set(
-        Attempt.objects.filter(profile=profile, client_attempt_id__isnull=False).values_list(
-            "client_attempt_id", flat=True
-        )
-    )
-    imported = rejected = 0
+    valid = []
+    rejected = 0
     for raw in items:
         item = AttemptImportSerializer(data=raw)
-        if not item.is_valid():
+        if item.is_valid():
+            valid.append(item.validated_data)
+        else:
             rejected += 1
-            continue
-        d = item.validated_data
-        if d["client_attempt_id"] in seen:
-            continue  # duplicate of an earlier import — neither imported nor an error
-        seen.add(d["client_attempt_id"])
-        result = scoring.compute(
-            d["twister"].text, d["transcript"], d["duration_ms"], d["twister"].difficulty
-        )
-        attempt = Attempt.objects.create(
-            profile=profile,
+    for d in valid:
+        d["occurred_at"] = min(now, max(now - MAX_BACKDATE, d.get("created_at", now)))
+    imported = 0
+    for d in sorted(valid, key=lambda d: d["occurred_at"]):  # oldest first, like the offline queue
+        submission = service.Submission(
             twister=d["twister"],
             transcript=d["transcript"],
             duration_ms=d["duration_ms"],
             client_attempt_id=d["client_attempt_id"],
-            accuracy=result["accuracy"],
-            wpm=result["wpm"],
-            score=result["score"],
-            xp_awarded=0,
+            occurred_at=d["occurred_at"],
+            earns_progress=False,
         )
-        when = min(now, max(now - MAX_BACKDATE, d.get("created_at", now)))
-        Attempt.objects.filter(pk=attempt.pk).update(
-            created_at=when
-        )  # auto_now_add ignores create() kwargs
-        imported += 1
+        with transaction.atomic():
+            result = service.submit(profile, submission, now)
+        if result.unscorable:
+            rejected += 1
+        elif result.created:
+            imported += 1  # an already-imported id is neither imported nor an error
     return imported, rejected
 
 

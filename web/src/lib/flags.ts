@@ -7,6 +7,7 @@ import { useAuth } from './auth'
 export const DEFAULT_FLAGS: FeatureFlags = {
   practice_hub: true,
   read_along: true,
+  speak_v2: true, // scoring v2 ships on; the server flag is the kill switch
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

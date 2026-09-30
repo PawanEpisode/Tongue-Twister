@@ -1,22 +1,15 @@
-from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django_filters import rest_framework as filters
-from rest_framework import mixins, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from . import scoring
-from .models import Attempt, Category, Favorite, Profile, Twister
-from .practice import services
-from .serializers import (
-    AttemptCreateSerializer,
-    AttemptSerializer,
-    CategorySerializer,
-    ProfileSerializer,
-    TwisterSerializer,
-)
+from .models import Attempt, AttemptKind, Category, Favorite, Profile, Twister
+from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer
+from .speak.queries import best_scores, leaderboard_attempts
+from .speak.serializers import AttemptSerializer
 
 
 class TwisterFilter(filters.FilterSet):
@@ -53,9 +46,7 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if getattr(user, "is_authenticated", False) and isinstance(user, Profile):
             ctx["favorite_ids"] = set(user.favorites.values_list("twister_id", flat=True))
-            ctx["best_scores"] = dict(
-                user.attempts.values_list("twister_id").annotate(b=Max("score"))
-            )
+            ctx["best_scores"] = best_scores(user.attempts.all())
         return ctx
 
     @action(detail=False, methods=["get"])
@@ -84,13 +75,17 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         )
         if limit == "bad":
             raise ValidationError({"range": "Use 10, 30 or all."})
-        mine = Attempt.objects.filter(profile=request.user, twister=self.get_object())
-        stats = mine.aggregate(count=Count("id"), best=Max("score"))
+        twister = self.get_object()
+        mine = Attempt.objects.filter(profile=request.user, twister=twister).select_related(
+            "twister", "model_version"
+        )
+        if (kind := request.query_params.get("kind")) in AttemptKind.values:
+            mine = mine.filter(kind=kind)
         rows = mine[:limit] if limit else mine
         return Response(
             {
-                "count": stats["count"],
-                "best_score": stats["best"],
+                "count": mine.count(),
+                "best_score": best_scores(mine).get(twister.id),
                 "results": AttemptSerializer(rows, many=True).data,
             }
         )
@@ -99,7 +94,8 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
     def leaderboard(self, request, slug=None):
         twister = self.get_object()
         rows = (
-            Attempt.objects.filter(twister=twister)
+            leaderboard_attempts()
+            .filter(twister=twister)
             .values("profile_id", "profile__display_name", "profile__avatar_emoji")
             .annotate(best=Max("score"))
             .order_by("-best")[:10]
@@ -116,54 +112,6 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
-class AttemptViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = AttemptSerializer
-    filter_backends = []
-
-    def get_queryset(self):
-        return Attempt.objects.filter(profile=self.request.user).select_related("twister")
-
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        ser = AttemptCreateSerializer(data=request.data)
-        ser.is_valid(raise_exception=True)
-        twister: Twister = ser.validated_data["twister"]
-        result = scoring.compute(
-            twister.text,
-            ser.validated_data["transcript"],
-            ser.validated_data["duration_ms"],
-            twister.difficulty,
-        )
-
-        profile = Profile.objects.select_for_update().get(pk=request.user.pk)
-        prev_best = Attempt.objects.filter(profile=profile, twister=twister).aggregate(
-            m=Max("score")
-        )["m"]
-        attempt = Attempt.objects.create(
-            profile=profile,
-            twister=twister,
-            transcript=ser.validated_data["transcript"],
-            accuracy=result["accuracy"],
-            duration_ms=ser.validated_data["duration_ms"],
-            wpm=result["wpm"],
-            score=result["score"],
-            xp_awarded=result["xp"],
-        )
-        old_level = profile.level
-        services.record_attempt(profile, result["xp"])
-
-        data = AttemptSerializer(attempt).data
-        data.update(
-            {
-                "personal_best": prev_best is None or result["score"] > prev_best,
-                "level_up": profile.level > old_level,
-                "profile": ProfileSerializer(profile).data,
-            }
-        )
-        return Response(data, status=status.HTTP_201_CREATED)
-
-
 @api_view(["GET", "PATCH"])
 @permission_classes([permissions.IsAuthenticated])
 def me(request):
@@ -172,11 +120,13 @@ def me(request):
         ser.is_valid(raise_exception=True)
         ser.save()
         return Response(ser.data)
-    stats = request.user.attempts.aggregate(total=Count("id"), best=Max("score"))
+    mine = request.user.attempts
     return Response(
         {
             **ProfileSerializer(request.user).data,
-            "total_attempts": stats["total"],
-            "best_score": stats["best"],
+            "total_attempts": mine.count(),
+            "best_score": mine.filter(kind=AttemptKind.TEST, flagged=False).aggregate(
+                best=Max("score")
+            )["best"],
         }
     )

@@ -4,7 +4,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from twisters.models import Category, Twister
+from twisters.models import Category, Twister, TwisterPronunciation
 
 
 class Command(BaseCommand):
@@ -36,7 +36,8 @@ class Command(BaseCommand):
             t["category"] = cats[t["category"]]
             Twister.objects.update_or_create(slug=slug, defaults=t)  # .save() recomputes word_count
             slugs.append(slug)
-        msg = f"Seeded {len(cats)} categories, {len(slugs)} twisters"
+        overrides = self._seed_overrides()
+        msg = f"Seeded {len(cats)} categories, {len(slugs)} twisters, {overrides} pronunciation overrides"
         if prune:
             n = (
                 Twister.objects.exclude(slug__in=slugs)
@@ -45,3 +46,29 @@ class Command(BaseCommand):
             )
             msg += f"; unpublished {n} not in seed file"
         self.stdout.write(self.style.SUCCESS(msg))
+
+    @staticmethod
+    def _seed_overrides() -> int:
+        """Global lexicon overrides kept in the repo; rows added later in the admin are left alone."""
+        rows = json.loads(
+            (
+                Path(__file__).resolve().parents[2]
+                / "speak"
+                / "data"
+                / "pronunciation_overrides.json"
+            ).read_text(encoding="utf-8")
+        )["words"]
+        for row in rows:
+            TwisterPronunciation.objects.update_or_create(
+                twister=None,
+                word=row["word"],
+                accent="",
+                defaults={
+                    "arpabet": " | ".join(row["arpabet"]),
+                    "respelling": row.get("respelling", ""),
+                    "accepted_variants": row.get("accepted_variants", []),
+                    "note": row.get("note", ""),
+                    "source": TwisterPronunciation.Source.OVERRIDE,
+                },
+            )
+        return len(rows)

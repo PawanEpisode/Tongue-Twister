@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Attempt, Category, Profile, Twister
+from .models import Category, Profile, Twister
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -44,32 +44,6 @@ class TwisterSerializer(serializers.ModelSerializer):
 
     def get_best_score(self, obj):
         return self._best().get(obj.id)
-
-
-class AttemptCreateSerializer(serializers.Serializer):
-    twister = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
-    )
-    transcript = serializers.CharField(allow_blank=True, max_length=3000)
-    duration_ms = serializers.IntegerField(min_value=300, max_value=300_000)
-
-
-class AttemptSerializer(serializers.ModelSerializer):
-    twister = serializers.SlugRelatedField(slug_field="slug", read_only=True)
-
-    class Meta:
-        model = Attempt
-        fields = [
-            "id",
-            "twister",
-            "transcript",
-            "accuracy",
-            "wpm",
-            "score",
-            "xp_awarded",
-            "duration_ms",
-            "created_at",
-        ]
 
 
 class ProfileSerializer(serializers.ModelSerializer):

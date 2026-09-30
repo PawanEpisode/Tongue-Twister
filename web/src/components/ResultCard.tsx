@@ -2,6 +2,7 @@ import Lottie from '#/components/ClientLottie'
 import confetti from 'canvas-confetti'
 import { animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import success from '#/assets/lottie/success.json'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
@@ -21,6 +22,8 @@ export default function ResultCard({
   xp,
   personalBest,
   levelUp,
+  notice,
+  children,
   onRetry,
   onNext,
 }: {
@@ -30,6 +33,10 @@ export default function ResultCard({
   xp?: number
   personalBest?: boolean
   levelUp?: boolean
+  /** A line of context under the score (offline, capped, estimated…). */
+  notice?: string
+  /** Detail below the stats, e.g. the word-by-word view. */
+  children?: ReactNode
   onRetry: () => void
   onNext: () => void
 }) {
@@ -135,6 +142,12 @@ export default function ResultCard({
           <Stat k="Speed" v={`${Math.round(wpm)} wpm`} />
           <Stat k="XP" v={xp != null ? `+${xp}` : '—'} />
         </div>
+        {notice && (
+          <p role="status" className="mt-4 text-xs text-muted-foreground">
+            {notice}
+          </p>
+        )}
+        {children}
         <div className="mt-6 flex gap-3">
           <Button variant="outline" className="flex-1 py-3" onClick={onRetry}>
             Retry

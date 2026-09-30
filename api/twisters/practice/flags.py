@@ -18,3 +18,9 @@ def is_on(flag: FeatureFlag, profile: Profile | None) -> bool:
 
 def evaluate(profile: Profile | None) -> dict[str, bool]:
     return {f.code: is_on(f, profile) for f in FeatureFlag.objects.all()}
+
+
+def enabled(code: str, profile: Profile | None) -> bool:
+    """One flag by code; a flag that has not been created yet is off."""
+    flag = FeatureFlag.objects.filter(code=code).first()
+    return flag is not None and is_on(flag, profile)

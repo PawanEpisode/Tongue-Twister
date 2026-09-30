@@ -1,0 +1,31 @@
+{
+  "note": "Global lexicon overrides for words CMUdict and the suffix/compound rules cannot resolve. Loaded by seed_twisters into TwisterPronunciation (source=override); edit further in the admin.",
+  "words": [
+    {"word": "bilabial", "arpabet": ["B AY L EY B IY AH L"], "respelling": "by-LAY-bee-ul"},
+    {"word": "ch", "arpabet": ["CH"], "note": "the sound, not the letters"},
+    {"word": "cr", "arpabet": ["K R"], "note": "consonant cluster"},
+    {"word": "curdle", "arpabet": ["K ER D AH L"]},
+    {"word": "fidgety", "arpabet": ["F IH JH AH T IY"]},
+    {"word": "freezy", "arpabet": ["F R IY Z IY"]},
+    {"word": "fricative", "arpabet": ["F R IH K AH T IH V"]},
+    {"word": "kr", "arpabet": ["K R"], "note": "consonant cluster"},
+    {"word": "megalodons", "arpabet": ["M EH G AH L AH D AA N Z"]},
+    {"word": "nougat", "arpabet": ["N UW G AH T", "N UW G AA"], "respelling": "NOO-gut"},
+    {"word": "peppery", "arpabet": ["P EH P ER IY"]},
+    {"word": "sarsaparilla", "arpabet": ["S AE S P ER IH L AH", "S AA S P ER IH L AH"], "respelling": "SAR-spuh-RIL-uh"},
+    {"word": "scrumptious", "arpabet": ["S K R AH M P SH AH S"]},
+    {"word": "shallied", "arpabet": ["SH AE L IY D"]},
+    {"word": "shilly", "arpabet": ["SH IH L IY"]},
+    {"word": "sl", "arpabet": ["S L"], "note": "consonant cluster"},
+    {"word": "sp", "arpabet": ["S P"], "note": "consonant cluster"},
+    {"word": "spr", "arpabet": ["S P R"], "note": "consonant cluster"},
+    {"word": "sprats", "arpabet": ["S P R AE T S"]},
+    {"word": "springy", "arpabet": ["S P R IH NG IY"]},
+    {"word": "tarns", "arpabet": ["T AA R N Z"]},
+    {"word": "thistlethwaite", "arpabet": ["TH IH S AH L TH W EY T"], "respelling": "THIS-ul-thwayt"},
+    {"word": "thridded", "arpabet": ["TH R IH D IH D"], "respelling": "THRID-ded"},
+    {"word": "wh", "arpabet": ["W"], "note": "consonant cluster"},
+    {"word": "wharves", "arpabet": ["W AO R V Z"], "respelling": "WORVZ"},
+    {"word": "zesty", "arpabet": ["Z EH S T IY"]}
+  ]
+}

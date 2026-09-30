@@ -1,0 +1,5 @@
+# Ruff config only. [project] has no runtime dependencies, and uv.lock
+# lists none. Vercel prefers these over requirements.txt, so the
+# function ships without Django (ModuleNotFoundError: django).
+pyproject.toml
+uv.lock

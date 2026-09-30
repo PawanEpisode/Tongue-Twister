@@ -127,7 +127,14 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "300/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/min",
+        "user": "300/min",
+        # Scoped throttles (API contract 07 §1, decision D9); "N/Mmin" windows are parsed by twisters.throttles.
+        "attempts": "30/10min",
+        "attempts_sync": "10/1min",
+        "word_feedback": "60/60min",
+    },
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -146,6 +153,55 @@ READ_ALONG_XP_DAILY_CAP = int(
 SESSION_CLOCK_SKEW_MS = int(
     env("SESSION_CLOCK_SKEW_MS", "5000")
 )  # tolerance when bounding client-reported active time
+
+# Speak & Score (decisions D5 mastery, D8 trust, D9 abuse controls; docs/features/03, 06b, 11).
+MASTERY_MIN_SCORE = int(env("MASTERY_MIN_SCORE", "90"))
+MASTERY_DAYS = int(env("MASTERY_DAYS", "2"))  # distinct local days at/above the score...
+MASTERY_WINDOW_DAYS = int(env("MASTERY_WINDOW_DAYS", "30"))  # ...within this many days
+# Until the worker can verify attempts (P2b) provisional test attempts may count so mastery is reachable (D5 note).
+MASTERY_ALLOW_PROVISIONAL = env("MASTERY_ALLOW_PROVISIONAL", "1") == "1"
+MASTERY_PROVISIONAL_MIN_CONFIDENCE = float(env("MASTERY_PROVISIONAL_MIN_CONFIDENCE", "0.6"))
+LEADERBOARD_REQUIRE_VERIFIED = (
+    env("LEADERBOARD_REQUIRE_VERIFIED", "0") == "1"
+)  # flip on with the worker
+MIN_ENGINE_CONFIDENCE = float(
+    env("MIN_ENGINE_CONFIDENCE", "0.45")
+)  # below: "couldn't hear you", no save
+MAX_PLAUSIBLE_WPM = int(
+    env("MAX_PLAUSIBLE_WPM", "320")
+)  # faster than this is flagged, never ranked
+SPAM_TRANSCRIPT_LIMIT = int(
+    env("SPAM_TRANSCRIPT_LIMIT", "5")
+)  # identical transcripts per twister...
+SPAM_WINDOW_MIN = int(env("SPAM_WINDOW_MIN", "10"))  # ...within this many minutes
+OFFLINE_XP_MAX_AGE_DAYS = int(
+    env("OFFLINE_XP_MAX_AGE_DAYS", "7")
+)  # older queued attempts earn no XP
+ATTEMPT_MAX_BACKDATE_DAYS = int(env("ATTEMPT_MAX_BACKDATE_DAYS", "365"))
+SPOT_CHECK_RATE = float(env("SPOT_CHECK_RATE", "0.10"))  # share of device test attempts re-scored
+SPOT_CHECK_MIN_SCORE = int(
+    env("SPOT_CHECK_MIN_SCORE", "90")
+)  # every would-be personal best above this
+SPOT_CHECK_MAX_DELTA = float(
+    env("SPOT_CHECK_MAX_DELTA", "15")
+)  # score points before a disagreement
+DEVICE_DISTRUST_AFTER = int(
+    env("DEVICE_DISTRUST_AFTER", "3")
+)  # disagreements before device results stop counting
+PENDING_RETRY_AFTER_MIN = int(env("PENDING_RETRY_AFTER_MIN", "10"))
+WORKER_SHARED_SECRET = env(
+    "WORKER_SHARED_SECRET", ""
+)  # HMAC key for /internal/scoring-jobs/ callbacks
+WORD_WEAKNESS_RECENT_ALPHA = (
+    0.3  # EMA weight of the latest attempt in UserWordStat.recent_error_rate
+)
+WEAK_WORD_LADDER_DAYS = (
+    1,
+    3,
+    7,
+    14,
+)  # spaced review: next_review_at after 1, 2, 3, 4+ correct in a row
+XP_KIND_MULTIPLIER = {"test": 1.0, "train": 0.5, "drill": 0.25, "record": 1.0}
 
 # Supabase auth (JWT verification). Provide SUPABASE_URL (JWKS, asymmetric keys)
 # and/or SUPABASE_JWT_SECRET (legacy HS256 secret).

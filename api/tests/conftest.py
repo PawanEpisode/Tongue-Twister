@@ -2,8 +2,11 @@ import uuid
 
 import jwt
 import pytest
+from django.core.cache import cache
 from django.core.management import call_command
 from rest_framework.test import APIClient
+
+from twisters.models import Profile
 
 SECRET = "test-secret-test-secret-test-secret"
 
@@ -33,3 +36,19 @@ def auth_client(db):
         return client
 
     return make
+
+
+@pytest.fixture(autouse=True)
+def _fresh_throttle_cache():
+    cache.clear()
+    yield
+    cache.clear()
+
+
+@pytest.fixture
+def user(seeded, auth_client):
+    """(client, profile) for a signed-in user whose Profile row already exists."""
+    sub = str(uuid.uuid4())
+    client = auth_client(sub)
+    client.get("/api/v1/me/")
+    return client, Profile.objects.get(pk=sub)

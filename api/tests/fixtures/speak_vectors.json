@@ -1,0 +1,703 @@
+{
+  "note": "Shared by api/tests/test_speak_units.py and web/src/lib/speak/*.test.ts. Change a rule => change a vector, in both places.",
+  "normalise": [
+    {
+      "in": "Peter Piper picked a peck!",
+      "out": [
+        "peter",
+        "piper",
+        "picked",
+        "a",
+        "peck"
+      ]
+    },
+    {
+      "in": "  It's   WOODCHUCK-wood, isn’t it? ",
+      "out": [
+        "it's",
+        "woodchuck",
+        "wood",
+        "isn't",
+        "it"
+      ]
+    },
+    {
+      "in": "Um, uh... she sells, er, hmm seashells",
+      "out": [
+        "she",
+        "sells",
+        "seashells"
+      ]
+    },
+    {
+      "in": "I ate 2 cakes and 21 pies",
+      "out": [
+        "i",
+        "ate",
+        "two",
+        "cakes",
+        "and",
+        "twenty",
+        "one",
+        "pies"
+      ]
+    },
+    {
+      "in": "the 1st, 2nd, 3rd and 20th",
+      "out": [
+        "the",
+        "first",
+        "second",
+        "third",
+        "and",
+        "twentieth"
+      ]
+    },
+    {
+      "in": "colour colours grey neighbour",
+      "out": [
+        "color",
+        "colors",
+        "gray",
+        "neighbor"
+      ]
+    },
+    {
+      "in": "Café 100 'quoted' words",
+      "out": [
+        "cafe",
+        "one",
+        "hundred",
+        "quoted",
+        "words"
+      ]
+    },
+    {
+      "in": "Self-service costs $10.50",
+      "out": [
+        "self",
+        "service",
+        "costs",
+        "ten",
+        "fifty"
+      ]
+    },
+    {
+      "in": "123456",
+      "out": [
+        "one",
+        "hundred",
+        "twenty",
+        "three",
+        "thousand",
+        "four",
+        "hundred",
+        "fifty",
+        "six"
+      ]
+    },
+    {
+      "in": "1234567",
+      "out": [
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven"
+      ]
+    },
+    {
+      "in": "",
+      "out": []
+    },
+    {
+      "in": "?!... --",
+      "out": []
+    }
+  ],
+  "classify": [
+    {
+      "target": "peck",
+      "spoken": "peck",
+      "status": "correct",
+      "reason": ""
+    },
+    {
+      "target": "peck",
+      "spoken": "pack",
+      "status": "near",
+      "reason": ""
+    },
+    {
+      "target": "sells",
+      "spoken": "cells",
+      "status": "near",
+      "reason": "homophone"
+    },
+    {
+      "target": "wood",
+      "spoken": "would",
+      "status": "near",
+      "reason": "homophone"
+    },
+    {
+      "target": "they're",
+      "spoken": "their",
+      "status": "near",
+      "reason": "homophone"
+    },
+    {
+      "target": "sells",
+      "spoken": "shells",
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "status": "wrong",
+      "reason": "focus_swap"
+    },
+    {
+      "target": "sells",
+      "spoken": "shells",
+      "focus": [
+        "p"
+      ],
+      "status": "near",
+      "reason": ""
+    },
+    {
+      "target": "she",
+      "spoken": "see",
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "status": "wrong",
+      "reason": "focus_swap"
+    },
+    {
+      "target": "sells",
+      "spoken": "sell",
+      "focus": [
+        "s"
+      ],
+      "status": "wrong",
+      "reason": "focus_swap"
+    },
+    {
+      "target": "peter",
+      "spoken": "beter",
+      "focus": [
+        "p"
+      ],
+      "status": "wrong",
+      "reason": "focus_swap"
+    },
+    {
+      "target": "peck",
+      "spoken": "pack",
+      "focus": [
+        "p",
+        "k"
+      ],
+      "status": "near",
+      "reason": ""
+    },
+    {
+      "target": "cat",
+      "spoken": "cot",
+      "status": "wrong",
+      "reason": ""
+    },
+    {
+      "target": "a",
+      "spoken": "up",
+      "status": "wrong",
+      "reason": ""
+    },
+    {
+      "target": "peck",
+      "spoken": "pickle",
+      "status": "wrong",
+      "reason": ""
+    },
+    {
+      "target": "wuzzy",
+      "spoken": "wussy",
+      "accepted": [
+        "wussy"
+      ],
+      "status": "correct",
+      "reason": ""
+    },
+    {
+      "target": "sea",
+      "spoken": "see",
+      "status": "near",
+      "reason": "homophone"
+    }
+  ],
+  "align": [
+    {
+      "target": "Peter Piper picked a peck",
+      "spoken": "peter piper picked up pickle",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
+          ""
+        ],
+        [
+          2,
+          2,
+          "correct",
+          ""
+        ],
+        [
+          3,
+          3,
+          "wrong",
+          ""
+        ],
+        [
+          4,
+          4,
+          "wrong",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "She sells seashells by the seashore",
+      "spoken": "she shells sea shells by the sea shore",
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "wrong",
+          "focus_swap"
+        ],
+        [
+          2,
+          2,
+          "correct",
+          ""
+        ],
+        [
+          3,
+          4,
+          "correct",
+          ""
+        ],
+        [
+          4,
+          5,
+          "correct",
+          ""
+        ],
+        [
+          5,
+          6,
+          "correct",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "one two three",
+      "spoken": "one three",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          2,
+          1,
+          "correct",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "one two three",
+      "spoken": "one two two three",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
+          ""
+        ],
+        [
+          null,
+          2,
+          "extra",
+          ""
+        ],
+        [
+          2,
+          3,
+          "correct",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "one two three",
+      "spoken": "",
+      "rows": [
+        [
+          0,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          1,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          2,
+          null,
+          "missed",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "red lorry yellow lorry",
+      "spoken": "red lorry yellow lorry red lorry",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
+          ""
+        ],
+        [
+          2,
+          2,
+          "correct",
+          ""
+        ],
+        [
+          3,
+          3,
+          "correct",
+          ""
+        ],
+        [
+          null,
+          4,
+          "extra",
+          ""
+        ],
+        [
+          null,
+          5,
+          "extra",
+          ""
+        ]
+      ]
+    }
+  ],
+  "score": [
+    {
+      "target": "Peter Piper picked a peck of pickled peppers",
+      "spoken": "peter piper picked a peck of pickled peppers",
+      "duration_ms": 6000,
+      "long_pause_ms": 0,
+      "difficulty": 2,
+      "focus": [],
+      "expect": {
+        "score": 92,
+        "accuracy": 1.0,
+        "speed": 0.6154,
+        "fluency": 1.0,
+        "completeness": 1.0,
+        "wpm": 80.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 8,
+          "near": 0,
+          "wrong": 0,
+          "missed": 0,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "Peter Piper picked a peck of pickled peppers",
+      "spoken": "peter piper picked up pickle",
+      "duration_ms": 5000,
+      "long_pause_ms": 0,
+      "difficulty": 2,
+      "focus": [],
+      "expect": {
+        "score": 42,
+        "accuracy": 0.45,
+        "speed": 0.0,
+        "fluency": 1.0,
+        "completeness": 0.5,
+        "wpm": 60.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 3,
+          "near": 1,
+          "wrong": 1,
+          "missed": 3,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "She sells seashells by the seashore",
+      "spoken": "she shells seashells by the seashore",
+      "duration_ms": 3000,
+      "long_pause_ms": 0,
+      "difficulty": 2,
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "expect": {
+        "score": 79,
+        "accuracy": 0.8333,
+        "speed": 0.9231,
+        "fluency": 1.0,
+        "completeness": 0.8333,
+        "wpm": 120.0,
+        "focus_gated": true,
+        "counts": {
+          "correct": 5,
+          "near": 0,
+          "wrong": 1,
+          "missed": 0,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "She sells seashells by the seashore",
+      "spoken": "she sells seashells by the seashore",
+      "duration_ms": 3000,
+      "long_pause_ms": 1000,
+      "difficulty": 2,
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "expect": {
+        "score": 89,
+        "accuracy": 1.0,
+        "speed": 0.9231,
+        "fluency": 0.0476,
+        "completeness": 1.0,
+        "wpm": 120.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 6,
+          "near": 0,
+          "wrong": 0,
+          "missed": 0,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "Red lorry yellow lorry",
+      "spoken": "red lorry yellow lorry red lorry red lorry red lorry red lorry",
+      "duration_ms": 4000,
+      "long_pause_ms": 0,
+      "difficulty": 1,
+      "focus": [
+        "r",
+        "l"
+      ],
+      "expect": {
+        "score": 91,
+        "accuracy": 0.875,
+        "speed": 1.0,
+        "fluency": 1.0,
+        "completeness": 1.0,
+        "wpm": 180.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 4,
+          "near": 0,
+          "wrong": 0,
+          "missed": 0,
+          "extra": 8
+        }
+      }
+    },
+    {
+      "target": "Red lorry yellow lorry",
+      "spoken": "red lorry",
+      "duration_ms": 100,
+      "long_pause_ms": 9999,
+      "difficulty": 4,
+      "focus": [],
+      "expect": {
+        "score": 39,
+        "accuracy": 0.5,
+        "speed": 0.0,
+        "fluency": 0.4286,
+        "completeness": 0.5,
+        "wpm": 240.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 2,
+          "near": 0,
+          "wrong": 0,
+          "missed": 2,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "How much wood would a woodchuck chuck",
+      "spoken": "how much would a wood chuck chuck",
+      "duration_ms": 4500,
+      "long_pause_ms": 700,
+      "difficulty": 3,
+      "focus": [
+        "w",
+        "ch"
+      ],
+      "expect": {
+        "score": 66,
+        "accuracy": 0.6929,
+        "speed": 0.6222,
+        "fluency": 0.5556,
+        "completeness": 0.7143,
+        "wpm": 93.3,
+        "focus_gated": false,
+        "counts": {
+          "correct": 5,
+          "near": 0,
+          "wrong": 1,
+          "missed": 1,
+          "extra": 1
+        }
+      }
+    },
+    {
+      "target": "Six sick sheiks",
+      "spoken": "um six uh sick sheik",
+      "duration_ms": 2500,
+      "long_pause_ms": 0,
+      "difficulty": 2,
+      "focus": [
+        "s",
+        "sh"
+      ],
+      "expect": {
+        "score": 68,
+        "accuracy": 0.6667,
+        "speed": 0.5538,
+        "fluency": 1.0,
+        "completeness": 0.6667,
+        "wpm": 72.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 2,
+          "near": 0,
+          "wrong": 1,
+          "missed": 0,
+          "extra": 0
+        }
+      }
+    },
+    {
+      "target": "Unique New York",
+      "spoken": "unique new york unique new york unique new york",
+      "duration_ms": 9000,
+      "long_pause_ms": 0,
+      "difficulty": 4,
+      "focus": [],
+      "expect": {
+        "score": 75,
+        "accuracy": 0.8333,
+        "speed": 0.3529,
+        "fluency": 1.0,
+        "completeness": 1.0,
+        "wpm": 60.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 3,
+          "near": 0,
+          "wrong": 0,
+          "missed": 0,
+          "extra": 6
+        }
+      }
+    },
+    {
+      "target": "Toy boat",
+      "spoken": "toy boat toy boat toy boat",
+      "duration_ms": 500,
+      "long_pause_ms": 0,
+      "difficulty": 2,
+      "focus": [],
+      "expect": {
+        "score": 82,
+        "accuracy": 0.75,
+        "speed": 1.0,
+        "fluency": 1.0,
+        "completeness": 1.0,
+        "wpm": 720.0,
+        "focus_gated": false,
+        "counts": {
+          "correct": 2,
+          "near": 0,
+          "wrong": 0,
+          "missed": 0,
+          "extra": 4
+        }
+      }
+    }
+  ]
+}

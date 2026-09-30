@@ -36,15 +36,86 @@ export type Profile = {
   total_attempts?: number
   best_score?: number | null
 }
+export type WordStatus = 'correct' | 'near' | 'wrong' | 'missed' | 'extra'
+export type WordReason = '' | 'homophone' | 'focus_swap'
+export type AttemptKind = 'test' | 'train' | 'drill'
+export type VerificationStatus =
+  'none' | 'device' | 'pending' | 'verified' | 'failed'
+/** A scored word as the API returns it; `target_index` counts scoring tokens, not displayed words. */
+export type AttemptWord = {
+  target_index: number | null
+  spoken_index: number | null
+  target: string
+  spoken: string
+  status: WordStatus
+  reason: WordReason
+  credit: number
+  confidence: number | null
+}
 export type AttemptResult = {
-  id: number
+  id: number | null
   accuracy: number
   wpm: number
   score: number
   xp_awarded: number
   personal_best: boolean
   level_up: boolean
+  mastered_now?: boolean
+  verification_status?: VerificationStatus
+  focus_gated?: boolean
+  words?: AttemptWord[]
+  low_confidence?: false
+  warning?: string | null
   profile: Profile
+}
+/** 200 with no attempt saved: the recogniser was too unsure to score fairly (PRD 03 §4). */
+export type LowConfidenceResult = {
+  low_confidence: true
+  reason: string
+  id: null
+  score: null
+}
+export type SubmitAttemptBody = {
+  client_attempt_id: string
+  twister: string
+  kind?: AttemptKind
+  transcript: string
+  duration_ms: number
+  long_pause_ms?: number
+  stt?: { engine: 'text_layer'; confidence?: number | null }
+  client_score?: { version: number; score: number }
+  /** Only set for attempts replayed from the offline queue. */
+  occurred_at?: string
+}
+export type AttemptSyncItem = {
+  client_attempt_id: string | null
+  status: 'created' | 'duplicate' | 'rejected'
+  reason?: string
+}
+export type AttemptSyncResult = {
+  results: AttemptSyncItem[]
+  counts: Record<'created' | 'duplicate' | 'rejected', number>
+  profile: Pick<Profile, 'xp' | 'level' | 'current_streak' | 'best_streak'>
+}
+export type WeakWord = {
+  word: string
+  seen: number
+  miss_rate: number
+  weakness: number
+  next_review_at: string | null
+  respelling: string
+}
+export type WeakSound = {
+  pair: string
+  target: string
+  heard: string | null
+  occurrences: number
+  errors: number
+  error_rate: number
+}
+export type WordFeedback = {
+  judged_correct?: boolean | null
+  comment?: string
 }
 export type PracticeMode = 'read_along' | 'speak_score' | 'record'
 export type DisplayStyle = 'word' | 'line' | 'scroll'
@@ -168,12 +239,32 @@ export const api = {
     request<{ user: string; emoji: string; score: number }[]>(
       `/twisters/${slug}/leaderboard/`,
     ),
-  submitAttempt: (body: {
-    twister: string
-    transcript: string
-    duration_ms: number
-  }) =>
-    request<AttemptResult>('/attempts/', {
+  /** Retrying with the same `client_attempt_id` is safe: the server replays the first result. */
+  submitAttempt: (body: SubmitAttemptBody) =>
+    request<AttemptResult | LowConfidenceResult>('/attempts/', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': body.client_attempt_id },
+      body: JSON.stringify(body),
+    }),
+  syncAttempts: (attempts: SubmitAttemptBody[]) =>
+    request<AttemptSyncResult>('/attempts/sync/', {
+      method: 'POST',
+      body: JSON.stringify({ attempts }),
+    }),
+  weakWords: (params: { due?: boolean; limit?: number } = {}) => {
+    const qs = new URLSearchParams()
+    if (params.due) qs.set('due', '1')
+    if (params.limit) qs.set('limit', String(params.limit))
+    return request<{ results: WeakWord[] }>(`/me/words/weak/?${qs}`).then(
+      (r) => r.results,
+    )
+  },
+  weakSounds: (limit?: number) =>
+    request<{ results: WeakSound[] }>(
+      `/me/sounds/${limit ? `?limit=${limit}` : ''}`,
+    ).then((r) => r.results),
+  wordFeedback: (attemptId: number, index: number, body: WordFeedback) =>
+    request<WordFeedback>(`/attempts/${attemptId}/words/${index}/feedback/`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),

@@ -7,6 +7,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { AuthProvider } from '#/lib/auth'
+import AttemptSync from '#/components/AttemptSync'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, seo } from '#/lib/seo'
@@ -101,6 +102,7 @@ function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <GuestSync />
+          <AttemptSync />
           <Header />
           <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
             <Outlet />

@@ -1,4 +1,5 @@
 import type { GuestAttempt, GuestSyncPayload } from './api'
+import { readJson, writeJson } from './storage'
 
 /** What a guest did before signing up, kept on-device until the one-time import (decision D12). */
 type Queue = { batchId: string; attempts: GuestAttempt[]; favorites: string[] }
@@ -12,22 +13,8 @@ const empty = (): Queue => ({
   favorites: [],
 })
 
-function read(): Queue {
-  try {
-    const raw = window.localStorage.getItem(KEY)
-    if (raw) return { ...empty(), ...(JSON.parse(raw) as Partial<Queue>) }
-  } catch {
-    /* corrupt or blocked: start clean */
-  }
-  return empty()
-}
-function write(q: Queue) {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(q))
-  } catch {
-    /* private mode: guest data just won't survive this visit */
-  }
-}
+const read = () => readJson(KEY, empty)
+const write = (q: Queue) => writeJson(KEY, q)
 
 export const guestQueue = {
   addAttempt(a: Omit<GuestAttempt, 'client_attempt_id' | 'created_at'>) {

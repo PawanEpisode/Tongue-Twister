@@ -96,6 +96,10 @@ Train/Drill: same endpoint with `kind:"train"|"drill"`; response omits `words` u
 ### `GET /attempts/?twister=&kind=&page=` 🔐 · `GET /attempts/{id}/` 🔐 (includes `words[]`) · `DELETE /attempts/{id}/` 🔐 (recomputes stats).
 
 ### `POST /attempts/sync/` 🔐 — batch upload of offline/guest attempts (max 50), each with its own `client_attempt_id`; returns per-item results `{status:"created|duplicate|rejected", …}`.
+**As built (06b):** `sync` takes `{attempts:[<same body as POST /attempts/> + occurred_at]}` and returns `{results[], counts:{created,duplicate,rejected}, profile}`. Items are applied oldest-first by `occurred_at` (accepted from `ATTEMPT_MAX_BACKDATE_DAYS` ago to +5 min) so personal bests, streak days and mastery replay in order; each item is its own savepoint, and a rejected item carries `reason` (`invalid` + `fields`, or an error code). Successful create responses also carry `verification_status`, `focus_gated`, `mastered_now` and `warning`; `words[]` rows add `spoken_index`, `reason` (`homophone|focus_swap`), `confidence`, `acoustic_score`, `phonemes[]`. `Idempotency-Key` is accepted as an alias of `client_attempt_id`. Errors use the shared envelope; 06b adds `model_unsupported` (422), `nonce_invalid`, `audio_hash_duplicate` and `consent_required` (403).
+
+Also shipped: `GET /me/words/weak/?due=1&limit=` → `{results:[{word, seen, miss_rate, weakness, next_review_at, respelling}]}` · `GET /me/sounds/?limit=` → `{results:[{pair, target, heard|null, occurrences, errors, error_rate}]}` · `GET /engine/manifest/` (`model` and `scoring_profile` are `null` until a model is published or while `accurate_mode` is off) · `POST /attempts/{id}/words/{target_index}/feedback/` `{judged_correct?, comment?, donated_audio?}` (donation → `403 consent_required` until 06c).
+
 
 ## 6. Media & recordings
 

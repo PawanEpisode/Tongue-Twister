@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type SpeechStatus = 'idle' | 'arming' | 'live'
-export type SpeechResult = { transcript: string; durationMs: number }
+export type SpeechResult = {
+  transcript: string
+  durationMs: number
+  /** Total time with no new words for longer than LONG_PAUSE_MS (feeds the fluency score). */
+  longPauseMs: number
+  /** Recogniser confidence 0–1, when the browser reports one. */
+  confidence: number | null
+}
+/** A silence longer than this counts towards `longPauseMs` (PRD 03 §6). */
+export const LONG_PAUSE_MS = 700
 
 function getCtor(): (new () => any) | null {
   if (typeof window === 'undefined') return null
@@ -38,6 +47,8 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
   const liveAt = useRef(0)
   const speechStart = useRef(0)
   const lastResult = useRef(0)
+  const longPause = useRef(0)
+  const confidence = useRef<number | null>(null)
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -71,7 +82,13 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
     const to = lastResult.current || Date.now()
     const ms = Math.max(0, to - from)
     setDurationMs(ms)
-    if (text) onFinishRef.current?.({ transcript: text, durationMs: ms })
+    if (text)
+      onFinishRef.current?.({
+        transcript: text,
+        durationMs: ms,
+        longPauseMs: Math.min(longPause.current, ms),
+        confidence: confidence.current,
+      })
   }, [teardownAudio])
 
   const startRecognition = useCallback(() => {
@@ -89,10 +106,22 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
     }
     r.onresult = (e: any) => {
       let text = ''
-      for (let i = 0; i < e.results.length; i++)
+      let confSum = 0,
+        confN = 0
+      for (let i = 0; i < e.results.length; i++) {
         text += e.results[i][0].transcript + ' '
+        const c = e.results[i][0].confidence
+        if (typeof c === 'number' && c > 0) {
+          confSum += c
+          confN++
+        }
+      }
       session.current = text.trim()
-      lastResult.current = Date.now()
+      if (confN) confidence.current = confSum / confN
+      const now = Date.now()
+      if (lastResult.current && now - lastResult.current > LONG_PAUSE_MS)
+        longPause.current += now - lastResult.current
+      lastResult.current = now
       if (!speechStart.current) speechStart.current = lastResult.current
       goLive()
       setTranscript(`${committed.current} ${session.current}`.trim())
@@ -134,6 +163,8 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
     liveAt.current = 0
     speechStart.current = 0
     lastResult.current = 0
+    longPause.current = 0
+    confidence.current = null
     finalized.current = false
     want.current = true
     setTranscript('')

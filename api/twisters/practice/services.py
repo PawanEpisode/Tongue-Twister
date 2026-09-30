@@ -30,11 +30,13 @@ def _mark_streak(profile: Profile, day: DailyActivity) -> None:
     if day.qualifies_streak:
         return
     day.qualifies_streak = True
-    if profile.last_activity_date != day.local_date:
-        continues = profile.last_activity_date == day.local_date - dt.timedelta(days=1)
-        profile.current_streak = profile.current_streak + 1 if continues else 1
-        profile.best_streak = max(profile.best_streak, profile.current_streak)
-        profile.last_activity_date = day.local_date
+    last = profile.last_activity_date
+    if last is not None and day.local_date <= last:
+        return  # today already counted, or a back-dated (offline) day: it qualifies but the streak doesn't move
+    continues = last == day.local_date - dt.timedelta(days=1)
+    profile.current_streak = profile.current_streak + 1 if continues else 1
+    profile.best_streak = max(profile.best_streak, profile.current_streak)
+    profile.last_activity_date = day.local_date
 
 
 def record_attempt(profile: Profile, xp: int, now: dt.datetime | None = None) -> None:

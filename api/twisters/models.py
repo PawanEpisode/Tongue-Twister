@@ -51,6 +51,13 @@ class Twister(models.Model):
     )
     focus_sounds = models.JSONField(default=list, blank=True, help_text='e.g. ["s", "sh"]')
     word_count = models.PositiveSmallIntegerField(editable=False, default=0)
+    phonemes = models.JSONField(
+        default=dict,
+        blank=True,
+        editable=False,
+        help_text="word -> [ARPAbet variants], built offline by `build_pronunciations`",
+    )
+    phoneme_version = models.PositiveSmallIntegerField(default=0, editable=False)
     is_published = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -128,17 +135,103 @@ class Profile(models.Model):
         return 1 + self.xp // 200
 
 
+class AccentLang(models.TextChoices):
+    EN_US = "en-US", "English (US)"
+    EN_GB = "en-GB", "English (UK)"
+    EN_IN = "en-IN", "English (India)"
+    EN_AU = "en-AU", "English (Australia)"
+
+
+class Engine(models.TextChoices):
+    TEXT_LAYER = "text_layer", "Text layer"
+    ONDEVICE = "ondevice", "On-device"
+    WORKER = "worker", "Worker"
+    NONE = "none", "None"
+
+
+class AttemptKind(models.TextChoices):
+    TEST = "test", "Test"
+    TRAIN = "train", "Train"
+    DRILL = "drill", "Drill"
+    RECORD = "record", "Record"
+
+
+class Verification(models.TextChoices):
+    """Trust ladder (decision D8). `none` = text layer only, a practice score."""
+
+    NONE = "none", "None"
+    DEVICE = "device", "Device"
+    PENDING = "pending", "Pending"
+    VERIFIED = "verified", "Verified"
+    FAILED = "failed", "Failed"
+
+
+SCORE_VERSION_LEGACY = 1
+SCORE_VERSION_CURRENT = 2
+
+
 class Attempt(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="attempts")
     twister = models.ForeignKey(Twister, on_delete=models.CASCADE, related_name="attempts")
+    public_id = models.UUIDField(
+        default=uuid.uuid4, unique=True, editable=False, help_text="For score-card sharing"
+    )
+    session = models.ForeignKey(
+        "PracticeSession", null=True, blank=True, on_delete=models.SET_NULL, related_name="attempts"
+    )
+    kind = models.CharField(
+        max_length=6, choices=AttemptKind.choices, default=AttemptKind.TEST, db_index=True
+    )
     transcript = models.TextField(blank=True)
     accuracy = models.FloatField(help_text="0..1, server-computed")
+    speed_score = models.FloatField(null=True, blank=True, help_text="0..1 (v2)")
+    fluency_score = models.FloatField(null=True, blank=True, help_text="0..1 (v2)")
+    gop_score = models.FloatField(
+        null=True, blank=True, help_text="Acoustic score from our engine, 0..100"
+    )
+    completeness = models.FloatField(
+        null=True, blank=True, help_text="Share of expected words found"
+    )
     duration_ms = models.PositiveIntegerField()
+    long_pause_ms = models.PositiveIntegerField(default=0)
     wpm = models.FloatField()
     score = models.PositiveSmallIntegerField(db_index=True)
+    score_version = models.PositiveSmallIntegerField(default=SCORE_VERSION_CURRENT)
     xp_awarded = models.PositiveSmallIntegerField(default=0)
     client_attempt_id = models.UUIDField(
-        null=True, blank=True, help_text="Client-generated; makes imports idempotent"
+        null=True, blank=True, help_text="Client-generated; makes submissions idempotent"
+    )
+    engine = models.CharField(max_length=12, choices=Engine.choices, default=Engine.TEXT_LAYER)
+    engine_version = models.CharField(max_length=40, blank=True)
+    engine_confidence = models.FloatField(null=True, blank=True)
+    model_version = models.ForeignKey(
+        "AcousticModelVersion",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="attempts",
+    )
+    scoring_profile = models.ForeignKey(
+        "ScoringProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="attempts"
+    )
+    nonce = models.UUIDField(null=True, blank=True, help_text="Per-attempt anti-replay token")
+    # NULL (not "") when absent, so the partial unique index below ignores it.
+    audio_sha256 = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001
+    quality = models.JSONField(default=dict, blank=True, help_text="snr, clipping, blank_ratio")
+    spot_checked = models.BooleanField(default=False)
+    spot_check_delta = models.FloatField(null=True, blank=True)
+    lang = models.CharField(max_length=5, choices=AccentLang.choices, blank=True)
+    verification_status = models.CharField(
+        max_length=8, choices=Verification.choices, default=Verification.NONE
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    is_personal_best = models.BooleanField(default=False)
+    flagged = models.BooleanField(default=False)
+    breakdown = models.JSONField(
+        default=dict, blank=True, help_text="Aggregate for train/drill (no AttemptWord rows)"
+    )
+    voice_asset_id = models.UUIDField(
+        null=True, blank=True, help_text="MediaAsset (ERD 06c); a plain id until that table ships"
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -147,11 +240,33 @@ class Attempt(models.Model):
         indexes = [
             models.Index(fields=["twister", "-score"]),
             models.Index(fields=["profile", "-created_at"]),
+            models.Index(fields=["profile", "twister", "-created_at"], name="attempt_hist_idx"),
+            models.Index(
+                fields=["twister", "-score"],
+                name="attempt_board_idx",
+                condition=Q(verification_status="verified", flagged=False, kind="test"),
+            ),
+            models.Index(
+                fields=["verification_status", "created_at"],
+                name="attempt_pending_idx",
+                condition=Q(verification_status="pending"),
+            ),
         ]
         constraints = [
             models.UniqueConstraint(
                 fields=["profile", "client_attempt_id"], name="uniq_attempt_client_id"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["profile", "nonce"],
+                condition=Q(nonce__isnull=False),
+                name="uniq_attempt_nonce",
+            ),
+            models.UniqueConstraint(
+                fields=["audio_sha256"],
+                condition=Q(audio_sha256__isnull=False),
+                name="uniq_attempt_audio_hash",
+            ),
+            models.CheckConstraint(condition=Q(score__lte=100), name="attempt_score_range"),
         ]
 
     def __str__(self):
@@ -183,13 +298,6 @@ class DisplayStyle(models.TextChoices):
     WORD = "word", "Word by word"
     LINE = "line", "Line by line"
     SCROLL = "scroll", "Continuous scroll"
-
-
-class AccentLang(models.TextChoices):
-    EN_US = "en-US", "English (US)"
-    EN_GB = "en-GB", "English (UK)"
-    EN_IN = "en-IN", "English (India)"
-    EN_AU = "en-AU", "English (Australia)"
 
 
 class RecordResolution(models.TextChoices):
@@ -280,13 +388,6 @@ class Submode(models.TextChoices):
     TEST = "test", "Test"
     TRAIN = "train", "Train"
     DRILL = "drill", "Drill"
-
-
-class Engine(models.TextChoices):
-    TEXT_LAYER = "text_layer", "Text layer"
-    ONDEVICE = "ondevice", "On-device"
-    WORKER = "worker", "Worker"
-    NONE = "none", "None"
 
 
 class SessionStatus(models.TextChoices):
@@ -414,3 +515,337 @@ class FeatureFlag(models.Model):
 
     def __str__(self):
         return self.code
+
+
+# --- Speak & Score (ERD 06b) -------------------------------------------------------------------
+
+
+class WordStatus(models.TextChoices):
+    CORRECT = "correct", "Correct"
+    NEAR = "near", "Near"
+    WRONG = "wrong", "Wrong"
+    MISSED = "missed", "Missed"
+    EXTRA = "extra", "Extra"
+
+
+class WordReason(models.TextChoices):
+    HOMOPHONE = "homophone", "Homophone"
+    FOCUS_SWAP = "focus_swap", "Focus sound swapped"
+    SLURRED = "slurred", "Slurred"
+    UNCERTAIN = "uncertain", "Uncertain"
+    LOW_CONF = "low_conf", "Low confidence"
+
+
+class PhonemeVerdict(models.TextChoices):
+    OK = "ok", "OK"
+    WEAK = "weak", "Weak"
+    SUBSTITUTED = "substituted", "Substituted"
+    DELETED = "deleted", "Deleted"
+    UNCERTAIN = "uncertain", "Uncertain"
+
+
+def _in(field: str, choices: type[models.TextChoices]) -> Q:
+    return Q(**{f"{field}__in": choices.values})
+
+
+class TwisterPronunciation(models.Model):
+    """Per-word override for the lexicon (names, rare words). `twister=NULL` applies to every twister."""
+
+    class Source(models.TextChoices):
+        CMUDICT = "cmudict", "CMUdict"
+        RULE = "rule", "Rule"
+        OVERRIDE = "override", "Override"
+        G2P = "g2p", "G2P"
+
+    twister = models.ForeignKey(
+        Twister, null=True, blank=True, on_delete=models.CASCADE, related_name="pronunciations"
+    )
+    word = models.CharField(max_length=64, help_text="Normalised (see speak.normalise)")
+    arpabet = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Space-separated phones; alternative pronunciations are separated by ' | '",
+    )
+    ipa = models.CharField(max_length=200, blank=True)
+    respelling = models.CharField(max_length=80, blank=True, help_text="e.g. PEK-uhld")
+    accepted_variants = models.JSONField(
+        default=list, blank=True, help_text="Spoken forms counted correct"
+    )
+    accent = models.CharField(
+        max_length=5, choices=AccentLang.choices, blank=True, help_text="Blank = every accent"
+    )
+    source = models.CharField(max_length=8, choices=Source.choices, default=Source.OVERRIDE)
+    note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["twister", "word", "accent"], name="uniq_pronunciation_per_twister"
+            ),
+            models.UniqueConstraint(
+                fields=["word", "accent"],
+                condition=Q(twister__isnull=True),
+                name="uniq_pronunciation_global",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.word} /{self.arpabet}/"
+
+
+class AttemptWord(models.Model):
+    """One aligned word of a Test/Record attempt. `target_index` is null for extras, `spoken_index` for misses."""
+
+    attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="words")
+    target_index = models.PositiveSmallIntegerField(null=True, blank=True)
+    spoken_index = models.PositiveSmallIntegerField(null=True, blank=True)
+    target_word = models.CharField(max_length=64, blank=True)
+    spoken_word = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=8, choices=WordStatus.choices)
+    reason = models.CharField(max_length=12, choices=WordReason.choices, blank=True)
+    credit = models.FloatField()
+    confidence = models.FloatField(null=True, blank=True)
+    acoustic_score = models.FloatField(null=True, blank=True, help_text="0..100 from GOP features")
+    phoneme_distance = models.FloatField(null=True, blank=True)
+    start_ms = models.PositiveIntegerField(null=True, blank=True)
+    end_ms = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["id"]
+        indexes = [models.Index(fields=["attempt"])]
+        constraints = [
+            models.CheckConstraint(condition=_in("status", WordStatus), name="attemptword_status")
+        ]
+
+    def __str__(self):
+        return f"{self.status}: {self.target_word or self.spoken_word}"
+
+
+class AttemptPhoneme(models.Model):
+    """Written only for attempts scored by the device/worker engine (~3-4x words per twister)."""
+
+    attempt_word = models.ForeignKey(AttemptWord, on_delete=models.CASCADE, related_name="phonemes")
+    idx = models.PositiveSmallIntegerField()
+    target_phoneme = models.CharField(max_length=8)
+    heard_phoneme = models.CharField(max_length=8, blank=True, help_text="Empty if deleted")
+    variant_used = models.CharField(max_length=40, blank=True)
+    verdict = models.CharField(max_length=12, choices=PhonemeVerdict.choices)
+    delta = models.FloatField(
+        null=True, blank=True, help_text="Substitution test, log-likelihood ratio"
+    )
+    lpp = models.FloatField(null=True, blank=True, help_text="Mean log posterior of target")
+    lpr = models.FloatField(
+        null=True, blank=True, help_text="Log posterior ratio vs best competitor"
+    )
+    start_ms = models.PositiveIntegerField(null=True, blank=True)
+    end_ms = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["attempt_word_id", "idx"]
+        indexes = [
+            models.Index(fields=["attempt_word"]),
+            models.Index(
+                fields=["target_phoneme", "heard_phoneme"],
+                name="phoneme_sub_idx",
+                condition=Q(verdict="substituted"),
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=_in("verdict", PhonemeVerdict), name="attemptphoneme_verdict"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.target_phoneme}>{self.heard_phoneme or '-'} {self.verdict}"
+
+
+class UserWordStat(models.Model):
+    """Per-user, per-word tallies: powers 'practise weak words' and the spaced-review queue."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="word_stats")
+    word_norm = models.CharField(max_length=64)
+    seen = models.PositiveIntegerField(default=0)
+    correct = models.PositiveIntegerField(default=0)
+    near = models.PositiveIntegerField(default=0)
+    wrong = models.PositiveIntegerField(default=0)
+    missed = models.PositiveIntegerField(default=0)
+    recent_error_rate = models.FloatField(default=0.0, help_text="EMA of per-attempt error (0..1)")
+    weakness = models.FloatField(default=0.0, help_text="0..1, recency-weighted")
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    next_review_at = models.DateTimeField(null=True, blank=True)
+    streak_correct = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "word_norm"], name="uniq_word_stat"),
+            models.CheckConstraint(
+                condition=Q(weakness__gte=0, weakness__lte=1), name="wordstat_weakness_range"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["profile", "-weakness"]),
+            models.Index(fields=["profile", "next_review_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.word_norm} ({self.weakness:.2f})"
+
+
+class UserPhonemeStat(models.Model):
+    """`phoneme_pair` is `TARGET>HEARD` (e.g. S>SH; `S>-` for a deletion). `S>S` rows count every observation."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="phoneme_stats")
+    phoneme_pair = models.CharField(max_length=20)
+    occurrences = models.PositiveIntegerField(default=0)
+    errors = models.PositiveIntegerField(default=0)
+    error_rate = models.FloatField(default=0.0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "phoneme_pair"], name="uniq_phoneme_stat")
+        ]
+
+    def __str__(self):
+        return self.phoneme_pair
+
+
+class UserTwisterStats(models.Model):
+    """Single-row read for the side panel and mastery. Maintained in the attempt transaction."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="twister_stats")
+    twister = models.ForeignKey(Twister, on_delete=models.CASCADE, related_name="user_stats")
+    attempts_count = models.PositiveIntegerField(default=0)
+    test_attempts_count = models.PositiveIntegerField(default=0)
+    best_score = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Verified test")
+    best_practice_score = models.PositiveSmallIntegerField(
+        null=True, blank=True, help_text="Provisional test"
+    )
+    best_test_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    last_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    first_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    mastered_at = models.DateTimeField(null=True, blank=True)
+    mastery_days_hit = models.PositiveSmallIntegerField(default=0)
+    mastery_last_day = models.DateField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "user twister stats"
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "twister"], name="uniq_user_twister_stats")
+        ]
+        indexes = [models.Index(fields=["profile", "mastered_at"])]
+
+    def __str__(self):
+        return f"{self.profile_id}:{self.twister_id}"
+
+
+class AcousticModelVersion(models.Model):
+    class Quantization(models.TextChoices):
+        FP32 = "fp32", "fp32"
+        FP16 = "fp16", "fp16"
+        INT8 = "int8", "int8"
+
+    name = models.CharField(max_length=80, help_text="e.g. w2v-espeak-lv60-int8-r1")
+    base_model = models.CharField(max_length=120)
+    licence = models.CharField(max_length=60)
+    quantization = models.CharField(max_length=4, choices=Quantization.choices)
+    size_bytes = models.BigIntegerField()
+    sha256 = models.CharField(max_length=64, unique=True)
+    download_url = models.URLField(
+        blank=True, help_text="Our own storage, never a third-party host"
+    )
+    label_map_version = models.CharField(max_length=20)
+    active = models.BooleanField(default=False)
+    released_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-released_at", "-id"]
+
+    def __str__(self):
+        return self.name
+
+
+class ScoringProfile(models.Model):
+    code = models.CharField(max_length=40, unique=True, help_text="e.g. sp-2026-10-a")
+    model_version = models.ForeignKey(
+        AcousticModelVersion, on_delete=models.PROTECT, related_name="scoring_profiles"
+    )
+    thresholds = models.JSONField(default=dict, blank=True)
+    accent_packs = models.JSONField(default=dict, blank=True)
+    confusion_map = models.JSONField(default=dict, blank=True)
+    calibration_set = models.CharField(max_length=80, blank=True)
+    active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["model_version"],
+                condition=Q(active=True),
+                name="uniq_active_profile_per_model",
+            )
+        ]
+
+    def __str__(self):
+        return self.code
+
+
+class ScoringJob(models.Model):
+    class Kind(models.TextChoices):
+        SPOT_CHECK = "spot_check", "Spot check"
+        VERIFY = "verify", "Verify"
+        DEVICE_UNSUPPORTED = "device_unsupported", "Device unsupported"
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="scoring_jobs")
+    audio_asset_id = models.UUIDField(
+        null=True, blank=True, help_text="MediaAsset (ERD 06c); a plain id until that table ships"
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.QUEUED)
+    tries = models.PositiveSmallIntegerField(default=0)
+    latency_ms = models.PositiveIntegerField(null=True, blank=True)
+    error_code = models.CharField(max_length=40, blank=True)
+    model_version = models.ForeignKey(
+        AcousticModelVersion, on_delete=models.PROTECT, related_name="jobs"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["status", "created_at"]), models.Index(fields=["attempt"])]
+
+    def __str__(self):
+        return f"{self.kind} {self.status}"
+
+
+class AttemptFeedback(models.Model):
+    """'Was this verdict right?' — feeds threshold calibration. One row per (word, user)."""
+
+    attempt_word = models.ForeignKey(AttemptWord, on_delete=models.CASCADE, related_name="feedback")
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="word_feedback")
+    judged_correct = models.BooleanField(help_text="User says the verdict was right")
+    comment = models.CharField(max_length=200, blank=True)
+    donated_audio = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "attempt feedback"
+        indexes = [models.Index(fields=["attempt_word"])]
+        constraints = [
+            models.UniqueConstraint(fields=["attempt_word", "profile"], name="uniq_word_feedback")
+        ]
+
+    def __str__(self):
+        return f"{self.attempt_word_id} {'👍' if self.judged_correct else '👎'}"

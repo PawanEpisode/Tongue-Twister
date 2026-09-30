@@ -1,0 +1,99 @@
+name: Management command
+
+# Runs an API management command against the production database, either on a schedule or by hand
+# (Actions → "Management command" → Run workflow).
+#
+# To add a command: append its name to ALLOWED below; to schedule it, add a cron here and a matching
+# line in the "Resolve command" case statement. Nothing else changes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Management command (must be in the allow-list in this workflow)"
+        required: true
+        default: reconcile_speak_stats
+      args:
+        description: "Optional arguments, e.g. --check or --profile <uuid>"
+        required: false
+        default: ""
+  schedule:
+    - cron: "17 3 * * *" # nightly 03:17 UTC — reconcile_speak_stats
+    # - cron: "*/10 * * * *" # enable with the scoring worker — sweep_pending_attempts
+
+# Two runs of the same command must never overlap (they would fight over the same rows).
+concurrency:
+  group: manage-${{ github.event.inputs.command || github.event.schedule }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Add required reviewers on this environment to gate manual runs; scheduled runs use it too.
+    environment: production
+    defaults:
+      run:
+        working-directory: api
+    env:
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_SSL_REQUIRE: "1"
+      SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      # Untrusted text goes through env vars, never straight into the shell script.
+      INPUT_COMMAND: ${{ github.event.inputs.command }}
+      INPUT_ARGS: ${{ github.event.inputs.args }}
+      SCHEDULE: ${{ github.event.schedule }}
+    steps:
+      - name: Resolve command
+        id: resolve
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters"
+
+          if [ -n "${SCHEDULE:-}" ]; then
+            case "$SCHEDULE" in
+              "17 3 * * *")   command=reconcile_speak_stats ;;
+              "*/10 * * * *") command=sweep_pending_attempts ;;
+              *) echo "No command mapped to schedule '$SCHEDULE'" >&2; exit 1 ;;
+            esac
+            args=""
+          else
+            command="$INPUT_COMMAND"
+            args="${INPUT_ARGS:-}"
+          fi
+
+          case " $ALLOWED " in
+            *" $command "*) ;;
+            *) echo "'$command' is not in the allow-list: $ALLOWED" >&2; exit 1 ;;
+          esac
+          if [[ -n "$args" && ! "$args" =~ ^[A-Za-z0-9_=.,:\ -]+$ ]]; then
+            echo "Arguments contain unsupported characters." >&2; exit 1
+          fi
+
+          echo "command=$command" >> "$GITHUB_OUTPUT"
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+          echo "### \`manage.py $command $args\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: api/requirements*.txt
+      - run: uv venv --python 3.12
+      - run: uv pip install -r requirements-dev.txt # includes cmudict, needed by build_pronunciations
+
+      - name: Run
+        env:
+          COMMAND: ${{ steps.resolve.outputs.command }}
+          ARGS: ${{ steps.resolve.outputs.args }}
+        run: |
+          set -o pipefail  # keep the command's exit code through tee
+          read -r -a extra <<< "${ARGS:-}"
+          uv run python manage.py "$COMMAND" "${extra[@]}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"

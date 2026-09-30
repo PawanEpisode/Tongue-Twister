@@ -9,10 +9,21 @@ import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { api } from '#/lib/api'
-import type { AttemptResult, Twister } from '#/lib/api'
+import type {
+  AttemptResult,
+  LowConfidenceResult,
+  SubmitAttemptBody,
+  Twister,
+} from '#/lib/api'
 import { useAuth } from '#/lib/auth'
-import { matchedIndexes, scoreAttempt } from '#/lib/scoring'
+import { attemptQueue, isTransient } from '#/lib/attemptQueue'
+import { useFlag } from '#/lib/flags'
+import { SCORE_VERSION, liveHits, scoreLocally } from '#/lib/scoring'
+import { displayStatuses, displayWords } from '#/lib/speak/display'
+import type { DisplayWord, WordRow } from '#/lib/speak/display'
+import type { WordStatus } from '#/lib/speak/similarity'
 import { useSpeech } from '#/lib/speech'
+import type { SpeechResult } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { draft } from '#/lib/draft'
 import { guestQueue } from '#/lib/syncQueue'
@@ -20,6 +31,7 @@ import { usePracticeLock } from '#/lib/tabLock'
 import { useMediaPermissions } from '#/lib/useMediaPermissions'
 import { cn } from '#/lib/utils'
 import PermissionNotice from './PermissionNotice'
+import WordBreakdown from './WordBreakdown'
 
 type Result = {
   score: number
@@ -28,7 +40,21 @@ type Result = {
   xp?: number
   personalBest?: boolean
   levelUp?: boolean
+  notice?: string
+  attemptId?: number | null
+  breakdown?: {
+    display: DisplayWord[]
+    statuses: (WordStatus | null)[]
+    rows: WordRow[]
+  }
 }
+
+const GATED_NOTICE =
+  'Score capped at 79 — a slip on this twister’s focus sound. Nail that sound to go higher.'
+const OFFLINE_NOTICE =
+  'You’re offline — saved on this device and it will count once you’re back online.'
+const UNSAVED_NOTICE =
+  'We couldn’t save this attempt, so the score is an estimate.'
 
 export default function SpeakAndScore({
   t,
@@ -49,9 +75,51 @@ export default function SpeakAndScore({
   const typedStart = useRef(0)
   const currentRef = useRef<HTMLSpanElement | null>(null)
 
+  const showBreakdown = useFlag('speak_v2')
+  const [unclear, setUnclear] = useState<string | null>(null)
+  const display = useMemo(() => displayWords(t.text), [t.text])
+
+  /** The result screen for a local score: guests, offline, and failed saves. */
+  const showLocal = (
+    spoken: string,
+    m: { durationMs: number; longPauseMs: number },
+    notice?: string,
+  ) => {
+    const local = scoreLocally({
+      text: t.text,
+      spoken,
+      difficulty: t.difficulty,
+      focusSounds: t.focus_sounds,
+      ...m,
+    })
+    setResult({
+      score: local.score,
+      accuracy: local.accuracy,
+      wpm: local.wpm,
+      notice: [notice, local.evaluation.score.focusGated && GATED_NOTICE]
+        .filter(Boolean)
+        .join(' '),
+      breakdown: {
+        display: local.display,
+        statuses: local.statuses,
+        rows: local.rows,
+      },
+    })
+  }
+
   const submit = useMutation({
     mutationFn: api.submitAttempt,
-    onSuccess: (r: AttemptResult) => {
+    onSuccess: (r: AttemptResult | LowConfidenceResult) => {
+      if (r.low_confidence) {
+        setUnclear(r.reason)
+        return
+      }
+      const rows: WordRow[] | undefined = r.words?.map((w) => ({
+        targetIndex: w.target_index,
+        spoken: w.spoken,
+        status: w.status,
+        reason: w.reason,
+      }))
       setResult({
         score: r.score,
         accuracy: r.accuracy,
@@ -59,31 +127,69 @@ export default function SpeakAndScore({
         xp: r.xp_awarded,
         personalBest: r.personal_best,
         levelUp: r.level_up,
+        attemptId: r.id,
+        notice: r.focus_gated ? GATED_NOTICE : undefined,
+        breakdown: rows && {
+          display,
+          statuses: displayStatuses(display, rows),
+          rows,
+        },
       })
       qc.invalidateQueries({ queryKey: ['me'] })
+      qc.invalidateQueries({ queryKey: ['history'] })
     },
   })
 
-  const finish = (spoken: string, ms: number) => {
-    if (!t || !spoken.trim()) return
+  const finish = (
+    spoken: string,
+    ms: number,
+    meta: Partial<SpeechResult> = {},
+  ) => {
+    if (!spoken.trim()) return
     draft.clear(t.slug)
-    if (session) {
-      submit.mutate(
-        { twister: t.slug, transcript: spoken, duration_ms: Math.max(300, ms) },
-        {
-          onError: () =>
-            setResult(scoreAttempt(t.text, spoken, ms, t.difficulty)),
-        },
-      )
-    } else {
+    const durationMs = Math.max(300, Math.round(ms))
+    const timing = {
+      durationMs,
+      longPauseMs: Math.min(Math.round(meta.longPauseMs ?? 0), durationMs),
+    }
+    if (!session) {
       // Guests keep their history on-device; it is imported when they sign up (see GuestSync).
       guestQueue.addAttempt({
         twister: t.slug,
         transcript: spoken,
-        duration_ms: Math.max(300, ms),
+        duration_ms: durationMs,
       })
-      setResult(scoreAttempt(t.text, spoken, ms, t.difficulty))
+      showLocal(spoken, timing)
+      return
     }
+    const body: SubmitAttemptBody = {
+      client_attempt_id: crypto.randomUUID(),
+      twister: t.slug,
+      kind: 'test',
+      transcript: spoken,
+      duration_ms: durationMs,
+      long_pause_ms: timing.longPauseMs,
+      stt: { engine: 'text_layer', confidence: meta.confidence ?? null },
+      client_score: {
+        version: SCORE_VERSION,
+        score: scoreLocally({
+          text: t.text,
+          spoken,
+          difficulty: t.difficulty,
+          focusSounds: t.focus_sounds,
+          ...timing,
+        }).score,
+      },
+    }
+    submit.mutate(body, {
+      onError: (err) => {
+        // Unreachable or throttled: keep it and replay later (the server de-duplicates on the id).
+        if (isTransient(err)) {
+          attemptQueue.add(session.user.id, body)
+          showLocal(spoken, timing, OFFLINE_NOTICE)
+        } else showLocal(spoken, timing, UNSAVED_NOTICE)
+      },
+    })
   }
 
   // A typed answer survives a sign-in round-trip (Google redirect) in this tab.
@@ -95,7 +201,7 @@ export default function SpeakAndScore({
   }, [t.slug])
 
   const speech = useSpeech({
-    onFinish: ({ transcript, durationMs }) => finish(transcript, durationMs),
+    onFinish: (r) => finish(r.transcript, r.durationMs, r),
   })
   const isLong = t.word_count > 30
 
@@ -109,10 +215,12 @@ export default function SpeakAndScore({
 
   const spoken =
     speech.status !== 'idle' ? speech.transcript : typed || speech.transcript
-  const hits = useMemo(() => matchedIndexes(t.text, spoken), [t, spoken])
+  const hits = useMemo(
+    () => liveHits(t.text, spoken, t.focus_sounds),
+    [t.text, t.focus_sounds, spoken],
+  )
   const matched = hits.filter(Boolean).length
   const currentIdx = hits.findIndex((h) => !h)
-  const targetWords = t.text.split(/\s+/) ?? []
 
   // Auto-finish: everything matched, or the speaker went quiet after saying something.
   useEffect(() => {
@@ -145,6 +253,7 @@ export default function SpeakAndScore({
 
   const retry = () => {
     setResult(null)
+    setUnclear(null)
     setTyped('')
     typedStart.current = 0
     speech.reset()
@@ -175,16 +284,48 @@ export default function SpeakAndScore({
         {result ? (
           <div key="r">
             <ResultCard
-              {...result}
+              score={result.score}
+              accuracy={result.accuracy}
+              wpm={result.wpm}
+              xp={result.xp}
+              personalBest={result.personalBest}
+              levelUp={result.levelUp}
+              notice={result.notice}
               onRetry={retry}
               onNext={() => void twisterNav.next()}
-            />
+            >
+              {showBreakdown && result.breakdown && (
+                <WordBreakdown
+                  {...result.breakdown}
+                  onFeedback={
+                    result.attemptId
+                      ? async (index) => {
+                          await api.wordFeedback(result.attemptId!, index, {
+                            judged_correct: true,
+                          })
+                        }
+                      : undefined
+                  }
+                />
+              )}
+            </ResultCard>
             {twisterNav.failed && (
               <p role="alert" className="mt-4 text-sm text-pink">
                 Couldn’t fetch another twister — check your connection and tap
                 Next again.
               </p>
             )}
+          </div>
+        ) : unclear ? (
+          <div key="u" role="alert" className="mx-auto max-w-md">
+            <h2 className="text-2xl font-bold">We couldn’t hear you clearly</h2>
+            <p className="mt-2 text-muted-foreground">
+              Nothing was scored or saved. Move closer to the mic, cut
+              background noise and try once more.
+            </p>
+            <Button className="mt-5 px-6 py-3" onClick={retry}>
+              Try again
+            </Button>
           </div>
         ) : (
           <motion.div
@@ -203,7 +344,7 @@ export default function SpeakAndScore({
               <p
                 className={`font-display font-bold leading-snug ${textSize} ${isLong ? 'leading-relaxed' : ''} ${arming ? 'opacity-60' : ''}`}
               >
-                {targetWords.map((w, i) => (
+                {display.map((w, i) => (
                   <motion.span
                     key={i}
                     ref={i === currentIdx ? currentRef : undefined}
@@ -216,7 +357,7 @@ export default function SpeakAndScore({
                         'bg-primary/25 underline decoration-primary decoration-2 underline-offset-4',
                     )}
                   >
-                    {w}
+                    {w.text}
                   </motion.span>
                 ))}
               </p>
