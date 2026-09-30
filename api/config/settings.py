@@ -1,5 +1,6 @@
 """Django settings for Twister API. All config via environment variables."""
 
+import json
 import os
 from pathlib import Path
 
@@ -71,7 +72,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "twisters" / "media" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -134,6 +135,12 @@ REST_FRAMEWORK = {
         "attempts": "30/10min",
         "attempts_sync": "10/1min",
         "word_feedback": "60/60min",
+        # Media (API contract 07 §1): recordings create 10/h, share resolve 60/min/IP.
+        "recordings": "10/h",
+        "voice_uploads": "30/h",
+        "share_resolve": "60/min",
+        "share_create": "30/h",
+        "share_report": "10/h",
     },
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -202,6 +209,82 @@ WEAK_WORD_LADDER_DAYS = (
     14,
 )  # spaced review: next_review_at after 1, 2, 3, 4+ correct in a row
 XP_KIND_MULTIPLIER = {"test": 1.0, "train": 0.5, "drill": 0.25, "record": 1.0}
+
+# Record, media, sharing & consent (docs/features/13-06c-build-spec.md). Numbers that belong to a plan live
+# in Plan.limits (decision D1); PLAN_LIMIT_DEFAULTS only fills keys a plan row does not define.
+PLAN_LIMIT_DEFAULTS = {
+    "recordings_max": 5,
+    "recording_ms_max": 180_000,
+    "storage_bytes_max": 104_857_600,
+    "retention_days": 30,
+    "share_max_days": 7,
+    "voice_clip_ms_max": 60_000,
+    "voice_clip_bytes_max": 2_097_152,
+}
+# Object storage adapter: "memory" (dev/tests, never touches the network) or "supabase".
+MEDIA_STORAGE_BACKEND = env("MEDIA_STORAGE_BACKEND", "memory" if DEBUG else "supabase")
+SUPABASE_SERVICE_ROLE_KEY = env(
+    "SUPABASE_SERVICE_ROLE_KEY", ""
+)  # server-side only, never returned/logged
+MEDIA_MAX_BYTES = int(
+    env("MEDIA_MAX_BYTES", str(100 * 1024 * 1024))
+)  # per object, server-side ceiling
+# Off until the FFmpeg worker ships: `complete` then marks a recording ready directly (PRD 04 §10).
+MEDIA_PROCESSING_ENABLED = env("MEDIA_PROCESSING_ENABLED", "0") == "1"
+MEDIA_ORPHAN_HOURS = int(env("MEDIA_ORPHAN_HOURS", "24"))  # abandoned uploads are swept after this
+UPLOAD_URL_TTL_S = int(env("UPLOAD_URL_TTL_S", "3600"))
+PLAYBACK_URL_TTL_S = int(env("PLAYBACK_URL_TTL_S", "900"))
+UPLOAD_CHUNK_BYTES = 6 * 1024 * 1024  # Supabase TUS requires exactly 6 MiB chunks
+THUMBNAIL_MAX_BYTES = 200 * 1024
+RESTORE_WINDOW_HOURS = int(env("RESTORE_WINDOW_HOURS", "24"))  # soft-delete undo, then hard delete
+CONSENT_REVOCATION_GRACE_HOURS = int(env("CONSENT_REVOCATION_GRACE_HOURS", "24"))
+EXPIRY_REMINDER_DAYS = int(env("EXPIRY_REMINDER_DAYS", "3"))
+VOICE_RETENTION_DAYS = int(env("VOICE_RETENTION_DAYS", "30"))
+SHARE_BASE_URL = env("SHARE_BASE_URL", "https://twister.meetpawan.com").rstrip("/")
+SCORE_CARD_SHARE_DAYS = int(env("SCORE_CARD_SHARE_DAYS", "30"))
+SHARE_MAX_ACTIVE_PER_TARGET = int(env("SHARE_MAX_ACTIVE_PER_TARGET", "10"))
+REPORT_AUTOHIDE_THRESHOLD = int(env("REPORT_AUTOHIDE_THRESHOLD", "3"))  # distinct reporters
+# Media worker queue (spec 13 A2). The worker claims a job, holds a lease and extends it by heartbeat;
+# the sweeper re-queues jobs whose lease lapsed and fails those that used up their tries.
+MEDIA_JOB_LEASE_S = int(env("MEDIA_JOB_LEASE_S", "120"))
+MEDIA_JOB_MAX_TRIES = int(env("MEDIA_JOB_MAX_TRIES", "3"))
+MEDIA_JOB_MAX_RUN_S = int(env("MEDIA_JOB_MAX_RUN_S", "900"))  # told to the worker as limits.max_s
+MEDIA_WORKER_MAX_HEIGHT = int(env("MEDIA_WORKER_MAX_HEIGHT", "1080"))
+MEDIA_WORKER_URL_TTL_S = int(env("MEDIA_WORKER_URL_TTL_S", "1800"))  # signed GET / upload URLs
+ANALYSIS_AUDIO_RETENTION_DAYS = int(env("ANALYSIS_AUDIO_RETENTION_DAYS", "7"))
+# Opaque storage folders: HMAC key for `hmac(profile_id)[:16]` (spec 13 A2.5). Changing it only affects
+# new uploads (each asset stores its own path). Required in production like the other secrets.
+MEDIA_PATH_SECRET = env("MEDIA_PATH_SECRET") or ("dev-insecure-media-path-secret" if DEBUG else "")
+if not MEDIA_PATH_SECRET:
+    raise RuntimeError("MEDIA_PATH_SECRET must be set when DJANGO_DEBUG=0")
+
+# Transactional e-mail (expiry reminders). Console backend in dev; SMTP elsewhere.
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST") or "localhost"
+EMAIL_PORT = int(env("EMAIL_PORT") or "587")  # blank CI secrets fall back too
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", "1") == "1"
+EMAIL_TIMEOUT = int(env("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL") or "Twister <no-reply@twister.meetpawan.com>"
+WEB_BASE_URL = (env("WEB_BASE_URL", "") or SHARE_BASE_URL).rstrip("/")  # links inside e-mails
+# Current version of each consent text; bump one to make everyone re-consent (docs/features/06c).
+CONSENT_VERSIONS = {
+    "recording_upload": "v1",
+    "voice_storage": "v1",
+    "voice_processing": "v1",
+    "model_improvement": "v1",
+    "terms": "v1",
+    "marketing": "v1",
+    **(json.loads(env("CONSENT_VERSIONS", "{}")) or {}),
+}
+# Salt for the stored IP hashes (consent log, anonymous reports); defaults to a key derived from SECRET_KEY.
+IP_HASH_SALT = env("IP_HASH_SALT", "") or SECRET_KEY
 
 # Supabase auth (JWT verification). Provide SUPABASE_URL (JWKS, asymmetric keys)
 # and/or SUPABASE_JWT_SECRET (legacy HS256 secret).

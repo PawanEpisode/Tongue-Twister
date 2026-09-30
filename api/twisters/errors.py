@@ -10,6 +10,7 @@ CODES = {
     status.HTTP_403_FORBIDDEN: "forbidden",
     status.HTTP_404_NOT_FOUND: "not_found",
     status.HTTP_405_METHOD_NOT_ALLOWED: "method_not_allowed",
+    status.HTTP_402_PAYMENT_REQUIRED: "quota_exceeded",
     status.HTTP_409_CONFLICT: "conflict",
     status.HTTP_410_GONE: "gone",
     status.HTTP_413_REQUEST_ENTITY_TOO_LARGE: "too_large",
@@ -28,10 +29,13 @@ class Conflict(APIException):
 class ApiProblem(APIException):
     """An error with its own machine-readable `code` (API contract 07 §1 / §13)."""
 
-    def __init__(self, status_code: int, code: str, message: str):
+    details: dict
+
+    def __init__(self, status_code: int, code: str, message: str, details: dict | None = None):
         super().__init__(detail=message, code=code)
         self.status_code = status_code
         self.code = code
+        self.details = details or {}
 
 
 def nonce_invalid() -> ApiProblem:
@@ -56,6 +60,44 @@ def consent_required(message: str = "Consent is required for this.") -> ApiProbl
     return ApiProblem(status.HTTP_403_FORBIDDEN, "consent_required", message)
 
 
+def quota_exceeded(limit: str, **details) -> ApiProblem:
+    """402: a plan limit was hit. `details.limit` names which one so the UI can say what to free up."""
+    return ApiProblem(
+        status.HTTP_402_PAYMENT_REQUIRED,
+        "quota_exceeded",
+        f"Your plan's {limit} limit is reached.",
+        {"limit": limit, **details},
+    )
+
+
+def minor_not_allowed() -> ApiProblem:
+    return ApiProblem(
+        status.HTTP_403_FORBIDDEN,
+        "minor_not_allowed",
+        "Cloud recordings and voice uploads are for people aged 13 or older.",
+    )
+
+
+def age_required() -> ApiProblem:
+    return ApiProblem(
+        status.HTTP_403_FORBIDDEN,
+        "age_required",
+        "Tell us your age range before saving to the cloud.",
+    )
+
+
+def feature_disabled(message: str = "This feature is not available right now.") -> ApiProblem:
+    return ApiProblem(status.HTTP_403_FORBIDDEN, "feature_disabled", message)
+
+
+def dependency_unavailable(message: str = "A required service is not available.") -> ApiProblem:
+    return ApiProblem(status.HTTP_503_SERVICE_UNAVAILABLE, "dependency_unavailable", message)
+
+
+def gone(message: str = "This link is no longer available.") -> ApiProblem:
+    return ApiProblem(status.HTTP_410_GONE, "gone", message)
+
+
 def _message(data) -> str:
     return str(data["detail"]) if isinstance(data, dict) and "detail" in data else "Request failed."
 
@@ -70,7 +112,7 @@ def exception_handler(exc, context):
         code, message, details = (
             exc.code if isinstance(exc, ApiProblem) else CODES.get(response.status_code, "error"),
             _message(response.data),
-            {},
+            exc.details if isinstance(exc, ApiProblem) else {},
         )
     request = context.get("request")
     response.data = {

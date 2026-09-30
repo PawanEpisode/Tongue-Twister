@@ -7,6 +7,7 @@ import re
 from rest_framework import serializers
 
 from ..errors import model_unsupported
+from ..media import uploads
 from ..models import (
     AccentLang,
     AcousticModelVersion,
@@ -123,7 +124,8 @@ class AttemptSubmitSerializer(serializers.Serializer):
     )
     session_id = serializers.UUIDField(required=False, allow_null=True)
     kind = serializers.ChoiceField(
-        choices=[AttemptKind.TEST, AttemptKind.TRAIN, AttemptKind.DRILL], default=AttemptKind.TEST
+        choices=[AttemptKind.TEST, AttemptKind.TRAIN, AttemptKind.DRILL, AttemptKind.RECORD],
+        default=AttemptKind.TEST,
     )
     segment = SegmentSerializer(required=False)
     transcript = serializers.CharField(
@@ -145,6 +147,12 @@ class AttemptSubmitSerializer(serializers.Serializer):
     words = DeviceWordSerializer(many=True, required=False, max_length=600)
     # Offline queue only (POST /attempts/sync/): when the attempt really happened.
     occurred_at = serializers.DateTimeField(required=False)
+
+    def validate_voice_asset_id(self, value):
+        """Only the caller's own, finished voice clip can be attached (a foreign id looks unknown)."""
+        if value is not None and uploads.owned_audio_asset(self.context["profile"], value) is None:
+            raise serializers.ValidationError("Unknown voice clip.")
+        return value
 
     def validate_audio_sha256(self, value):
         value = value.lower() if value else value

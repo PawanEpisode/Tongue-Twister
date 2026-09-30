@@ -1,10 +1,13 @@
 import uuid
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
+
+from .names import PUBLIC_NAME_MAX, validate_public_name
 
 
 class Difficulty(models.IntegerChoices):
@@ -93,6 +96,14 @@ class Plan(models.Model):
         return self.name
 
 
+class AgeBand(models.TextChoices):
+    """Self-declared once (decision D6): `under13` and `unknown` are both blocked from cloud media."""
+
+    UNKNOWN = "unknown", "Unknown"
+    UNDER13 = "under13", "Under 13"
+    ADULT = "13plus", "13 or older"
+
+
 class Profile(models.Model):
     """One row per Supabase auth user. `id` is the Supabase `sub` claim."""
 
@@ -100,6 +111,13 @@ class Profile(models.Model):
     email = models.EmailField(blank=True)
     display_name = models.CharField(max_length=40, blank=True)
     avatar_emoji = models.CharField(max_length=8, default="🗣️")
+    public_name = models.CharField(
+        max_length=PUBLIC_NAME_MAX,
+        blank=True,
+        default="",
+        validators=[validate_public_name],
+        help_text="Opt-in name shown to viewers of recordings the user shares; blank = anonymous",
+    )
     xp = models.PositiveIntegerField(default=0)
     current_streak = models.PositiveIntegerField(default=0)
     best_streak = models.PositiveIntegerField(default=0)
@@ -120,6 +138,7 @@ class Profile(models.Model):
         on_delete=models.PROTECT,
         related_name="profiles",
     )
+    age_band = models.CharField(max_length=8, choices=AgeBand.choices, default=AgeBand.UNKNOWN)
     guest_migrated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -230,8 +249,14 @@ class Attempt(models.Model):
     breakdown = models.JSONField(
         default=dict, blank=True, help_text="Aggregate for train/drill (no AttemptWord rows)"
     )
-    voice_asset_id = models.UUIDField(
-        null=True, blank=True, help_text="MediaAsset (ERD 06c); a plain id until that table ships"
+    voice_asset = models.ForeignKey(
+        "MediaAsset",
+        null=True,
+        blank=True,
+        db_column="voice_asset_id",
+        on_delete=models.SET_NULL,
+        related_name="voiced_attempts",
+        help_text="Opt-in cloud copy of the audio (kind=audio); the id stays `voice_asset_id` in code and column",
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -807,8 +832,13 @@ class ScoringJob(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="scoring_jobs")
-    audio_asset_id = models.UUIDField(
-        null=True, blank=True, help_text="MediaAsset (ERD 06c); a plain id until that table ships"
+    audio_asset = models.ForeignKey(
+        "MediaAsset",
+        null=True,
+        blank=True,
+        db_column="audio_asset_id",
+        on_delete=models.SET_NULL,
+        related_name="scoring_jobs",
     )
     kind = models.CharField(max_length=20, choices=Kind.choices)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.QUEUED)
@@ -849,3 +879,527 @@ class AttemptFeedback(models.Model):
 
     def __str__(self):
         return f"{self.attempt_word_id} {'👍' if self.judged_correct else '👎'}"
+
+
+# --- Record, media, sharing & consent (ERD 06c) ------------------------------------------------
+
+MAX_ASSET_BYTES = 100 * 1024 * 1024  # hard ceiling for any one object (DB CHECK); plans go lower
+MAX_RECORDING_MS = 600_000  # 10 minutes: the longest recording any plan may ever allow
+
+
+class InvalidTransition(Exception):
+    """A status change that the state machine (ERD 06 §4) does not allow."""
+
+
+class StateMachine:
+    """Mixin: every status change goes through `transition()` so illegal edges cannot be written by
+    accident and each edge is defined once, next to the model (ERD 06 §4)."""
+
+    TRANSITIONS: dict[str, frozenset[str]] = {}
+
+    def transition(self, new: str, **fields) -> bool:
+        """Move to `new` (saving `fields` with it). Returns False when already there (idempotent)."""
+        if self.status == new:
+            return False
+        if new not in self.TRANSITIONS.get(self.status, frozenset()):
+            raise InvalidTransition(f"{type(self).__name__}: {self.status} -> {new}")
+        self.status = new
+        for name, value in fields.items():
+            setattr(self, name, value)
+        self.save(update_fields=["status", *fields])
+        return True
+
+
+class MediaKind(models.TextChoices):
+    AUDIO = "audio", "Audio"
+    VIDEO = "video", "Video"
+    IMAGE = "image", "Image"
+    CAPTION = "caption", "Caption"
+
+
+class MediaStatus(models.TextChoices):
+    PENDING_UPLOAD = "pending_upload", "Pending upload"
+    UPLOADING = "uploading", "Uploading"
+    UPLOADED = "uploaded", "Uploaded"
+    PROCESSING = "processing", "Processing"
+    READY = "ready", "Ready"
+    FAILED = "failed", "Failed"
+    DELETED = "deleted", "Deleted"
+
+
+class MediaAsset(StateMachine, models.Model):
+    """One object in a private storage bucket. Rows are tombstoned (`deleted`), never removed, so the
+    storage ledger keeps a complete audit trail."""
+
+    TRANSITIONS = {
+        MediaStatus.PENDING_UPLOAD: frozenset({"uploading", "uploaded", "failed", "deleted"}),
+        MediaStatus.UPLOADING: frozenset({"uploaded", "failed", "deleted"}),
+        MediaStatus.UPLOADED: frozenset({"processing", "ready", "failed", "deleted"}),
+        MediaStatus.PROCESSING: frozenset({"ready", "failed", "deleted"}),
+        MediaStatus.READY: frozenset({"processing", "deleted"}),
+        MediaStatus.FAILED: frozenset({"uploading", "uploaded", "processing", "deleted"}),
+        MediaStatus.DELETED: frozenset(),
+    }
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="media_assets")
+    kind = models.CharField(max_length=8, choices=MediaKind.choices)
+    bucket = models.CharField(max_length=20)
+    path = models.CharField(max_length=200)
+    mime_type = models.CharField(max_length=100)
+    size_bytes = models.BigIntegerField(default=0)
+    duration_ms = models.PositiveIntegerField(null=True, blank=True)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    checksum_sha256 = models.CharField(max_length=64, blank=True)
+    status = models.CharField(
+        max_length=14, choices=MediaStatus.choices, default=MediaStatus.PENDING_UPLOAD
+    )
+    upload_id = models.CharField(max_length=120, blank=True)
+    upload_attempts = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["bucket", "path"], name="uniq_asset_object"),
+            models.CheckConstraint(
+                condition=Q(size_bytes__gte=0, size_bytes__lte=MAX_ASSET_BYTES),
+                name="asset_size_range",
+            ),
+            models.CheckConstraint(condition=_in("kind", MediaKind), name="asset_kind"),
+            models.CheckConstraint(condition=_in("status", MediaStatus), name="asset_status"),
+        ]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="asset_sweep_idx"),
+            models.Index(
+                fields=["expires_at"],
+                name="asset_expiry_idx",
+                condition=Q(expires_at__isnull=False, deleted_at__isnull=True),
+            ),
+            models.Index(fields=["profile", "kind"], name="asset_owner_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.status}"
+
+
+class RecordingStatus(models.TextChoices):
+    RECORDING = "recording", "Recording"
+    LOCAL_READY = "local_ready", "Local ready"
+    UPLOADING = "uploading", "Uploading"
+    UPLOADED = "uploaded", "Uploaded"
+    PROCESSING = "processing", "Processing"
+    READY = "ready", "Ready"
+    FAILED = "failed", "Failed"
+    DELETED = "deleted", "Deleted"
+
+
+class Visibility(models.TextChoices):
+    """No `public` value on purpose: there is no gallery (decision D2)."""
+
+    PRIVATE = "private", "Private"
+    UNLISTED = "unlisted", "Unlisted"
+
+
+class CaptureSource(models.TextChoices):
+    GET_USER_MEDIA = "getUserMedia", "getUserMedia"
+    GET_DISPLAY_MEDIA = "getDisplayMedia", "getDisplayMedia"
+    REGION_CAPTURE = "region_capture", "Region capture"
+    ELEMENT_CAPTURE = "element_capture", "Element capture"
+
+
+class RecordingEndReason(models.TextChoices):
+    USER = "user", "User"
+    LIMIT = "limit", "Limit"
+    DEVICE = "device", "Device"
+    ERROR = "error", "Error"
+    TAB_HIDDEN = "tab_hidden", "Tab hidden"
+
+
+class CaptionsSource(models.TextChoices):
+    NONE = "none", "None"
+    ALIGNMENT = "alignment", "Alignment"
+
+
+class Recording(StateMachine, models.Model):
+    """A cloud-saved take. Local-only recordings never reach the server (PRD 04 V6)."""
+
+    TRANSITIONS = {
+        RecordingStatus.RECORDING: frozenset({"local_ready", "uploading", "failed", "deleted"}),
+        RecordingStatus.LOCAL_READY: frozenset({"uploading", "failed", "deleted"}),
+        RecordingStatus.UPLOADING: frozenset({"uploaded", "failed", "deleted"}),
+        RecordingStatus.UPLOADED: frozenset({"processing", "ready", "failed", "deleted"}),
+        RecordingStatus.PROCESSING: frozenset({"ready", "failed", "deleted"}),
+        RecordingStatus.READY: frozenset({"processing", "deleted"}),
+        RecordingStatus.FAILED: frozenset({"processing", "uploaded", "deleted"}),
+        RecordingStatus.DELETED: frozenset(),
+    }
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="recordings")
+    client_recording_id = models.UUIDField(help_text="Client-generated; makes create idempotent")
+    twister = models.ForeignKey(Twister, on_delete=models.CASCADE, related_name="recordings")
+    session = models.ForeignKey(
+        PracticeSession, null=True, blank=True, on_delete=models.SET_NULL, related_name="recordings"
+    )
+    attempt = models.OneToOneField(
+        Attempt, null=True, blank=True, on_delete=models.SET_NULL, related_name="recording"
+    )
+    title = models.CharField(max_length=80, blank=True)
+    notes = models.CharField(max_length=1000, blank=True)
+    layout = models.SlugField(
+        max_length=24,
+        default="camera_text",
+        help_text="Layout id from the web registry; deliberately not an enum so adding one is web-only",
+    )
+    layout_settings = models.JSONField(default=dict, blank=True)
+    crop_rect = models.JSONField(null=True, blank=True)
+    trim_start_ms = models.PositiveIntegerField(default=0)
+    trim_end_ms = models.PositiveIntegerField(null=True, blank=True)
+    has_camera = models.BooleanField(default=False)
+    has_screen = models.BooleanField(default=False)
+    has_mic = models.BooleanField(default=True)
+    has_system_audio = models.BooleanField(default=False)
+    duration_ms = models.PositiveIntegerField()
+    width = models.PositiveSmallIntegerField(null=True, blank=True)
+    height = models.PositiveSmallIntegerField(null=True, blank=True)
+    fps = models.PositiveSmallIntegerField(null=True, blank=True)
+    mime_type = models.CharField(max_length=120)
+    size_bytes = models.BigIntegerField()
+    capture_source = models.CharField(
+        max_length=16, choices=CaptureSource.choices, default=CaptureSource.GET_USER_MEDIA
+    )
+    status = models.CharField(
+        max_length=12, choices=RecordingStatus.choices, default=RecordingStatus.UPLOADING
+    )
+    failure_reason = models.CharField(max_length=60, blank=True)
+    recovered = models.BooleanField(default=False, help_text="Rebuilt from IndexedDB chunks")
+    video_asset = models.OneToOneField(
+        MediaAsset, null=True, on_delete=models.SET_NULL, related_name="video_of"
+    )
+    thumbnail_asset = models.OneToOneField(
+        MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="thumbnail_of"
+    )
+    captions_asset = models.OneToOneField(
+        MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="captions_of"
+    )
+    audio_asset = models.OneToOneField(
+        MediaAsset,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="analysis_audio_of",
+        help_text="16 kHz mono WAV made by the worker for later analysis (A2.3)",
+    )
+    captions_source = models.CharField(
+        max_length=9, choices=CaptionsSource.choices, default=CaptionsSource.NONE
+    )
+    visibility = models.CharField(
+        max_length=8, choices=Visibility.choices, default=Visibility.PRIVATE
+    )
+    ended_reason = models.CharField(max_length=10, choices=RecordingEndReason.choices, blank=True)
+    consented_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the T-3 day expiry e-mail covering this take went out",
+    )
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(
+        null=True, blank=True, help_text="Set by moderation; a hidden take cannot be shared"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "client_recording_id"], name="uniq_recording_client_id"
+            ),
+            models.CheckConstraint(
+                condition=Q(trim_end_ms__isnull=True) | Q(trim_end_ms__gt=F("trim_start_ms")),
+                name="recording_trim_order",
+            ),
+            models.CheckConstraint(
+                condition=Q(duration_ms__lte=MAX_RECORDING_MS), name="recording_duration_max"
+            ),
+            models.CheckConstraint(
+                condition=Q(size_bytes__gte=0, size_bytes__lte=MAX_ASSET_BYTES),
+                name="recording_size_range",
+            ),
+            models.CheckConstraint(
+                condition=_in("visibility", Visibility), name="recording_visibility"
+            ),
+            models.CheckConstraint(
+                condition=_in("status", RecordingStatus), name="recording_status"
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["profile", "-created_at"],
+                name="recording_owner_idx",
+                condition=Q(deleted_at__isnull=True),
+            ),
+            models.Index(
+                fields=["expires_at"],
+                name="recording_expiry_idx",
+                condition=Q(deleted_at__isnull=True),
+            ),
+            models.Index(
+                fields=["deleted_at"],
+                name="recording_purge_idx",
+                condition=Q(deleted_at__isnull=False),
+            ),
+        ]
+
+    def __str__(self):
+        return self.title or str(self.id)
+
+
+class JobKind(models.TextChoices):
+    PROCESS = "process", "Process"
+    ANALYSE = "analyse", "Analyse"
+
+
+class JobStatus(models.TextChoices):
+    QUEUED = "queued", "Queued"
+    RUNNING = "running", "Running"
+    DONE = "done", "Done"
+    FAILED = "failed", "Failed"
+
+
+def default_job_max_tries() -> int:
+    return settings.MEDIA_JOB_MAX_TRIES
+
+
+class MediaJob(StateMachine, models.Model):
+    """Work for the media worker (transcode/thumbnail/captions, or audio extraction for analysis).
+
+    A worker *claims* a job and holds a lease (`locked_until`) that it extends with heartbeats; the
+    sweeper re-queues jobs whose lease ran out and fails those that used up `max_tries`.
+    """
+
+    TRANSITIONS = {
+        JobStatus.QUEUED: frozenset(
+            {"running", "done", "failed"}
+        ),  # done: a late result after a lapse
+        JobStatus.RUNNING: frozenset({"queued", "done", "failed"}),
+        JobStatus.DONE: frozenset(),
+        JobStatus.FAILED: frozenset(),
+    }
+    ACTIVE = (JobStatus.QUEUED, JobStatus.RUNNING)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recording = models.ForeignKey(Recording, on_delete=models.CASCADE, related_name="jobs")
+    asset = models.ForeignKey(
+        MediaAsset,
+        on_delete=models.CASCADE,
+        related_name="jobs",
+        help_text="The source video asset the job reads",
+    )
+    kind = models.CharField(max_length=8, choices=JobKind.choices)
+    status = models.CharField(max_length=8, choices=JobStatus.choices, default=JobStatus.QUEUED)
+    tries = models.PositiveSmallIntegerField(default=0)
+    max_tries = models.PositiveSmallIntegerField(default=default_job_max_tries)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    error_code = models.CharField(max_length=60, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recording", "kind"],
+                condition=Q(status__in=["queued", "running"]),
+                name="mediajob_one_active",
+            ),
+            models.CheckConstraint(condition=_in("kind", JobKind), name="mediajob_kind"),
+            models.CheckConstraint(condition=_in("status", JobStatus), name="mediajob_status"),
+            models.CheckConstraint(
+                condition=Q(max_tries__gte=1, tries__lte=F("max_tries")), name="mediajob_tries"
+            ),
+            models.CheckConstraint(
+                condition=~Q(status="running") | Q(locked_until__isnull=False),
+                name="mediajob_running_has_lease",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["status", "created_at"],
+                name="mediajob_active_idx",
+                condition=Q(status__in=["queued", "running"]),
+            ),
+            models.Index(fields=["recording", "kind"], name="mediajob_recording_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.status}"
+
+
+class LedgerKind(models.TextChoices):
+    RECORDING = "recording", "Recording"
+    VOICE = "voice", "Voice"
+    THUMB = "thumb", "Thumbnail"
+    CAPTION = "caption", "Caption"
+
+
+class LedgerReason(models.TextChoices):
+    RESERVE = "reserve", "Reserve"
+    COMPLETE = "complete", "Complete"
+    DELETE = "delete", "Delete"
+    EXPIRE = "expire", "Expire"
+    ORPHAN = "orphan", "Orphan sweep"
+    REJECT = "reject", "Rejected upload"
+
+
+class StorageLedger(models.Model):
+    """Append-only quota ledger: usage = SUM(delta_bytes). Written only under the owner's Profile lock."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="storage_ledger")
+    kind = models.CharField(max_length=9, choices=LedgerKind.choices)
+    asset = models.ForeignKey(
+        MediaAsset, null=True, on_delete=models.SET_NULL, related_name="ledger_rows"
+    )
+    delta_bytes = models.BigIntegerField(help_text="Positive reserves, negative releases")
+    reason = models.CharField(max_length=8, choices=LedgerReason.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["profile", "created_at"]),
+            models.Index(fields=["asset"], name="ledger_asset_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=~Q(delta_bytes=0), name="ledger_nonzero_delta"),
+            models.CheckConstraint(condition=_in("kind", LedgerKind), name="ledger_kind"),
+            models.CheckConstraint(condition=_in("reason", LedgerReason), name="ledger_reason"),
+        ]
+
+    def __str__(self):
+        return f"{self.delta_bytes:+d} {self.reason}"
+
+
+class ShareTarget(models.TextChoices):
+    RECORDING = "recording", "Recording"
+    SCORE_CARD = "score_card", "Score card"
+
+
+class ShareLink(models.Model):
+    """Unlisted access to one recording or score card. Only the sha256 of the 128-bit token is stored."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    target_type = models.CharField(max_length=10, choices=ShareTarget.choices)
+    target_id = models.UUIDField(help_text="Recording.id, or Attempt.public_id for a score card")
+    token_hash = models.CharField(max_length=64)
+    created_by = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="share_links")
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(
+        null=True, blank=True, help_text="Moderation hold (reports or staff); resolves as 410"
+    )
+    view_count = models.PositiveIntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["token_hash"], name="uniq_share_token_hash"),
+            models.CheckConstraint(condition=_in("target_type", ShareTarget), name="share_target"),
+        ]
+        indexes = [models.Index(fields=["target_type", "target_id"])]
+
+    def __str__(self):
+        return f"{self.target_type} {self.target_id}"
+
+
+class ConsentType(models.TextChoices):
+    RECORDING_UPLOAD = "recording_upload", "Recording upload"
+    VOICE_STORAGE = "voice_storage", "Voice storage"
+    VOICE_PROCESSING = "voice_processing", "Voice processing"
+    MODEL_IMPROVEMENT = "model_improvement", "Model improvement"
+    TERMS = "terms", "Terms"
+    MARKETING = "marketing", "Marketing"
+
+
+class UserConsent(models.Model):
+    """Consent log. Rows are never edited except to stamp `revoked_at`, so the history is auditable."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="consents")
+    type = models.CharField(max_length=20, choices=ConsentType.choices)
+    version = models.CharField(max_length=20)
+    granted_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    ip_hash = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ["-granted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "type"],
+                condition=Q(revoked_at__isnull=True),
+                name="uniq_active_consent",
+            ),
+            models.CheckConstraint(condition=_in("type", ConsentType), name="consent_type"),
+        ]
+
+    def __str__(self):
+        return f"{self.type}@{self.version}"
+
+
+class ReportReason(models.TextChoices):
+    ABUSE = "abuse", "Abusive or harmful"
+    SEXUAL = "sexual", "Sexual content"
+    MINOR = "minor", "Involves a child"
+    PRIVACY = "privacy", "Privacy"
+    SPAM = "spam", "Spam"
+    OTHER = "other", "Other"
+
+
+class ReportStatus(models.TextChoices):
+    OPEN = "open", "Open"
+    ACTIONED = "actioned", "Actioned"
+    DISMISSED = "dismissed", "Dismissed"
+
+
+class ModerationReport(models.Model):
+    """A viewer's report of a shared link. One per (link, reporter) so nobody can stuff the ballot."""
+
+    reporter = models.ForeignKey(
+        Profile, null=True, blank=True, on_delete=models.SET_NULL, related_name="reports_filed"
+    )
+    reporter_ip_hash = models.CharField(max_length=64, blank=True)
+    share_link = models.ForeignKey(ShareLink, on_delete=models.CASCADE, related_name="reports")
+    reason = models.CharField(max_length=8, choices=ReportReason.choices)
+    details = models.TextField(blank=True, max_length=1000)
+    status = models.CharField(
+        max_length=9, choices=ReportStatus.choices, default=ReportStatus.OPEN, db_index=True
+    )
+    resolved_by = models.CharField(max_length=150, blank=True, help_text="Staff username")
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["share_link", "reporter"],
+                condition=Q(reporter__isnull=False),
+                name="uniq_report_user",
+            ),
+            models.UniqueConstraint(
+                fields=["share_link", "reporter_ip_hash"],
+                condition=Q(reporter__isnull=True),
+                name="uniq_report_ip",
+            ),
+            models.CheckConstraint(condition=_in("reason", ReportReason), name="report_reason"),
+            models.CheckConstraint(condition=_in("status", ReportStatus), name="report_status"),
+        ]
+
+    def __str__(self):
+        return f"{self.reason} on {self.share_link_id}"

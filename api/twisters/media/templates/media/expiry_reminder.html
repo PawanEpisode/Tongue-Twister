@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #1a1a1a">
+    <p>Hi{% if name %} {{ name }}{% endif %},</p>
+    <p>
+      {% if takes|length == 1 %}One of your Twister recordings{% else %}{{ takes|length }} of your Twister recordings{% endif %}
+      will be deleted within {{ days }} days:
+    </p>
+    <ul>
+      {% for take in takes %}
+      <li>{{ take.title|default:take.twister.slug }} (deleted {{ take.expires_at|date:"j M Y" }} UTC)</li>
+      {% endfor %}
+    </ul>
+    <p><a href="{{ library_url }}">Open your recordings</a> to download what you want to keep.</p>
+    <p style="color: #666; font-size: 13px">
+      Recordings are removed automatically after your plan's retention period. You are getting this once
+      because it is a service message about your saved files.
+    </p>
+  </body>
+</html>

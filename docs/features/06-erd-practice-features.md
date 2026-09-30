@@ -527,18 +527,9 @@ Sweeper: `pending_upload` older than 24 h ⇒ delete row + object; `uploaded` wi
 ## 5. Storage layout (Supabase Storage)
 
 - Buckets (all **private**): `recordings`, `voice`, `thumbs`, `captions`.
-- Path convention: `{profile_id}/{yyyy}/{mm}/{asset_id}.{ext}` — owner id first for simple RLS.
-- **Policies (Storage RLS on `storage.objects`):**
-  ```sql
-  -- owners may create/read/delete only inside their own folder
-  create policy "own upload" on storage.objects for insert to authenticated
-    with check (bucket_id in ('recordings','voice') and (storage.foldername(name))[1] = auth.uid()::text);
-  create policy "own read" on storage.objects for select to authenticated
-    using (bucket_id in ('recordings','voice','thumbs','captions') and (storage.foldername(name))[1] = auth.uid()::text);
-  create policy "own delete" on storage.objects for delete to authenticated
-    using ((storage.foldername(name))[1] = auth.uid()::text);
-  ```
-  Public/share playback **never** uses these policies; the API mints short-lived signed URLs with the service role after validating the share token.
+- Path convention: `{owner_folder}/{yyyy}/{mm}/{asset_id}.{ext}` where `owner_folder = HMAC-SHA256(MEDIA_PATH_SECRET, profile_id)[:16]` — opaque on purpose (signed URLs are shared on public pages). Assets made before 13 A2.5 keep `{profile_id}/…`.
+- **Policies (Storage RLS on `storage.objects`): deny-all for clients.** The owner folder is no longer the auth id, so per-owner policies cannot exist. Every read and write goes through API-minted signed URLs / upload tokens (service role bypasses RLS); `api/twisters/media/storage_policies.sql` drops the old `own *` policies and adds one RESTRICTIVE policy denying `anon`/`authenticated` on the four media buckets.
+  Public/share playback never involves a client session; the API mints short-lived signed URLs with the service role after validating the share token.
 - File size: enforce max at bucket level (`file_size_limit`) and in `complete`. **Verify current Supabase plan limits before launch** — the free plan has a small total quota and a per-file cap.
 - Thumbnails may live in a public-read bucket only if they contain no faces of minors — default: private + signed URL.
 

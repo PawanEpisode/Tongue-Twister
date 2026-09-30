@@ -6,9 +6,11 @@ import { useAuth } from '#/lib/auth'
 import { api } from '#/lib/api'
 import { supabase } from '#/lib/supabase'
 import ThemeMenu from '#/components/ThemeMenu'
+import { useFlag } from '#/lib/flags'
 
 export default function Header() {
   const { session, loading } = useAuth()
+  const recordCloud = useFlag('record_cloud')
   const here = useRouterState({ select: (s) => s.location.href })
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -56,6 +58,15 @@ export default function Header() {
               >
                 Practice
               </Link>
+              {recordCloud && (
+                <Link
+                  to="/recordings"
+                  className="hover:text-foreground"
+                  activeProps={{ className: 'text-foreground' }}
+                >
+                  Recordings
+                </Link>
+              )}
               {me && (
                 <span className="hidden items-center gap-1.5 rounded-full bg-card px-3 py-1 text-xs sm:inline-flex">
                   <Flame className="size-3.5 text-pink" aria-hidden />

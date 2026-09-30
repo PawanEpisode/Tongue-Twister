@@ -24,6 +24,8 @@ export type Category = {
   description: string
   count: number
 }
+/** Set once by the user (13+ or under 13); cloud saving and sharing are only for '13plus' (PRD 04 §9). */
+export type AgeBand = 'unknown' | 'under13' | '13plus'
 export type Profile = {
   id: string
   email: string
@@ -35,10 +37,13 @@ export type Profile = {
   best_streak: number
   total_attempts?: number
   best_score?: number | null
+  age_band?: AgeBand
+  /** Opt-in name shown on recordings you share; blank = anonymous. Never falls back to `display_name`. */
+  public_name?: string
 }
 export type WordStatus = 'correct' | 'near' | 'wrong' | 'missed' | 'extra'
 export type WordReason = '' | 'homophone' | 'focus_swap'
-export type AttemptKind = 'test' | 'train' | 'drill'
+export type AttemptKind = 'test' | 'train' | 'drill' | 'record'
 export type VerificationStatus =
   'none' | 'device' | 'pending' | 'verified' | 'failed'
 /** A scored word as the API returns it; `target_index` counts scoring tokens, not displayed words. */
@@ -210,6 +215,176 @@ export type History = {
 }
 type Page<T> = { count: number; results: T[] }
 
+// ─── Record mode, media, sharing and consent (docs/features/13-06c-build-spec.md §1) ───
+// Every request/response shape of the recordings API lives here so a contract fix is a one-file change.
+
+/** Layout ids double as the API's `Recording.layout` values. */
+export type RecordingLayout =
+  | 'camera'
+  | 'camera_text'
+  | 'side_by_side'
+  | 'screen_bubble'
+  | 'pip'
+  | 'portrait'
+  | 'region'
+export type CaptureSource =
+  'getUserMedia' | 'getDisplayMedia' | 'region_capture' | 'element_capture'
+export type RecordingStatus =
+  | 'recording'
+  | 'local_ready'
+  | 'uploading'
+  | 'uploaded'
+  | 'processing'
+  | 'ready'
+  | 'failed'
+  | 'deleted'
+export type RecordingVisibility = 'private' | 'unlisted'
+export type RecordingEndedReason =
+  'user' | 'limit' | 'device' | 'error' | 'tab_hidden'
+export type ConsentType =
+  | 'recording_upload'
+  | 'voice_storage'
+  | 'voice_processing'
+  | 'model_improvement'
+  | 'terms'
+  | 'marketing'
+/** Current consent text version; the server rejects unknown versions (`CONSENT_VERSIONS`). */
+export const CONSENT_VERSION = 'v1'
+/** A twister reference as list/detail/public payloads give it: a slug, or `{slug, text}`. */
+export type TwisterRef = string | { slug: string; text?: string }
+export const twisterSlug = (t: TwisterRef): string =>
+  typeof t === 'string' ? t : t.slug
+export type CreateRecordingBody = {
+  client_recording_id: string
+  twister: string
+  session_id?: string
+  /** A `kind=record` attempt made from this take (client-side analysis). */
+  attempt?: number
+  layout: RecordingLayout
+  layout_settings?: Record<string, unknown>
+  has_camera: boolean
+  has_screen: boolean
+  has_mic: boolean
+  has_system_audio: boolean
+  capture_source: CaptureSource
+  duration_ms: number
+  width: number
+  height: number
+  fps: number
+  mime_type: string
+  size_bytes: number
+  title: string
+  recovered?: boolean
+  ended_reason?: RecordingEndedReason
+  consent: { recording_upload: string }
+}
+export type UploadInfo = {
+  provider: string
+  bucket: string
+  path: string
+  signed_url: string
+  token: string
+  expires_in: number
+  chunk_size: number
+}
+export type Quota = {
+  used_bytes: number
+  limit_bytes: number
+  count: number
+  count_limit: number
+}
+export type RecordingSummary = {
+  id: string
+  title: string
+  status: RecordingStatus
+  layout: RecordingLayout
+  visibility: RecordingVisibility
+  twister: TwisterRef
+  duration_ms: number | null
+  size_bytes: number | null
+  mime_type: string
+  created_at: string
+  expires_at: string | null
+  thumbnail_url?: string | null
+  failure_reason?: string | null
+}
+export type CreateRecordingResult = {
+  recording: RecordingSummary
+  /** `null` when nothing is left to upload (a replay after the object was stored). */
+  upload: UploadInfo | null
+  quota: Quota
+}
+export type RecordingWord = {
+  target_index: number
+  target: string
+  status: WordStatus
+  start_ms: number | null
+  end_ms: number | null
+}
+/** Cloud analysis of a saved take (`POST /recordings/{id}/analyse/`); a missing block means `none`. */
+export type AnalysisStatus = 'none' | 'queued' | 'running' | 'ready' | 'failed'
+export type Analysis = { status: AnalysisStatus; audio_ready: boolean }
+/** `alignment` = the worker built the VTT from the attempt's word timings. */
+export type CaptionsSource = 'alignment'
+export type Playback = { url: string; expires_at: string; mime: string }
+export type RecordingDetail = RecordingSummary & {
+  notes: string
+  attempt: { id: number; score: number; accuracy: number; wpm: number } | null
+  words: RecordingWord[]
+  playback: Playback | null
+  captions_url: string | null
+  captions_source?: CaptionsSource | null
+  analysis?: Analysis
+}
+export type RecordingPatch = Partial<{
+  title: string
+  visibility: RecordingVisibility
+  notes: string
+  expires_at: string
+  attempt: number
+}>
+export type StorageInfo = Quota & {
+  expiring_soon: { id: string; title: string; expires_at: string }[]
+}
+export type ConsentRecord = {
+  type: ConsentType
+  version: string
+  granted_at: string
+  revoked_at: string | null
+}
+export type ShareExpiry = '24h' | '7d' | '30d'
+export type ShareCreated = { id: string; url: string; expires_at: string }
+export type ShareItem = {
+  id: string
+  created_at: string
+  expires_at: string
+  revoked_at: string | null
+  view_count: number
+  last_viewed_at: string | null
+}
+export type PublicRecording = {
+  title: string
+  twister: { slug: string; text: string }
+  duration_ms: number | null
+  score?: number | null
+  captions_url?: string | null
+  playback: Playback
+  owner: { display_name?: string | null }
+}
+export type ReportReason =
+  'abuse' | 'sexual' | 'minor' | 'privacy' | 'spam' | 'other'
+export type PlanInfo = {
+  code?: string
+  /** Plan limits (D1): only the keys the web reads. */
+  limits?: Partial<{
+    recordings_max: number
+    recording_ms_max: number
+    storage_bytes_max: number
+    retention_days: number
+    share_max_days: number
+  }>
+}
+
 /** Carries the API's error envelope; `message` stays "API <status>" for friendlyError(). */
 export class ApiError extends Error {
   constructor(
@@ -240,6 +415,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       body?.error?.request_id,
     )
   }
+  if (res.status === 204) return undefined as T // DELETE endpoints answer 204 with no body
   return res.json() as Promise<T>
 }
 
@@ -292,6 +468,86 @@ export const api = {
       body: JSON.stringify(body),
     }),
   me: () => request<Profile>('/me/'),
+  setAgeBand: (age_band: Exclude<AgeBand, 'unknown'>) =>
+    request<Profile>('/me/', {
+      method: 'PATCH',
+      body: JSON.stringify({ age_band }),
+    }),
+  setPublicName: (public_name: string) =>
+    request<Profile>('/me/', {
+      method: 'PATCH',
+      body: JSON.stringify({ public_name }),
+    }),
+  entitlements: () => request<{ plan: PlanInfo }>('/me/entitlements/'),
+  consents: () =>
+    request<{ results: ConsentRecord[] }>('/me/consents/').then(
+      (r) => r.results,
+    ),
+  grantConsent: (type: ConsentType, version: string) =>
+    request<ConsentRecord>('/me/consents/', {
+      method: 'POST',
+      body: JSON.stringify({ type, version }),
+    }),
+  storage: () => request<StorageInfo>('/me/storage/'),
+  /** Retrying with the same `client_recording_id` replays the first response (fresh upload token included). */
+  createRecording: (body: CreateRecordingBody) =>
+    request<CreateRecordingResult>('/recordings/', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  completeRecording: (
+    id: string,
+    body: {
+      size_bytes: number
+      checksum_sha256?: string
+      thumbnail?: string | null
+    },
+  ) =>
+    request<RecordingSummary>(`/recordings/${id}/complete/`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  recordings: (params: { twister?: string; page?: number } = {}) => {
+    const qs = new URLSearchParams()
+    if (params.twister) qs.set('twister', params.twister)
+    if (params.page) qs.set('page', String(params.page))
+    return request<Page<RecordingSummary>>(`/recordings/?${qs}`)
+  },
+  recording: (id: string) => request<RecordingDetail>(`/recordings/${id}/`),
+  analyseRecording: (id: string) =>
+    request<{ analysis: Analysis }>(`/recordings/${id}/analyse/`, {
+      method: 'POST',
+    }),
+  updateRecording: (id: string, patch: RecordingPatch) =>
+    request<RecordingDetail>(`/recordings/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+  deleteRecording: (id: string) =>
+    request<void>(`/recordings/${id}/`, { method: 'DELETE' }),
+  restoreRecording: (id: string) =>
+    request<RecordingSummary>(`/recordings/${id}/restore/`, { method: 'POST' }),
+  shareRecording: (id: string, expires_in: ShareExpiry) =>
+    request<ShareCreated>(`/recordings/${id}/share/`, {
+      method: 'POST',
+      body: JSON.stringify({ expires_in }),
+    }),
+  shares: (recording: string) =>
+    request<Page<ShareItem> | ShareItem[]>(
+      `/shares/?recording=${encodeURIComponent(recording)}`,
+    ).then((r) => (Array.isArray(r) ? r : r.results)),
+  revokeShare: (id: string) =>
+    request<void>(`/shares/${id}/`, { method: 'DELETE' }),
+  publicRecording: (token: string) =>
+    request<PublicRecording>(`/public/r/${encodeURIComponent(token)}/`),
+  reportRecording: (
+    token: string,
+    body: { reason: ReportReason; details: string },
+  ) =>
+    request<void>(`/public/r/${encodeURIComponent(token)}/report/`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   flags: () => request<{ flags: FeatureFlags }>('/flags/').then((r) => r.flags),
   syncGuest: (body: GuestSyncPayload) =>
     request<GuestSyncResult>('/sync/guest/', {

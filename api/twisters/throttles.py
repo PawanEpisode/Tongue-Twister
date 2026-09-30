@@ -2,7 +2,9 @@
 
 import re
 
-from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
+from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle, UserRateThrottle
+
+from .security import client_ip
 
 _RATE = re.compile(r"^(\d+)/(\d+)(s|min|h|d)$")
 _UNIT_SECONDS = {"s": 1, "min": 60, "h": 3600, "d": 86400}
@@ -33,4 +35,46 @@ class WordFeedbackThrottle(WindowedRateMixin, UserRateThrottle):
     scope = "word_feedback"
 
 
-__all__ = ["AttemptSyncThrottle", "AttemptThrottle", "ScopedRateThrottle", "WordFeedbackThrottle"]
+class RecordingCreateThrottle(WindowedRateMixin, UserRateThrottle):
+    """10 cloud recordings per hour per user (API contract 07 §1): uploads are the expensive path."""
+
+    scope = "recordings"
+
+
+class VoiceUploadThrottle(WindowedRateMixin, UserRateThrottle):
+    scope = "voice_uploads"
+
+
+class ShareCreateThrottle(WindowedRateMixin, UserRateThrottle):
+    scope = "share_create"
+
+
+class IpRateThrottle(WindowedRateMixin, SimpleRateThrottle):
+    """Per client IP, for unauthenticated endpoints. Uses `client_ip` (proxy aware), not REMOTE_ADDR,
+    because on Vercel every request would otherwise share the platform's address."""
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": client_ip(request)}
+
+
+class ShareResolveThrottle(IpRateThrottle):
+    """60 resolves per minute per IP: makes guessing 128-bit tokens (and scraping) pointless."""
+
+    scope = "share_resolve"
+
+
+class ShareReportThrottle(IpRateThrottle):
+    scope = "share_report"
+
+
+__all__ = [
+    "AttemptSyncThrottle",
+    "AttemptThrottle",
+    "RecordingCreateThrottle",
+    "ScopedRateThrottle",
+    "ShareCreateThrottle",
+    "ShareReportThrottle",
+    "ShareResolveThrottle",
+    "VoiceUploadThrottle",
+    "WordFeedbackThrottle",
+]

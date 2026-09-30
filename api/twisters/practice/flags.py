@@ -24,3 +24,9 @@ def enabled(code: str, profile: Profile | None) -> bool:
     """One flag by code; a flag that has not been created yet is off."""
     flag = FeatureFlag.objects.filter(code=code).first()
     return flag is not None and is_on(flag, profile)
+
+
+def switched_on(code: str) -> bool:
+    """Kill-switch state only, ignoring allow-list and rollout. For anonymous surfaces (public share
+    pages) that must keep working for a link's audience whoever was allowed to create it."""
+    return FeatureFlag.objects.filter(code=code, enabled=True).exists()

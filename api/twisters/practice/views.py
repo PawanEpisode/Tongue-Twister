@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from ..errors import Conflict
+from ..media import quota
 from ..models import PracticeSession, Profile, SessionStatus, UserPreference
 from ..serializers import ProfileSerializer
 from . import flags, guest_sync, services
@@ -38,7 +39,13 @@ def preferences(request):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def entitlements(request):
-    return Response({"plan": PlanSerializer(request.user.plan).data})
+    used = quota.usage(request.user)
+    return Response(
+        {
+            "plan": PlanSerializer(request.user.plan).data,
+            "usage": {"used_bytes": used.used_bytes, "count": used.count},
+        }
+    )
 
 
 @api_view(["GET"])

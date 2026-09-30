@@ -10,6 +10,7 @@ import { AuthProvider } from '#/lib/auth'
 import AttemptSync from '#/components/AttemptSync'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
+import UploadSync from '#/components/UploadSync'
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, seo } from '#/lib/seo'
 import { ThemeProvider, THEME_COLORS, themeBootScript } from '#/lib/theme'
 import appCss from '../styles.css?url'
@@ -103,6 +104,7 @@ function RootLayout() {
         <AuthProvider>
           <GuestSync />
           <AttemptSync />
+          <UploadSync />
           <Header />
           <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
             <Outlet />

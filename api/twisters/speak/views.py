@@ -1,6 +1,4 @@
 import datetime as dt
-import hashlib
-import hmac
 import json
 
 from django.conf import settings
@@ -13,6 +11,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
 from .. import errors
+from ..media import consent
+from ..media.views import create_score_card_link
 from ..models import (
     SCORE_VERSION_CURRENT,
     AcousticModelVersion,
@@ -20,6 +20,7 @@ from ..models import (
     AttemptFeedback,
     AttemptKind,
     AttemptWord,
+    ConsentType,
     Profile,
     ScoringJob,
     ScoringProfile,
@@ -30,7 +31,13 @@ from ..models import (
     Verification,
 )
 from ..practice import flags
-from ..throttles import AttemptSyncThrottle, AttemptThrottle, WordFeedbackThrottle
+from ..security import require_worker_signature
+from ..throttles import (
+    AttemptSyncThrottle,
+    AttemptThrottle,
+    ShareCreateThrottle,
+    WordFeedbackThrottle,
+)
 from . import queries, service, stats
 from .serializers import (
     ACCURATE_MODE_FLAG,
@@ -211,6 +218,19 @@ class AttemptViewSet(
             service.delete_attempt(profile, attempt)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # -- POST /attempts/{id}/score-card/ -----------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="score-card",
+        url_name="score-card",
+        throttle_classes=[ShareCreateThrottle],
+    )
+    def score_card(self, request, pk=None):
+        """A public, media-free share link for this attempt's result (spec 13 §1)."""
+        return create_score_card_link(request, self.get_object())
+
     # -- POST /attempts/{id}/words/{i}/feedback/ ---------------------------------------------------
 
     @action(
@@ -227,8 +247,8 @@ class AttemptViewSet(
         ser = FeedbackSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         if ser.validated_data.get("donated_audio"):
-            # Audio donation needs a consent record (UserConsent, ERD 06c) that does not exist yet.
-            raise errors.consent_required("Donating audio needs your consent first.")
+            consent.require_not_minor(request.user)  # decision D6
+            consent.require(request.user, ConsentType.MODEL_IMPROVEMENT)
         feedback, created = AttemptFeedback.objects.update_or_create(
             attempt_word=word, profile=request.user, defaults=ser.validated_data
         )
@@ -349,26 +369,12 @@ def engine_manifest(request):
     )
 
 
-def _worker_signature_ok(request) -> bool:
-    secret = settings.WORKER_SHARED_SECRET
-    if not secret:
-        return False
-    supplied = request.headers.get("X-Worker-Signature", "").removeprefix("sha256=")
-    expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(supplied, expected)
-
-
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([permissions.AllowAny])
 def scoring_job_result(request, job_id):
     """Worker callback (HMAC-signed, idempotent): applies a spot-check verdict to the attempt."""
-    if not settings.WORKER_SHARED_SECRET:
-        raise errors.ApiProblem(
-            503, "dependency_unavailable", "Worker callbacks are not configured."
-        )
-    if not _worker_signature_ok(request):
-        raise errors.ApiProblem(403, "forbidden", "Bad signature.")
+    require_worker_signature(request)
     try:
         body = json.loads(request.body or b"{}")
     except ValueError as exc:

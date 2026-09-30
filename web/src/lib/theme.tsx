@@ -11,7 +11,7 @@ export const THEME_STORAGE_KEY = 'twister-theme'
 
 /** Local-time window for the System preference. Light from 7:00 until 19:00, dark otherwise. */
 export const DAY_START_HOUR = 7
-export const NIGHT_START_HOUR = 18
+export const NIGHT_START_HOUR = 19
 
 export const THEME_OPTIONS = ['system', 'light', 'dark', 'reading'] as const
 

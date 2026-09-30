@@ -4,6 +4,7 @@ import ModeSwitcher, { BUILT_MODES } from '#/components/practice/ModeSwitcher'
 import type { ModeKey } from '#/components/practice/ModeSwitcher'
 import ReadAlongMode from '#/components/practice/ReadAlongMode'
 import HubHeader from '#/components/practice/HubHeader'
+import RecordEntry from '#/components/practice/record/RecordEntry'
 import SidePanel from '#/components/practice/SidePanel'
 import SpeakAndScore from '#/components/practice/SpeakAndScore'
 import TrainMode from '#/components/practice/TrainMode'
@@ -15,6 +16,7 @@ import { useFlags } from '#/lib/flags'
 import { PracticeLockProvider } from '#/lib/tabLock'
 import { usePreferences } from '#/lib/preferences'
 import { clampWpm } from '#/lib/readAlong/timeline'
+import { useRecordSupport } from '#/lib/record/useRecordSupport'
 import { seo } from '#/lib/seo'
 
 const MODE_OF: Record<PracticeMode, ModeKey | undefined> = {
@@ -80,6 +82,7 @@ function PracticeHub() {
   const nav = useNavigate({ from: Route.fullPath })
   const { prefs, update, sync, ready } = usePreferences()
   const flags = useFlags()
+  const canRecord = useRecordSupport()
   const {
     data: t,
     isError,
@@ -95,7 +98,8 @@ function PracticeHub() {
     (m) =>
       (flags.practice_hub &&
         (m !== 'read' || flags.read_along) &&
-        (m !== 'train' || flags.speak_v2)) ||
+        (m !== 'train' || flags.speak_v2) &&
+        (m !== 'record' || (flags.record_local && canRecord))) ||
       m === 'speak',
   )
   const remembered = MODE_OF[prefs.default_mode]
@@ -146,6 +150,13 @@ function PracticeHub() {
               prefs={prefs}
               update={update}
               overrides={{ wpm: search.wpm, style: search.style }}
+              onSwitchMode={() => switchMode('speak')}
+            />
+          ) : mode === 'record' ? (
+            <RecordEntry
+              key={t.slug}
+              twister={t}
+              prefs={prefs}
               onSwitchMode={() => switchMode('speak')}
             />
           ) : mode === 'train' ? (

@@ -116,7 +116,6 @@ def test_noisy_take_with_many_errors_is_rejected(user):
         {"duration_ms": 300_001},
         {"transcript": "a " * 3000},
         {"long_pause_ms": 5000},
-        {"kind": "record"},
         {"kind": "karaoke"},
         {"twister": "ghost"},
         {"stt": {"confidence": 1.2}},

@@ -25,7 +25,7 @@ from .test_speak_trust import device_body, model  # noqa: F401  (model is a fixt
 # --- migrations ----------------------------------------------------------------------------------
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 def test_migration_backfills_public_ids_and_survives_a_round_trip():
     executor = MigrationExecutor(connection)
     executor.migrate([("twisters", "0004_metronome_volume")])

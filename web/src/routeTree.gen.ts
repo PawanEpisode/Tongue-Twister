@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PracticeRouteImport } from './routes/practice'
+import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as TwistersIndexRouteImport } from './routes/twisters.index'
 import { Route as TwistersSlugRouteImport } from './routes/twisters.$slug'
 
@@ -32,6 +34,11 @@ const PracticeRoute = PracticeRouteImport.update({
   path: '/practice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecordingsRoute = RecordingsRouteImport.update({
+  id: '/recordings',
+  path: '/recordings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -40,6 +47,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RTokenRoute = RTokenRouteImport.update({
+  id: '/r/$token',
+  path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TwistersIndexRoute = TwistersIndexRouteImport.update({
@@ -57,8 +69,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/practice': typeof PracticeRoute
+  '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/r/$token': typeof RTokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters/': typeof TwistersIndexRoute
 }
@@ -66,8 +80,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/practice': typeof PracticeRoute
+  '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/r/$token': typeof RTokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters': typeof TwistersIndexRoute
 }
@@ -76,8 +92,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/practice': typeof PracticeRoute
+  '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/r/$token': typeof RTokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
   '/twisters/': typeof TwistersIndexRoute
 }
@@ -87,8 +105,10 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/practice'
+    | '/recordings'
     | '/sitemap.xml'
     | '/auth/callback'
+    | '/r/$token'
     | '/twisters/$slug'
     | '/twisters/'
   fileRoutesByTo: FileRoutesByTo
@@ -96,8 +116,10 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/practice'
+    | '/recordings'
     | '/sitemap.xml'
     | '/auth/callback'
+    | '/r/$token'
     | '/twisters/$slug'
     | '/twisters'
   id:
@@ -105,8 +127,10 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/practice'
+    | '/recordings'
     | '/sitemap.xml'
     | '/auth/callback'
+    | '/r/$token'
     | '/twisters/$slug'
     | '/twisters/'
   fileRoutesById: FileRoutesById
@@ -115,8 +139,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   PracticeRoute: typeof PracticeRoute
+  RecordingsRoute: typeof RecordingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  RTokenRoute: typeof RTokenRoute
   TwistersSlugRoute: typeof TwistersSlugRoute
   TwistersIndexRoute: typeof TwistersIndexRoute
 }
@@ -144,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PracticeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recordings': {
+      id: '/recordings'
+      path: '/recordings'
+      fullPath: '/recordings'
+      preLoaderRoute: typeof RecordingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -156,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$token': {
+      id: '/r/$token'
+      path: '/r/$token'
+      fullPath: '/r/$token'
+      preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/twisters/': {
@@ -179,8 +219,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   PracticeRoute: PracticeRoute,
+  RecordingsRoute: RecordingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  RTokenRoute: RTokenRoute,
   TwistersSlugRoute: TwistersSlugRoute,
   TwistersIndexRoute: TwistersIndexRoute,
 }

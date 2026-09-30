@@ -7,8 +7,9 @@ import { attemptQueue, isTransient } from './attemptQueue'
 
 export type PracticeTake = {
   twister: string
-  kind: Extract<AttemptKind, 'train' | 'drill'>
-  segment: Segment
+  kind: Extract<AttemptKind, 'train' | 'drill' | 'record'>
+  /** Train and Drill score only the practised words; a whole recorded take has none. */
+  segment?: Segment
   transcript: string
   durationMs: number
   longPauseMs?: number
@@ -16,7 +17,7 @@ export type PracticeTake = {
 }
 
 /**
- * Saves a Train / Drill take. Best effort by design: the learner already has their result on
+ * Saves a Train / Drill / Record take. Best effort by design: the learner already has their result on
  * screen, so a failure never interrupts practice. Offline or throttled takes are queued and replayed;
  * guests keep nothing (their history is Test attempts only). Resolves to the saved result, or null.
  */
@@ -32,7 +33,7 @@ export function usePracticeSubmit() {
         client_attempt_id: crypto.randomUUID(),
         twister: take.twister,
         kind: take.kind,
-        segment: take.segment,
+        ...(take.segment && { segment: take.segment }),
         transcript: take.transcript,
         duration_ms: Math.max(300, Math.round(take.durationMs)),
         long_pause_ms: Math.min(

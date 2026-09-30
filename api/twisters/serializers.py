@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from .models import Category, Profile, Twister
+from .errors import Conflict
+from .models import AgeBand, Category, Profile, Twister
+from .names import clean_public_name
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -56,10 +58,23 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "display_name",
             "avatar_emoji",
+            "public_name",
             "xp",
             "level",
             "current_streak",
             "best_streak",
             "timezone",
+            "age_band",
         ]
         read_only_fields = ["id", "email", "xp", "current_streak", "best_streak"]
+
+    def validate_public_name(self, value: str) -> str:
+        """Canonicalise before the model's `validate_public_name` runs (single spaces, NFC)."""
+        return clean_public_name(value)
+
+    def validate_age_band(self, value: str) -> str:
+        """Self-declared once (decision D6). Changing it later needs support, so a second, different
+        answer is a conflict rather than a silent overwrite of a safety setting."""
+        if self.instance and self.instance.age_band not in (AgeBand.UNKNOWN, value):
+            raise Conflict("Age range has already been set.")
+        return value

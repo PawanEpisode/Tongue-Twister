@@ -20,10 +20,16 @@ export function LeaveConfirm({
   open,
   onStay,
   onLeave,
+  title = 'Leave this run?',
+  body = 'You’re partway through. Leaving now ends the run early.',
+  stayLabel = 'Keep practising',
 }: {
   open: boolean
   onStay: () => void
   onLeave: () => void
+  title?: string
+  body?: string
+  stayLabel?: string
 }) {
   if (!open) return null
   return (
@@ -35,14 +41,12 @@ export function LeaveConfirm({
     >
       <div className="glass w-full max-w-sm rounded-2xl p-6 text-center">
         <h2 id="leave-title" className="font-display text-xl font-bold">
-          Leave this run?
+          {title}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          You’re partway through. Leaving now ends the run early.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{body}</p>
         <div className="mt-5 flex justify-center gap-3">
           <Button autoFocus onClick={onStay}>
-            Keep practising
+            {stayLabel}
           </Button>
           <Button
             variant="outline"

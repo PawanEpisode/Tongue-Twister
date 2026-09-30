@@ -15,3 +15,6 @@ DATABASES = {
     if _test_db
     else {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
 }
+
+# Tests must never reach a real bucket, whatever the environment says.
+MEDIA_STORAGE_BACKEND = "memory"

@@ -19,6 +19,8 @@ on:
         default: ""
   schedule:
     - cron: "17 3 * * *" # nightly 03:17 UTC — reconcile_speak_stats
+    - cron: "23 * * * *" # hourly at :23 — expire_recordings (retention, hard delete, consent revocations)
+    - cron: "41 4 * * *" # daily 04:41 UTC — orphan_sweeper (abandoned uploads)
     # - cron: "*/10 * * * *" # enable with the scoring worker — sweep_pending_attempts
 
 # Two runs of the same command must never overlap (they would fight over the same rows).
@@ -44,6 +46,18 @@ jobs:
       DATABASE_SSL_REQUIRE: "1"
       SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      # Media jobs delete storage objects, so they need the service-role key (never printed by the commands).
+      MEDIA_STORAGE_BACKEND: supabase
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Required by settings in production (opaque storage folders); must equal the API's value.
+      MEDIA_PATH_SECRET: ${{ secrets.MEDIA_PATH_SECRET }}
+      # expire_recordings e-mails the T-3 day reminders.
+      EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+      EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+      EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+      EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+      DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+      WEB_BASE_URL: ${{ secrets.WEB_BASE_URL }}
       # Untrusted text goes through env vars, never straight into the shell script.
       INPUT_COMMAND: ${{ github.event.inputs.command }}
       INPUT_ARGS: ${{ github.event.inputs.args }}
@@ -54,11 +68,13 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters"
+          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper"
 
           if [ -n "${SCHEDULE:-}" ]; then
             case "$SCHEDULE" in
               "17 3 * * *")   command=reconcile_speak_stats ;;
+              "23 * * * *")   command=expire_recordings ;;
+              "41 4 * * *")   command=orphan_sweeper ;;
               "*/10 * * * *") command=sweep_pending_attempts ;;
               *) echo "No command mapped to schedule '$SCHEDULE'" >&2; exit 1 ;;
             esac

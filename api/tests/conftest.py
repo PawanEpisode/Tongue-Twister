@@ -52,3 +52,36 @@ def user(seeded, auth_client):
     client = auth_client(sub)
     client.get("/api/v1/me/")
     return client, Profile.objects.get(pk=sub)
+
+
+# --- media (slice 06c) -------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def storage():
+    """A fresh in-memory bucket store for every test, so none can reach the network or each other."""
+    from twisters.media.storage import get_storage, reset_storage
+
+    reset_storage()
+    yield get_storage()
+    reset_storage()
+
+
+@pytest.fixture
+def anon(db):
+    """An unauthenticated API client (public share pages)."""
+    return APIClient()
+
+
+@pytest.fixture
+def cloud_user(user):
+    """(client, profile) who may save to the cloud: 13+, consented, with the cloud and share flags on."""
+    from twisters.models import AgeBand, ConsentType, FeatureFlag, UserConsent
+
+    client, profile = user
+    FeatureFlag.objects.filter(code__in=["record_cloud", "share_links"]).update(enabled=True)
+    Profile.objects.filter(pk=profile.pk).update(age_band=AgeBand.ADULT)
+    for consent_type in (ConsentType.RECORDING_UPLOAD, ConsentType.VOICE_STORAGE):
+        UserConsent.objects.create(profile=profile, type=consent_type, version="v1")
+    profile.refresh_from_db()
+    return client, profile

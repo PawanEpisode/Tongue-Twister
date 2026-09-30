@@ -1,0 +1,11 @@
+{% autoescape off %}Hi{% if name %} {{ name }}{% endif %},
+
+{% if takes|length == 1 %}One of your Twister recordings{% else %}{{ takes|length }} of your Twister recordings{% endif %} will be deleted within {{ days }} days:
+{% for take in takes %}
+- {{ take.title|default:take.twister.slug }} (deleted {{ take.expires_at|date:"j M Y" }} UTC){% endfor %}
+
+Open your recordings to download what you want to keep:
+{{ library_url }}
+
+Recordings are removed automatically after your plan's retention period. You are getting this once because it is a service message about your saved files.
+{% endautoescape %}

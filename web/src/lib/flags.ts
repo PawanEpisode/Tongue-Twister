@@ -8,6 +8,12 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   practice_hub: true,
   read_along: true,
   speak_v2: true, // scoring v2 ships on; the server flag is the kill switch
+  // Record mode (06c): local recording ships on; cloud saving and share links wait for Supabase Pro (D7).
+  record_local: true,
+  record_screen: true,
+  record_region: true,
+  record_cloud: false,
+  share_links: false,
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

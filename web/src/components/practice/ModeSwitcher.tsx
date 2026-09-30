@@ -6,7 +6,7 @@ const MODES: { key: ModeKey; label: string; built: boolean }[] = [
   { key: 'read', label: 'Read along', built: true },
   { key: 'speak', label: 'Speak & score', built: true },
   { key: 'train', label: 'Train', built: true },
-  { key: 'record', label: 'Record', built: false }, // Phase 3
+  { key: 'record', label: 'Record', built: true },
 ]
 /** Modes that exist in this build (feature flags may still switch some off). */
 export const BUILT_MODES = MODES.filter((m) => m.built).map((m) => m.key)

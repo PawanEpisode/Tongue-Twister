@@ -1,0 +1,26 @@
+{
+  "description": "HMAC-SHA256 (hex) of the raw request body keyed with the shared secret. Sent as `X-Worker-Signature: sha256=<hex>`; the API also accepts bare hex. Shared by worker/ and api/ tests.",
+  "header": "X-Worker-Signature",
+  "secret": "test-shared-secret",
+  "payload": {
+    "worker_id": "worker-1",
+    "note": "héllo"
+  },
+  "body": "{\"note\":\"h\\u00e9llo\",\"worker_id\":\"worker-1\"}",
+  "signature": "368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb",
+  "cases": [
+    {
+      "name": "empty_body",
+      "body": "",
+      "signature": "7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214",
+      "header_value": "sha256=7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214"
+    },
+    {
+      "name": "unicode_json",
+      "body": "{\"a\":\"é\"}",
+      "signature": "4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c",
+      "header_value": "sha256=4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c"
+    }
+  ],
+  "header_value": "sha256=368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb"
+}
