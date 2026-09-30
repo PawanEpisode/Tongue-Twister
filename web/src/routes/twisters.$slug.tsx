@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Lottie from '#/components/ClientLottie'
 import { AnimatePresence, motion } from 'motion/react'
@@ -12,6 +12,7 @@ import type { AttemptResult } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { matchedIndexes, scoreAttempt } from '#/lib/scoring'
 import { useSpeech } from '#/lib/speech'
+import { ErrorState, PracticeSkeleton } from '#/components/feedback'
 import { seo } from '#/lib/seo'
 
 export const Route = createFileRoute('/twisters/$slug')({
@@ -54,13 +55,19 @@ function Practice() {
   const nav = useNavigate()
   const qc = useQueryClient()
   const { session } = useAuth()
-  const { data: t } = useQuery({
+  const {
+    data: t,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['twister', slug],
     queryFn: () => api.twister(slug),
   })
   const [result, setResult] = useState<Result | null>(null)
   const [typed, setTyped] = useState('')
   const [showGo, setShowGo] = useState(false)
+  const [nextFailed, setNextFailed] = useState(false)
   const typedStart = useRef(0)
   const currentRef = useRef<HTMLSpanElement | null>(null)
 
@@ -151,14 +158,37 @@ function Practice() {
     speech.reset()
   }
   const next = async () => {
-    const page = await api.twisters({ difficulty: String(t?.difficulty ?? 1) })
+    const page = await api
+      .twisters({ difficulty: String(t?.difficulty ?? 1) })
+      .catch(() => null)
+    if (!page) return setNextFailed(true)
     const others = page.results.filter((x) => x.slug !== slug)
     const pick = others[Math.floor(Math.random() * others.length)]
     retry()
+    setNextFailed(false)
     if (pick) nav({ to: '/twisters/$slug', params: { slug: pick.slug } })
   }
 
-  if (!t) return <p className="text-white/50">Loading…</p>
+  if (isError)
+    return (
+      <ErrorState
+        title={
+          /API 404/.test(String((error as Error).message))
+            ? 'Twister not found'
+            : 'Couldn’t load this twister'
+        }
+        error={error}
+        onRetry={() => void refetch()}
+      >
+        <Link
+          to="/twisters"
+          className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-brand"
+        >
+          Browse twisters
+        </Link>
+      </ErrorState>
+    )
+  if (!t) return <PracticeSkeleton />
 
   const arming = speech.status === 'arming'
   const live = speech.status === 'live'
@@ -184,7 +214,15 @@ function Practice() {
       </div>
       <AnimatePresence mode="wait">
         {result ? (
-          <ResultCard key="r" {...result} onRetry={retry} onNext={next} />
+          <div key="r">
+            <ResultCard {...result} onRetry={retry} onNext={next} />
+            {nextFailed && (
+              <p role="alert" className="mt-4 text-sm text-pink">
+                Couldn’t fetch another twister — check your connection and tap
+                Next again.
+              </p>
+            )}
+          </div>
         ) : (
           <motion.div
             key="p"

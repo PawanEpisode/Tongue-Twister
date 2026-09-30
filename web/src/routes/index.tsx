@@ -3,7 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
-import { TwisterCard } from '#/components/ui'
+import {
+  CategoryCardSkeleton,
+  ErrorState,
+  Skeleton,
+} from '#/components/feedback'
 
 export const Route = createFileRoute('/')({
   head: () => seo({ title: 'Twister — Say it fast. Say it right.', path: '/' }),
@@ -71,11 +75,33 @@ function Home() {
           <div className="text-xs font-semibold uppercase tracking-widest text-pink">
             Today’s twister
           </div>
-          <p className="mt-3 font-display text-2xl leading-snug">
-            {daily.data?.text ?? 'Loading a tangle…'}
-          </p>
-          {daily.data?.tip && (
-            <p className="mt-4 text-sm text-white/50">💡 {daily.data.tip}</p>
+          {daily.isPending ? (
+            <div className="mt-4 space-y-3" aria-busy>
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-5/6" />
+              <Skeleton className="mt-5 h-3 w-2/3" />
+            </div>
+          ) : daily.isError ? (
+            <div role="alert" className="mt-3">
+              <p className="text-white/70">Couldn’t load today’s twister.</p>
+              <button
+                onClick={() => void daily.refetch()}
+                className="mt-3 rounded-lg border border-line px-3 py-1.5 text-sm hover:border-brand"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="mt-3 line-clamp-4 font-display text-2xl leading-snug">
+                {daily.data.text}
+              </p>
+              {daily.data.tip && (
+                <p className="mt-4 text-sm text-white/50">
+                  💡 {daily.data.tip}
+                </p>
+              )}
+            </>
           )}
         </motion.div>
       </section>
@@ -110,40 +136,51 @@ function Home() {
 
       <section>
         <h2 className="mb-5 text-2xl font-bold">Sound families</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.data?.map((c, i) => (
-            <motion.div
-              key={c.slug}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <Link
-                to="/twisters"
-                search={{ category: c.slug }}
-                className="glass flex items-center gap-4 rounded-2xl p-5 hover:border-brand/60"
-              >
-                <span className="text-3xl">{c.emoji}</span>
-                <span>
-                  <span className="block font-display text-lg font-bold">
-                    {c.name}{' '}
-                    <span className="text-sm font-normal text-white/40">
-                      · {c.count}
-                    </span>
-                  </span>
-                  <span className="text-sm text-white/50">{c.description}</span>
-                </span>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+        {cats.isError ? (
+          <ErrorState
+            compact
+            title="Couldn’t load sound families"
+            error={cats.error}
+            onRetry={() => void cats.refetch()}
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cats.isPending
+              ? Array.from({ length: 6 }, (_, i) => (
+                  <CategoryCardSkeleton key={i} />
+                ))
+              : cats.data.map((c, i) => (
+                  <motion.div
+                    key={c.slug}
+                    className="h-full"
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <Link
+                      to="/twisters"
+                      search={{ category: c.slug }}
+                      className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5 hover:border-brand/60"
+                    >
+                      <span className="text-3xl">{c.emoji}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-display text-lg font-bold">
+                          {c.name}{' '}
+                          <span className="text-sm font-normal text-white/40">
+                            · {c.count}
+                          </span>
+                        </span>
+                        <span className="line-clamp-2 text-sm text-white/50">
+                          {c.description}
+                        </span>
+                      </span>
+                    </Link>
+                  </motion.div>
+                ))}
+          </div>
+        )}
       </section>
-      {daily.data && (
-        <div className="hidden">
-          <TwisterCard t={daily.data} />
-        </div>
-      )}
     </div>
   )
 }

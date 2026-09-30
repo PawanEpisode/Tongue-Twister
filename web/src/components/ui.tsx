@@ -23,6 +23,7 @@ export function DifficultyBadge({ level }: { level: 1 | 2 | 3 | 4 }) {
 export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
   return (
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i, 8) * 0.04 }}
@@ -31,7 +32,7 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
       <Link
         to="/twisters/$slug"
         params={{ slug: t.slug }}
-        className="glass group block h-full rounded-2xl p-5 transition-colors hover:border-brand/60"
+        className="glass group flex h-[12.5rem] flex-col rounded-2xl p-5 transition-colors hover:border-brand/60"
       >
         <div className="mb-3 flex items-center justify-between">
           <DifficultyBadge level={t.difficulty} />
@@ -39,10 +40,11 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
             {t.origin}
           </span>
         </div>
-        <p className="font-display text-lg leading-snug text-white/95">
+        {/* Fixed 3-line preview: every card is the same height; the full text is on the practice screen. */}
+        <p className="line-clamp-3 h-[4.5rem] font-display text-lg leading-6 text-white/95">
           {t.text}
         </p>
-        <div className="mt-4 flex items-center justify-between text-xs text-white/50">
+        <div className="mt-auto flex items-center justify-between pt-4 text-xs text-white/50">
           <span>{t.word_count} words</span>
           {t.best_score != null ? (
             <span className="text-lime">Best {t.best_score}</span>

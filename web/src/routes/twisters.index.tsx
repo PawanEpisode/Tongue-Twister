@@ -1,9 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import { TwisterCard } from '#/components/ui'
+import {
+  ChipsSkeleton,
+  EmptyState,
+  ErrorState,
+  TwisterCardSkeleton,
+} from '#/components/feedback'
 
 type Search = {
   difficulty?: string
@@ -38,16 +44,28 @@ function Browse() {
   const set = (patch: Partial<Search>) =>
     nav({ search: (p) => ({ ...p, ...patch }) })
   const cats = useQuery({ queryKey: ['categories'], queryFn: api.categories })
-  const list = useQuery({
+  const list = useInfiniteQuery({
     queryKey: ['twisters', s],
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       api.twisters({
         difficulty: s.difficulty,
         category: s.category,
         origin: s.origin,
         search: s.q,
+        page: String(pageParam),
       }),
+    getNextPageParam: (last, pages) =>
+      pages.reduce((n, p) => n + p.results.length, 0) < last.count
+        ? pages.length + 1
+        : undefined,
   })
+  const items = list.data?.pages.flatMap((p) => p.results) ?? []
+  const total = list.data?.pages[0]?.count ?? 0
+  const clearFilters = () => {
+    setQ('')
+    nav({ search: {} })
+  }
 
   return (
     <div>
@@ -109,6 +127,12 @@ function Browse() {
         >
           Every sound
         </button>
+        {cats.isPending && <ChipsSkeleton />}
+        {cats.isError && (
+          <button className={chip(false)} onClick={() => void cats.refetch()}>
+            Couldn’t load sounds — retry
+          </button>
+        )}
         {cats.data?.map((c) => (
           <button
             key={c.slug}
@@ -119,20 +143,65 @@ function Browse() {
           </button>
         ))}
       </div>
-      {list.isError && (
-        <p className="mt-10 text-pink">
-          Couldn’t reach the API. Is the Django server running?
-        </p>
-      )}
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {list.data?.results.map((t, i) => (
-          <TwisterCard key={t.slug} t={t} i={i} />
-        ))}
-      </div>
-      {list.data && list.data.results.length === 0 && (
-        <p className="mt-10 text-white/50">
-          No twisters match — loosen a filter.
-        </p>
+      {list.isError && !items.length ? (
+        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+      ) : list.isPending ? (
+        <div
+          className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-busy
+          aria-label="Loading twisters"
+        >
+          {Array.from({ length: 9 }, (_, i) => (
+            <TwisterCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="No twisters match"
+          hint="Try a different search or loosen a filter."
+          action={
+            <button
+              onClick={clearFilters}
+              className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-brand"
+            >
+              Clear filters
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <p className="mt-6 text-sm text-white/40" aria-live="polite">
+            Showing {items.length} of {total}
+          </p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((t, i) => (
+              <TwisterCard key={t.slug} t={t} i={i % 24} />
+            ))}
+            {list.isFetchingNextPage &&
+              Array.from({ length: 3 }, (_, i) => (
+                <TwisterCardSkeleton key={`sk${i}`} />
+              ))}
+          </div>
+          {list.isError && (
+            <ErrorState
+              compact
+              title="Couldn’t load more"
+              error={list.error}
+              onRetry={() => void list.fetchNextPage()}
+            />
+          )}
+          {list.hasNextPage && !list.isError && (
+            <div className="mt-8 text-center">
+              <button
+                disabled={list.isFetchingNextPage}
+                onClick={() => void list.fetchNextPage()}
+                className="rounded-2xl border border-line px-6 py-3 font-semibold hover:border-brand disabled:opacity-50"
+              >
+                {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

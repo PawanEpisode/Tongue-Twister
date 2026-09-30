@@ -1,4 +1,5 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { ErrorState, NotFound, PracticeSkeleton } from '#/components/feedback'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
@@ -7,6 +8,18 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    // App-wide safety nets: any route that throws or 404s gets a friendly screen instead of a blank page.
+    defaultErrorComponent: ({ error, reset }) => (
+      <ErrorState
+        error={error}
+        onRetry={() => {
+          reset()
+          void router.invalidate()
+        }}
+      />
+    ),
+    defaultNotFoundComponent: NotFound,
+    defaultPendingComponent: PracticeSkeleton,
   })
 
   return router
