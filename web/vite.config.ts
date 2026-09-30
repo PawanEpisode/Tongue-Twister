@@ -28,9 +28,14 @@ export default defineConfig(({ command, mode }) => {
         bundler: 'vite',
         dev: () => inspectorEnabled,
         openIn: 'reuse',
-        launchType: process.platform === 'darwin' ? 'open' : 'exec',
-        showSwitch: true,
-        autoToggle: true,
+        // 'exec' runs the editor CLI (`cursor`, `code`…) and prints a clear error in the
+        // dev-server terminal when it can't. 'open' uses the cursor:// URL scheme instead,
+        // which fails silently — set CODE_INSPECTOR_LAUNCH=open only if the CLI isn't installed.
+        launchType: env.CODE_INSPECTOR_LAUNCH === 'open' ? 'open' : 'exec',
+        // No floating toggle: the inspector only wakes while Option/Alt+Shift is held,
+        // so normal clicks (and the IDE's built-in browser) are never intercepted.
+        showSwitch: false,
+        autoToggle: false,
         hideDomPathAttr: true,
         pathType: 'absolute',
         match: /\.(jsx|tsx)$/,

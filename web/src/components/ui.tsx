@@ -28,7 +28,7 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
       <Card
         asChild
         variant="glass"
-        className="group flex h-[12.5rem] flex-col rounded-2xl p-5 transition-colors hover:border-primary/60"
+        className="group flex h-50 flex-col rounded-2xl p-5 transition-colors hover:border-primary/60"
       >
         <Link to="/twisters/$slug" params={{ slug: t.slug }}>
           <div className="mb-3 flex items-center justify-between">
@@ -38,7 +38,7 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
             </span>
           </div>
           {/* Fixed 3-line preview: every card is the same height; the full text is on the practice screen. */}
-          <p className="line-clamp-3 h-[4.5rem] font-display text-lg leading-6 text-foreground">
+          <p className="line-clamp-3 h-18 font-display text-lg leading-6 text-foreground">
             {t.text}
           </p>
           <div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground">

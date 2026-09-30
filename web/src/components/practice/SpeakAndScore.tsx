@@ -15,6 +15,7 @@ import type {
 } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { attemptQueue, isTransient } from '#/lib/attemptQueue'
+import { unsavedReason } from '#/lib/submitNotice'
 import { useFlag } from '#/lib/flags'
 import { SCORE_VERSION, scoreLocally } from '#/lib/scoring'
 import {
@@ -53,8 +54,6 @@ type Result = {
 
 const GATED_NOTICE =
   'Score capped at 79 — a slip on this twister’s focus sound. Nail that sound to go higher.'
-const OFFLINE_NOTICE =
-  'You’re offline — saved on this device and it will count once you’re back online.'
 const UNSAVED_NOTICE =
   'We couldn’t save this attempt, so the score is an estimate.'
 
@@ -190,7 +189,7 @@ export default function SpeakAndScore({
         // Unreachable or throttled: keep it and replay later (the server de-duplicates on the id).
         if (isTransient(err)) {
           // Only queue a take the server would have accepted (it rejects unclear ones anyway).
-          if (showLocal(spoken, timing, meta.confidence, OFFLINE_NOTICE))
+          if (showLocal(spoken, timing, meta.confidence, unsavedReason(err)))
             attemptQueue.add(session.user.id, body)
         } else showLocal(spoken, timing, meta.confidence, UNSAVED_NOTICE)
       },
