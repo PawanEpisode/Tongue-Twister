@@ -48,7 +48,7 @@ export default function ModeSwitcher({
             tabIndex={active ? 0 : -1}
             disabled={!enabled.includes(m.key)}
             onClick={() => onChange(m.key)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'bg-brand text-white' : 'text-white/70 hover:text-white'}`}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {m.label}
             {!m.built && (

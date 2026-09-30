@@ -6,6 +6,7 @@ import ReadAlongMode from '#/components/practice/ReadAlongMode'
 import HubHeader from '#/components/practice/HubHeader'
 import SidePanel from '#/components/practice/SidePanel'
 import SpeakAndScore from '#/components/practice/SpeakAndScore'
+import { Button } from '#/components/ui/button'
 import { ErrorState, PracticeSkeleton } from '#/components/feedback'
 import { api } from '#/lib/api'
 import type { DisplayStyle, PracticeMode } from '#/lib/api'
@@ -113,12 +114,9 @@ function PracticeHub() {
         error={error}
         onRetry={() => void refetch()}
       >
-        <Link
-          to="/twisters"
-          className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-brand"
-        >
-          Browse twisters
-        </Link>
+        <Button asChild variant="outline">
+          <Link to="/twisters">Browse twisters</Link>
+        </Button>
       </ErrorState>
     )
   if (!t || !ready) return <PracticeSkeleton />

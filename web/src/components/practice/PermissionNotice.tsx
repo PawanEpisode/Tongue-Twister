@@ -1,3 +1,5 @@
+import { Button } from '#/components/ui/button'
+import { Card } from '#/components/ui/card'
 import type { MediaKind, PermissionState } from '#/lib/useMediaPermissions'
 
 const LABEL: Record<MediaKind, string> = {
@@ -36,27 +38,22 @@ export default function PermissionNotice({
   const message = copy(state, kind)
   if (!message) return null
   return (
-    <div
+    <Card
       role="alert"
-      className="glass mx-auto mt-4 max-w-md rounded-2xl p-4 text-sm text-white/80"
+      variant="glass"
+      className="mx-auto mt-4 max-w-md rounded-2xl p-4 text-sm"
     >
       <p>{message}</p>
       <div className="mt-3 flex justify-center gap-2">
-        <button
-          className="rounded-xl border border-line px-3 py-1.5 font-semibold hover:border-brand"
-          onClick={onRetry}
-        >
+        <Button variant="outline" className="px-3 py-1.5" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
         {onReadAlong && (
-          <button
-            className="rounded-xl bg-brand px-3 py-1.5 font-semibold"
-            onClick={onReadAlong}
-          >
+          <Button className="px-3 py-1.5" onClick={onReadAlong}>
             Use Read along
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

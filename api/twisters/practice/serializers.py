@@ -36,27 +36,51 @@ class PreferenceSerializer(serializers.ModelSerializer):
 
 
 class SessionCreateSerializer(serializers.ModelSerializer):
-    twister = serializers.SlugRelatedField(slug_field="slug", queryset=Twister.objects.filter(is_published=True))
+    twister = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
+    )
 
     class Meta:
         model = PracticeSession
-        fields = ["client_session_id", "twister", "mode", "submode", "settings_snapshot", "engine", "user_agent_family"]
+        fields = [
+            "client_session_id",
+            "twister",
+            "mode",
+            "submode",
+            "settings_snapshot",
+            "engine",
+            "user_agent_family",
+        ]
 
     def validate_settings_snapshot(self, value):
         return _bounded_json(value)
 
 
 class SessionUpdateSerializer(serializers.ModelSerializer):
-    status = serializers.ChoiceField(choices=[SessionStatus.COMPLETED, SessionStatus.ABANDONED], required=False)
+    status = serializers.ChoiceField(
+        choices=[SessionStatus.COMPLETED, SessionStatus.ABANDONED], required=False
+    )
 
     class Meta:
         model = PracticeSession
-        fields = ["status", "ended_reason", "active_ms", "loops_completed", "passes_completed", "avg_wpm"]
+        fields = [
+            "status",
+            "ended_reason",
+            "active_ms",
+            "loops_completed",
+            "passes_completed",
+            "avg_wpm",
+        ]
         extra_kwargs = {"avg_wpm": {"min_value": 0, "max_value": 1000}}
 
     def validate(self, attrs):
         if "status" in attrs:
-            attrs.setdefault("ended_reason", EndReason.FINISHED if attrs["status"] == SessionStatus.COMPLETED else EndReason.USER)
+            attrs.setdefault(
+                "ended_reason",
+                EndReason.FINISHED
+                if attrs["status"] == SessionStatus.COMPLETED
+                else EndReason.USER,
+            )
         elif "ended_reason" in attrs:
             raise serializers.ValidationError({"ended_reason": "Only valid together with status."})
         return attrs
@@ -67,9 +91,24 @@ class SessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PracticeSession
-        fields = ["id", "client_session_id", "twister", "mode", "submode", "status", "ended_reason", "started_at",
-                  "ended_at", "active_ms", "loops_completed", "passes_completed", "avg_wpm", "settings_snapshot",
-                  "engine", "user_agent_family"]
+        fields = [
+            "id",
+            "client_session_id",
+            "twister",
+            "mode",
+            "submode",
+            "status",
+            "ended_reason",
+            "started_at",
+            "ended_at",
+            "active_ms",
+            "loops_completed",
+            "passes_completed",
+            "avg_wpm",
+            "settings_snapshot",
+            "engine",
+            "user_agent_family",
+        ]
         read_only_fields = fields
 
 

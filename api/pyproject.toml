@@ -1,0 +1,20 @@
+[project]
+name = "twister-api"
+version = "0.0.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+# The formatter owns wrapping. E501 also flags comments and strings it cannot wrap.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings_test.py" = ["F403", "F401"]
+
+[tool.ruff.format]
+quote-style = "double"

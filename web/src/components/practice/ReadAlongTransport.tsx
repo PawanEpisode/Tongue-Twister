@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { formatDuration } from '#/lib/readAlong/timeline'
 import type { EngineStatus } from '#/lib/readAlong/useReadAlong'
 
@@ -18,9 +19,6 @@ type Props = {
   onFocus: () => void
   onHelp: () => void
 }
-
-const ghost =
-  'rounded-xl border border-line px-4 py-3 hover:border-brand disabled:opacity-40'
 
 function speedNote(wpm: number) {
   if (wpm < 50) return 'Very slow — great for warm-ups.'
@@ -45,31 +43,44 @@ export default function ReadAlongTransport(p: Props) {
         className="mt-4 w-full accent-brand"
       />
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <button className={ghost} onClick={p.onRestart} aria-label="Restart">
+        <Button
+          type="button"
+          variant="outline"
+          className="px-4 py-3"
+          onClick={p.onRestart}
+          aria-label="Restart"
+        >
           ⏹
-        </button>
-        <button
-          className={ghost}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-4 py-3"
           onClick={() => p.onStep(-1)}
           aria-label="Back one word"
         >
           ⏪
-        </button>
-        <button
-          className="min-w-32 rounded-xl bg-brand px-6 py-3 font-semibold"
+        </Button>
+        <Button
+          type="button"
+          className="min-w-32 px-6 py-3"
           onClick={p.onToggle}
         >
           {running ? '⏸ Pause' : p.status === 'paused' ? '▶ Resume' : '▶ Start'}
-        </button>
-        <button
-          className={ghost}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-4 py-3"
           onClick={() => p.onStep(1)}
           aria-label="Forward one word"
         >
           ⏩
-        </button>
-        <button
-          className={ghost}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-4 py-3"
           onClick={p.onListen}
           disabled={p.listenState === 'unavailable'}
           title={
@@ -79,19 +90,21 @@ export default function ReadAlongTransport(p: Props) {
           }
         >
           {p.listenState === 'speaking' ? '🔊 Stop' : '🔈 Listen'}
-        </button>
+        </Button>
         {p.focus.supported && (
-          <button
-            className={ghost}
+          <Button
+            type="button"
+            variant="outline"
+            className="px-4 py-3"
             onClick={p.onFocus}
             aria-pressed={p.focus.active}
             aria-label="Focus mode"
           >
             ⛶
-          </button>
+          </Button>
         )}
       </div>
-      <p className="mt-3 text-center text-xs text-white/40">
+      <p className="mt-3 text-center text-xs text-muted-foreground">
         ~{formatDuration(p.totalMs)} at {p.wpm} WPM
         {p.loopLabel ? ` · ${p.loopLabel}` : ''}
         {' · '}

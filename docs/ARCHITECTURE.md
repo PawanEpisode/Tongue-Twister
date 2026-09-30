@@ -39,6 +39,18 @@ cd web && npm install && cp .env.example .env.local   # fill Supabase values (op
 npm run dev                               # http://localhost:3000
 ```
 
+## Checks
+
+Commit hooks live at the repo root. `npm install` there installs Husky; the pre-commit hook runs Prettier and ESLint on staged `web/` files and Ruff on staged `api/` files. Ruff comes from `requirements-dev.txt`, so the API venv above has to exist (`uv` on your PATH).
+
+```bash
+npm install          # repo root, once — sets up Husky
+npm run lint         # web eslint + prettier + tsc, and api ruff
+npm run format
+```
+
+GitHub Actions runs the same checks on pull requests and pushes to `main`.
+
 ## Supabase setup
 1. Create a project (free tier). Note **Project URL**, **anon/publishable key**.
 2. *Settings → Database → Connection string → Transaction pooler* → use as `DATABASE_URL` (port 6543).

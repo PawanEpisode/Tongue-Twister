@@ -37,10 +37,18 @@ class Category(models.Model):
 class Twister(models.Model):
     slug = models.SlugField(unique=True, max_length=80)
     text = models.TextField()
-    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="twisters")
-    difficulty = models.PositiveSmallIntegerField(choices=Difficulty.choices, default=Difficulty.EASY, db_index=True)
-    origin = models.CharField(max_length=10, choices=Origin.choices, default=Origin.CLASSIC, db_index=True)
-    tip = models.CharField(max_length=240, blank=True, help_text="Coaching hint shown before practice")
+    category = models.ForeignKey(
+        Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="twisters"
+    )
+    difficulty = models.PositiveSmallIntegerField(
+        choices=Difficulty.choices, default=Difficulty.EASY, db_index=True
+    )
+    origin = models.CharField(
+        max_length=10, choices=Origin.choices, default=Origin.CLASSIC, db_index=True
+    )
+    tip = models.CharField(
+        max_length=240, blank=True, help_text="Coaching hint shown before practice"
+    )
     focus_sounds = models.JSONField(default=list, blank=True, help_text='e.g. ["s", "sh"]')
     word_count = models.PositiveSmallIntegerField(editable=False, default=0)
     is_published = models.BooleanField(default=True, db_index=True)
@@ -49,12 +57,12 @@ class Twister(models.Model):
     class Meta:
         ordering = ["difficulty", "id"]
 
+    def __str__(self):
+        return self.text[:60]
+
     def save(self, *args, **kwargs):
         self.word_count = len(self.text.split())
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.text[:60]
 
 
 def validate_timezone(value: str) -> None:
@@ -88,10 +96,23 @@ class Profile(models.Model):
     xp = models.PositiveIntegerField(default=0)
     current_streak = models.PositiveIntegerField(default=0)
     best_streak = models.PositiveIntegerField(default=0)
-    last_activity_date = models.DateField(null=True, blank=True, help_text="Local date of the last streak-qualifying activity")
-    timezone = models.CharField(max_length=64, default="UTC", validators=[validate_timezone], help_text="IANA name; decides what 'today' means")
-    plan = models.ForeignKey(Plan, to_field="code", db_column="plan_code", default=Plan.DEFAULT_CODE,
-                             on_delete=models.PROTECT, related_name="profiles")
+    last_activity_date = models.DateField(
+        null=True, blank=True, help_text="Local date of the last streak-qualifying activity"
+    )
+    timezone = models.CharField(
+        max_length=64,
+        default="UTC",
+        validators=[validate_timezone],
+        help_text="IANA name; decides what 'today' means",
+    )
+    plan = models.ForeignKey(
+        Plan,
+        to_field="code",
+        db_column="plan_code",
+        default=Plan.DEFAULT_CODE,
+        on_delete=models.PROTECT,
+        related_name="profiles",
+    )
     guest_migrated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -116,13 +137,25 @@ class Attempt(models.Model):
     wpm = models.FloatField()
     score = models.PositiveSmallIntegerField(db_index=True)
     xp_awarded = models.PositiveSmallIntegerField(default=0)
-    client_attempt_id = models.UUIDField(null=True, blank=True, help_text="Client-generated; makes imports idempotent")
+    client_attempt_id = models.UUIDField(
+        null=True, blank=True, help_text="Client-generated; makes imports idempotent"
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["twister", "-score"]), models.Index(fields=["profile", "-created_at"])]
-        constraints = [models.UniqueConstraint(fields=["profile", "client_attempt_id"], name="uniq_attempt_client_id")]
+        indexes = [
+            models.Index(fields=["twister", "-score"]),
+            models.Index(fields=["profile", "-created_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "client_attempt_id"], name="uniq_attempt_client_id"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.score} on {self.twister_id}"
 
 
 class Favorite(models.Model):
@@ -133,8 +166,12 @@ class Favorite(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["profile", "twister"], name="uniq_favorite")]
 
+    def __str__(self):
+        return f"{self.profile_id}:{self.twister_id}"
+
 
 # --- Practice Hub & Read-along (ERD 06a) -------------------------------------------------------
+
 
 class PracticeMode(models.TextChoices):
     READ_ALONG = "read_along", "Read along"
@@ -181,13 +218,27 @@ def _bounded(field: str) -> list:
 class UserPreference(models.Model):
     """Durable Practice Hub settings. Hot settings are typed columns; the rest live in `extra`."""
 
-    profile = models.OneToOneField(Profile, primary_key=True, on_delete=models.CASCADE, related_name="preferences")
-    default_mode = models.CharField(max_length=12, choices=PracticeMode.choices, default=PracticeMode.SPEAK_SCORE)
-    display_style = models.CharField(max_length=6, choices=DisplayStyle.choices, default=DisplayStyle.WORD)
-    accent_lang = models.CharField(max_length=5, choices=AccentLang.choices, default=AccentLang.EN_US)
-    wpm = models.PositiveSmallIntegerField(null=True, blank=True, validators=_bounded("wpm"),
-                                           help_text="Null = automatic, by twister difficulty (90/110/130/150)")
-    threshold_pct = models.PositiveSmallIntegerField(default=35, validators=_bounded("threshold_pct"))
+    profile = models.OneToOneField(
+        Profile, primary_key=True, on_delete=models.CASCADE, related_name="preferences"
+    )
+    default_mode = models.CharField(
+        max_length=12, choices=PracticeMode.choices, default=PracticeMode.SPEAK_SCORE
+    )
+    display_style = models.CharField(
+        max_length=6, choices=DisplayStyle.choices, default=DisplayStyle.WORD
+    )
+    accent_lang = models.CharField(
+        max_length=5, choices=AccentLang.choices, default=AccentLang.EN_US
+    )
+    wpm = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=_bounded("wpm"),
+        help_text="Null = automatic, by twister difficulty (90/110/130/150)",
+    )
+    threshold_pct = models.PositiveSmallIntegerField(
+        default=35, validators=_bounded("threshold_pct")
+    )
     font_scale = models.FloatField(default=1.0, validators=_bounded("font_scale"))
     loop_count = models.PositiveSmallIntegerField(default=1, validators=_bounded("loop_count"))
     countdown_s = models.PositiveSmallIntegerField(default=3, validators=_bounded("countdown_s"))
@@ -196,14 +247,18 @@ class UserPreference(models.Model):
     metronome = models.BooleanField(default=False)
     metronome_volume = models.FloatField(default=0.5, validators=_bounded("metronome_volume"))
     listen_first = models.BooleanField(default=False)
-    tts_voice = models.CharField(max_length=200, blank=True, help_text="Device-specific voiceURI; empty = default")
+    tts_voice = models.CharField(
+        max_length=200, blank=True, help_text="Device-specific voiceURI; empty = default"
+    )
     tts_rate = models.FloatField(default=1.0, validators=_bounded("tts_rate"))
     reduce_motion = models.BooleanField(default=False)
     dyslexia_font = models.BooleanField(default=False)
     high_contrast = models.BooleanField(default=False)
     save_voice_default = models.BooleanField(default=False)
     record_layout = models.SlugField(max_length=24, default="camera_text")
-    record_resolution = models.CharField(max_length=5, choices=RecordResolution.choices, default=RecordResolution.P720)
+    record_resolution = models.CharField(
+        max_length=5, choices=RecordResolution.choices, default=RecordResolution.P720
+    )
     speed_ladder = models.JSONField(default=dict, blank=True)
     extra = models.JSONField(default=dict, blank=True)
     schema_version = models.PositiveSmallIntegerField(default=1)
@@ -212,7 +267,8 @@ class UserPreference(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                condition=Q(**{f"{f}__gte": lo, f"{f}__lte": hi}), name=f"pref_{f}_range")
+                condition=Q(**{f"{f}__gte": lo, f"{f}__lte": hi}), name=f"pref_{f}_range"
+            )
             for f, (lo, hi) in PREFERENCE_RANGES.items()
         ]
 
@@ -253,16 +309,22 @@ class PracticeSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="practice_sessions")
     twister = models.ForeignKey(Twister, on_delete=models.CASCADE, related_name="practice_sessions")
-    client_session_id = models.CharField(max_length=64, help_text="Client-generated id; makes create idempotent")
+    client_session_id = models.CharField(
+        max_length=64, help_text="Client-generated id; makes create idempotent"
+    )
     mode = models.CharField(max_length=12, choices=PracticeMode.choices)
     submode = models.CharField(max_length=8, choices=Submode.choices, blank=True)
-    status = models.CharField(max_length=10, choices=SessionStatus.choices, default=SessionStatus.ACTIVE)
+    status = models.CharField(
+        max_length=10, choices=SessionStatus.choices, default=SessionStatus.ACTIVE
+    )
     ended_reason = models.CharField(max_length=12, choices=EndReason.choices, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     active_ms = models.PositiveIntegerField(default=0)
     loops_completed = models.PositiveSmallIntegerField(default=0)
-    passes_completed = models.PositiveSmallIntegerField(default=0, help_text="Full passes through the text")
+    passes_completed = models.PositiveSmallIntegerField(
+        default=0, help_text="Full passes through the text"
+    )
     avg_wpm = models.FloatField(null=True, blank=True)
     settings_snapshot = models.JSONField(default=dict, blank=True)
     engine = models.CharField(max_length=12, choices=Engine.choices, blank=True)
@@ -270,8 +332,18 @@ class PracticeSession(models.Model):
 
     class Meta:
         ordering = ["-started_at"]
-        constraints = [models.UniqueConstraint(fields=["profile", "client_session_id"], name="uniq_session_client_id")]
-        indexes = [models.Index(fields=["profile", "-started_at"]), models.Index(fields=["twister", "mode"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "client_session_id"], name="uniq_session_client_id"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["profile", "-started_at"]),
+            models.Index(fields=["twister", "mode"]),
+        ]
+
+    def __str__(self):
+        return f"{self.mode} {self.status}"
 
 
 class DailyActivity(models.Model):
@@ -290,7 +362,12 @@ class DailyActivity(models.Model):
 
     class Meta:
         verbose_name_plural = "daily activity"
-        constraints = [models.UniqueConstraint(fields=["profile", "local_date"], name="uniq_daily_activity")]
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "local_date"], name="uniq_daily_activity")
+        ]
+
+    def __str__(self):
+        return f"{self.profile_id} {self.local_date}"
 
 
 class SyncKind(models.TextChoices):
@@ -311,7 +388,12 @@ class SyncBatch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["profile", "client_batch_id"], name="uniq_sync_batch")]
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "client_batch_id"], name="uniq_sync_batch")
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.client_batch_id}"
 
 
 class FeatureFlag(models.Model):
@@ -321,10 +403,14 @@ class FeatureFlag(models.Model):
     description = models.CharField(max_length=200, blank=True)
     enabled = models.BooleanField(default=False)
     rollout_pct = models.PositiveSmallIntegerField(default=100, validators=[MaxValueValidator(100)])
-    allow_list = models.JSONField(default=list, blank=True, help_text="Profile ids that always get the flag")
+    allow_list = models.JSONField(
+        default=list, blank=True, help_text="Profile ids that always get the flag"
+    )
 
     class Meta:
-        constraints = [models.CheckConstraint(condition=Q(rollout_pct__lte=100), name="flag_rollout_pct_range")]
+        constraints = [
+            models.CheckConstraint(condition=Q(rollout_pct__lte=100), name="flag_rollout_pct_range")
+        ]
 
     def __str__(self):
         return self.code

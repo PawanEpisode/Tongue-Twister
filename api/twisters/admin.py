@@ -23,4 +23,17 @@ class TwisterAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("text",)}
 
 
-admin.site.register([Category, Profile, Attempt, Favorite, Plan, UserPreference, PracticeSession, DailyActivity, SyncBatch, FeatureFlag])
+admin.site.register(
+    [
+        Category,
+        Profile,
+        Attempt,
+        Favorite,
+        Plan,
+        UserPreference,
+        PracticeSession,
+        DailyActivity,
+        SyncBatch,
+        FeatureFlag,
+    ]
+)

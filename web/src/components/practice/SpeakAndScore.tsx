@@ -6,6 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import AudioVisualizer from '#/components/AudioVisualizer'
 import pulse from '#/assets/lottie/pulse.json'
 import ResultCard from '#/components/ResultCard'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 import { api } from '#/lib/api'
 import type { AttemptResult, Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
@@ -16,6 +18,7 @@ import { draft } from '#/lib/draft'
 import { guestQueue } from '#/lib/syncQueue'
 import { usePracticeLock } from '#/lib/tabLock'
 import { useMediaPermissions } from '#/lib/useMediaPermissions'
+import { cn } from '#/lib/utils'
 import PermissionNotice from './PermissionNotice'
 
 type Result = {
@@ -193,7 +196,7 @@ export default function SpeakAndScore({
             <div
               className={
                 isLong
-                  ? 'max-h-[42vh] overflow-y-auto rounded-2xl border border-line/60 bg-panel/40 p-5 text-left'
+                  ? 'max-h-[42vh] overflow-y-auto rounded-2xl border border-border/60 bg-card/40 p-5 text-left'
                   : ''
               }
             >
@@ -204,11 +207,14 @@ export default function SpeakAndScore({
                   <motion.span
                     key={i}
                     ref={i === currentIdx ? currentRef : undefined}
-                    animate={{
-                      color: hits[i] ? '#a3f75b' : '#ecebff',
-                      scale: hits[i] ? 1.04 : 1,
-                    }}
-                    className={`mr-2.5 inline-block rounded-md px-0.5 transition-colors ${live && i === currentIdx ? 'bg-brand/25 underline decoration-brand decoration-2 underline-offset-4' : ''}`}
+                    animate={{ scale: hits[i] ? 1.04 : 1 }}
+                    className={cn(
+                      'mr-2.5 inline-block rounded-md px-0.5 transition-colors',
+                      hits[i] ? 'text-lime' : 'text-foreground',
+                      live &&
+                        i === currentIdx &&
+                        'bg-primary/25 underline decoration-primary decoration-2 underline-offset-4',
+                    )}
                   >
                     {w}
                   </motion.span>
@@ -216,13 +222,13 @@ export default function SpeakAndScore({
               </p>
             </div>
             {t.tip && !live && (
-              <p className="mt-5 text-sm text-white/50">💡 {t.tip}</p>
+              <p className="mt-5 text-sm text-muted-foreground">💡 {t.tip}</p>
             )}
 
             {live && (
-              <div className="mx-auto mt-5 h-1.5 max-w-md overflow-hidden rounded-full bg-panel">
+              <div className="mx-auto mt-5 h-1.5 max-w-md overflow-hidden rounded-full bg-card">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-brand to-pink"
+                  className="h-full bg-gradient-to-r from-primary to-pink"
                   animate={{
                     width: `${(matched / Math.max(1, hits.length)) * 100}%`,
                   }}
@@ -251,7 +257,7 @@ export default function SpeakAndScore({
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1.15, opacity: 1 }}
                     exit={{ scale: 1.6, opacity: 0 }}
-                    className="pointer-events-none absolute inset-0 z-10 grid place-items-center font-display text-5xl font-extrabold text-lime drop-shadow-[0_0_24px_rgba(163,247,91,.7)]"
+                    className="pointer-events-none absolute inset-0 z-10 grid place-items-center font-display text-5xl font-extrabold text-lime hit-glow"
                   >
                     GO!
                   </motion.div>
@@ -265,13 +271,16 @@ export default function SpeakAndScore({
                 }
                 onClick={live ? speech.stop : () => void startListening()}
                 aria-label={live ? 'Stop' : 'Start speaking'}
-                className={`absolute inset-[72px] grid place-items-center rounded-full text-3xl shadow-xl disabled:cursor-wait ${live ? 'bg-pink shadow-pink/40' : 'bg-brand shadow-brand/40'} ${arming ? 'opacity-70' : ''}`}
+                className={`absolute inset-[72px] grid place-items-center rounded-full text-3xl shadow-xl disabled:cursor-wait ${live ? 'bg-pink text-pink-foreground shadow-pink/40' : 'bg-primary text-primary-foreground shadow-primary/40'} ${arming ? 'opacity-70' : ''}`}
               >
                 {live ? '⏹' : arming ? '…' : '🎤'}
               </motion.button>
             </div>
 
-            <p className="mt-1 text-sm text-white/60" aria-live="polite">
+            <p
+              className="mt-1 text-sm text-muted-foreground"
+              aria-live="polite"
+            >
               {arming
                 ? 'Getting your mic ready… wait for GO!'
                 : live
@@ -297,7 +306,7 @@ export default function SpeakAndScore({
               <p className="mt-2 text-sm text-pink">{speech.error}</p>
             )}
             {live && speech.transcript && (
-              <p className="mx-auto mt-3 max-w-xl text-sm text-white/40">
+              <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
                 “{speech.transcript}”
               </p>
             )}
@@ -310,7 +319,7 @@ export default function SpeakAndScore({
                   finish(typed, Date.now() - typedStart.current)
                 }}
               >
-                <input
+                <Input
                   value={typed}
                   onChange={(e) => {
                     if (!typedStart.current) typedStart.current = Date.now()
@@ -318,15 +327,13 @@ export default function SpeakAndScore({
                     draft.write(t.slug, e.target.value)
                   }}
                   placeholder="Type the twister…"
-                  className="glass w-full rounded-2xl px-5 py-3 outline-none focus:border-brand"
+                  className="glass rounded-2xl px-5 py-3"
                 />
-                <button className="mt-3 rounded-xl bg-brand px-6 py-2.5 font-semibold">
-                  Score it
-                </button>
+                <Button className="mt-3 px-6 py-2.5">Score it</Button>
               </form>
             )}
             {!session && (
-              <p className="mt-8 text-xs text-white/35">
+              <p className="mt-8 text-xs text-muted-foreground">
                 Playing as guest —{' '}
                 <Link
                   to="/login"

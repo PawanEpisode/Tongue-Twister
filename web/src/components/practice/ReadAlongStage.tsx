@@ -57,8 +57,8 @@ function wordClass(
 ) {
   const motion = animate ? 'transition-colors duration-150' : ''
   if (i === current)
-    return `${motion} rounded-md px-1 underline decoration-2 underline-offset-4 ${contrast ? 'bg-yellow-300 text-black decoration-black' : 'bg-brand/30 text-white decoration-brand'}`
-  return `${motion} px-1 ${i < current ? 'text-white/35' : 'text-white/90'}`
+    return `${motion} rounded-md px-1 underline decoration-2 underline-offset-4 ${contrast ? 'bg-yellow-300 text-black decoration-black' : 'bg-primary/30 text-foreground decoration-primary'}`
+  return `${motion} px-1 ${i < current ? 'text-muted-foreground' : 'text-foreground'}`
 }
 
 export default function ReadAlongStage({
@@ -148,7 +148,7 @@ export default function ReadAlongStage({
   return (
     <div
       ref={box}
-      className={`relative min-h-64 touch-pan-y rounded-2xl ${focus ? 'h-[70vh]' : 'h-[42vh]'} border border-line/60 bg-panel/40 p-5 ${style === 'scroll' ? 'overflow-hidden' : 'overflow-y-auto'} ${look.mirror_text ? '-scale-x-100' : ''}`}
+      className={`relative min-h-64 touch-pan-y rounded-2xl ${focus ? 'h-[70vh]' : 'h-[42vh]'} border border-border/60 bg-card/40 p-5 ${style === 'scroll' ? 'overflow-hidden' : 'overflow-y-auto'} ${look.mirror_text ? '-scale-x-100' : ''}`}
       style={{
         fontSize: `${baseRem(timeline.tokens.length) * look.font_scale}rem`,
         fontFamily: look.dyslexia_font ? 'var(--font-dyslexic)' : undefined,
@@ -179,7 +179,7 @@ export default function ReadAlongStage({
       {style !== 'line' && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 border-t border-dashed border-brand/40"
+          className="pointer-events-none absolute inset-x-0 border-t border-dashed border-primary/40"
           style={{ top: `${look.threshold_pct}%` }}
         />
       )}

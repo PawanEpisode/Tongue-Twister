@@ -19,8 +19,19 @@ class TwisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Twister
-        fields = ["slug", "text", "category", "difficulty", "difficulty_label", "origin", "tip",
-                  "focus_sounds", "word_count", "is_favorite", "best_score"]
+        fields = [
+            "slug",
+            "text",
+            "category",
+            "difficulty",
+            "difficulty_label",
+            "origin",
+            "tip",
+            "focus_sounds",
+            "word_count",
+            "is_favorite",
+            "best_score",
+        ]
 
     def _fav_ids(self):
         return self.context.get("favorite_ids", set())
@@ -36,7 +47,9 @@ class TwisterSerializer(serializers.ModelSerializer):
 
 
 class AttemptCreateSerializer(serializers.Serializer):
-    twister = serializers.SlugRelatedField(slug_field="slug", queryset=Twister.objects.filter(is_published=True))
+    twister = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
+    )
     transcript = serializers.CharField(allow_blank=True, max_length=3000)
     duration_ms = serializers.IntegerField(min_value=300, max_value=300_000)
 
@@ -46,7 +59,17 @@ class AttemptSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Attempt
-        fields = ["id", "twister", "transcript", "accuracy", "wpm", "score", "xp_awarded", "duration_ms", "created_at"]
+        fields = [
+            "id",
+            "twister",
+            "transcript",
+            "accuracy",
+            "wpm",
+            "score",
+            "xp_awarded",
+            "duration_ms",
+            "created_at",
+        ]
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -54,5 +77,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ["id", "email", "display_name", "avatar_emoji", "xp", "level", "current_streak", "best_streak", "timezone"]
+        fields = [
+            "id",
+            "email",
+            "display_name",
+            "avatar_emoji",
+            "xp",
+            "level",
+            "current_streak",
+            "best_streak",
+            "timezone",
+        ]
         read_only_fields = ["id", "email", "xp", "current_streak", "best_streak"]

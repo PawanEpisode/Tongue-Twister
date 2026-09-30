@@ -8,7 +8,13 @@ from ..errors import Conflict
 from ..models import PracticeSession, Profile, SessionStatus, UserPreference
 from ..serializers import ProfileSerializer
 from . import flags, guest_sync, services
-from .serializers import PlanSerializer, PreferenceSerializer, SessionCreateSerializer, SessionSerializer, SessionUpdateSerializer
+from .serializers import (
+    PlanSerializer,
+    PreferenceSerializer,
+    SessionCreateSerializer,
+    SessionSerializer,
+    SessionUpdateSerializer,
+)
 
 
 @api_view(["GET", "PATCH"])
@@ -39,7 +45,9 @@ def entitlements(request):
 @permission_classes([permissions.AllowAny])
 def feature_flags(request):
     user = request.user if isinstance(request.user, Profile) else None
-    return Response({"flags": flags.evaluate(user)}, headers={"Cache-Control": "private, max-age=60"})
+    return Response(
+        {"flags": flags.evaluate(user)}, headers={"Cache-Control": "private, max-age=60"}
+    )
 
 
 @api_view(["POST"])
@@ -52,7 +60,11 @@ def sync_guest(request):
     profile = Profile.objects.select_for_update().get(pk=request.user.pk)
     batch, created = guest_sync.import_batch(profile, ser.validated_data)
     return Response(
-        {"attempts_imported": batch.attempts_imported, "favorites_imported": batch.favorites_imported, "rejected": batch.rejected},
+        {
+            "attempts_imported": batch.attempts_imported,
+            "favorites_imported": batch.favorites_imported,
+            "rejected": batch.rejected,
+        },
         status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         headers={} if created else {"Idempotent-Replay": "true"},
     )
@@ -74,7 +86,8 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         data = dict(ser.validated_data)
         client_id = data.pop("client_session_id")
         session, created = PracticeSession.objects.get_or_create(
-            profile=request.user, client_session_id=client_id, defaults=data)
+            profile=request.user, client_session_id=client_id, defaults=data
+        )
         return Response(
             SessionSerializer(session).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
@@ -89,8 +102,16 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         session.profile = profile
 
         xp = 0
-        if session.status == SessionStatus.ACTIVE:  # terminal sessions are immutable → replays are harmless no-ops
+        if (
+            session.status == SessionStatus.ACTIVE
+        ):  # terminal sessions are immutable → replays are harmless no-ops
             ser = SessionUpdateSerializer(session, data=request.data, partial=True)
             ser.is_valid(raise_exception=True)
             xp = services.apply_session_update(session, dict(ser.validated_data))
-        return Response({**SessionSerializer(session).data, "xp_awarded": xp, "profile": ProfileSerializer(profile).data})
+        return Response(
+            {
+                **SessionSerializer(session).data,
+                "xp_awarded": xp,
+                "profile": ProfileSerializer(profile).data,
+            }
+        )

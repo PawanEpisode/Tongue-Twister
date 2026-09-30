@@ -10,7 +10,13 @@ from rest_framework.response import Response
 from . import scoring
 from .models import Attempt, Category, Favorite, Profile, Twister
 from .practice import services
-from .serializers import AttemptCreateSerializer, AttemptSerializer, CategorySerializer, ProfileSerializer, TwisterSerializer
+from .serializers import (
+    AttemptCreateSerializer,
+    AttemptSerializer,
+    CategorySerializer,
+    ProfileSerializer,
+    TwisterSerializer,
+)
 
 
 class TwisterFilter(filters.FilterSet):
@@ -26,7 +32,9 @@ class TwisterFilter(filters.FilterSet):
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.annotate(count=Count("twisters", filter=Q(twisters__is_published=True))).filter(count__gt=0)
+    queryset = Category.objects.annotate(
+        count=Count("twisters", filter=Q(twisters__is_published=True))
+    ).filter(count__gt=0)
     serializer_class = CategorySerializer
     lookup_field = "slug"
     pagination_class = None
@@ -45,7 +53,9 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if getattr(user, "is_authenticated", False) and isinstance(user, Profile):
             ctx["favorite_ids"] = set(user.favorites.values_list("twister_id", flat=True))
-            ctx["best_scores"] = dict(user.attempts.values_list("twister_id").annotate(b=Max("score")))
+            ctx["best_scores"] = dict(
+                user.attempts.values_list("twister_id").annotate(b=Max("score"))
+            )
         return ctx
 
     @action(detail=False, methods=["get"])
@@ -69,20 +79,41 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def history(self, request, slug=None):
         """The caller's attempts on this twister (newest first) plus totals for the side panel."""
-        limit = {"10": 10, "30": 30, "all": None}.get(request.query_params.get("range", "10"), "bad")
+        limit = {"10": 10, "30": 30, "all": None}.get(
+            request.query_params.get("range", "10"), "bad"
+        )
         if limit == "bad":
             raise ValidationError({"range": "Use 10, 30 or all."})
         mine = Attempt.objects.filter(profile=request.user, twister=self.get_object())
         stats = mine.aggregate(count=Count("id"), best=Max("score"))
         rows = mine[:limit] if limit else mine
-        return Response({"count": stats["count"], "best_score": stats["best"], "results": AttemptSerializer(rows, many=True).data})
+        return Response(
+            {
+                "count": stats["count"],
+                "best_score": stats["best"],
+                "results": AttemptSerializer(rows, many=True).data,
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def leaderboard(self, request, slug=None):
         twister = self.get_object()
-        rows = (Attempt.objects.filter(twister=twister).values("profile_id", "profile__display_name", "profile__avatar_emoji")
-                .annotate(best=Max("score")).order_by("-best")[:10])
-        return Response([{"user": r["profile__display_name"] or "Anonymous", "emoji": r["profile__avatar_emoji"], "score": r["best"]} for r in rows])
+        rows = (
+            Attempt.objects.filter(twister=twister)
+            .values("profile_id", "profile__display_name", "profile__avatar_emoji")
+            .annotate(best=Max("score"))
+            .order_by("-best")[:10]
+        )
+        return Response(
+            [
+                {
+                    "user": r["profile__display_name"] or "Anonymous",
+                    "emoji": r["profile__avatar_emoji"],
+                    "score": r["best"],
+                }
+                for r in rows
+            ]
+        )
 
 
 class AttemptViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -98,24 +129,38 @@ class AttemptViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Ge
         ser = AttemptCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         twister: Twister = ser.validated_data["twister"]
-        result = scoring.compute(twister.text, ser.validated_data["transcript"], ser.validated_data["duration_ms"], twister.difficulty)
+        result = scoring.compute(
+            twister.text,
+            ser.validated_data["transcript"],
+            ser.validated_data["duration_ms"],
+            twister.difficulty,
+        )
 
         profile = Profile.objects.select_for_update().get(pk=request.user.pk)
-        prev_best = Attempt.objects.filter(profile=profile, twister=twister).aggregate(m=Max("score"))["m"]
+        prev_best = Attempt.objects.filter(profile=profile, twister=twister).aggregate(
+            m=Max("score")
+        )["m"]
         attempt = Attempt.objects.create(
-            profile=profile, twister=twister, transcript=ser.validated_data["transcript"],
-            accuracy=result["accuracy"], duration_ms=ser.validated_data["duration_ms"],
-            wpm=result["wpm"], score=result["score"], xp_awarded=result["xp"],
+            profile=profile,
+            twister=twister,
+            transcript=ser.validated_data["transcript"],
+            accuracy=result["accuracy"],
+            duration_ms=ser.validated_data["duration_ms"],
+            wpm=result["wpm"],
+            score=result["score"],
+            xp_awarded=result["xp"],
         )
         old_level = profile.level
         services.record_attempt(profile, result["xp"])
 
         data = AttemptSerializer(attempt).data
-        data.update({
-            "personal_best": prev_best is None or result["score"] > prev_best,
-            "level_up": profile.level > old_level,
-            "profile": ProfileSerializer(profile).data,
-        })
+        data.update(
+            {
+                "personal_best": prev_best is None or result["score"] > prev_best,
+                "level_up": profile.level > old_level,
+                "profile": ProfileSerializer(profile).data,
+            }
+        )
         return Response(data, status=status.HTTP_201_CREATED)
 
 
@@ -128,4 +173,10 @@ def me(request):
         ser.save()
         return Response(ser.data)
     stats = request.user.attempts.aggregate(total=Count("id"), best=Max("score"))
-    return Response({**ProfileSerializer(request.user).data, "total_attempts": stats["total"], "best_score": stats["best"]})
+    return Response(
+        {
+            **ProfileSerializer(request.user).data,
+            "total_attempts": stats["total"],
+            "best_score": stats["best"],
+        }
+    )

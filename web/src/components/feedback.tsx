@@ -1,5 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { Button } from '#/components/ui/button'
+import { Card } from '#/components/ui/card'
+import { Skeleton } from '#/components/ui/skeleton'
+
+export { Skeleton }
 
 /** Turn any thrown value into copy a human can act on. */
 export function friendlyError(err: unknown): string {
@@ -16,20 +21,12 @@ export function friendlyError(err: unknown): string {
   return 'Something unexpected happened. Please try again.'
 }
 
-export function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`animate-pulse rounded-lg bg-white/[0.07] ${className}`}
-    />
-  )
-}
-
 /** Mirrors TwisterCard's fixed layout so nothing jumps when data arrives. */
 export function TwisterCardSkeleton() {
   return (
-    <div
-      className="glass flex h-[12.5rem] flex-col rounded-2xl p-5"
+    <Card
+      variant="glass"
+      className="flex h-[12.5rem] flex-col rounded-2xl p-5"
       aria-hidden
     >
       <div className="mb-3 flex items-center justify-between">
@@ -45,14 +42,15 @@ export function TwisterCardSkeleton() {
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-3 w-14" />
       </div>
-    </div>
+    </Card>
   )
 }
 
 export function CategoryCardSkeleton() {
   return (
-    <div
-      className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5"
+    <Card
+      variant="glass"
+      className="flex h-[7.5rem] items-center gap-4 rounded-2xl p-5"
       aria-hidden
     >
       <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
@@ -61,7 +59,7 @@ export function CategoryCardSkeleton() {
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-3/4" />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -112,29 +110,23 @@ export function ErrorState({
   children?: ReactNode
 }) {
   return (
-    <div
+    <Card
       role="alert"
-      className={`glass mx-auto flex max-w-lg flex-col items-center rounded-3xl text-center ${compact ? 'p-6' : 'my-10 p-10'}`}
+      variant="glass"
+      className={`mx-auto flex max-w-lg flex-col items-center rounded-3xl text-center ${compact ? 'p-6' : 'my-10 p-10'}`}
     >
       <div className="text-4xl" aria-hidden>
         😵‍💫
       </div>
       <h2 className="mt-3 font-display text-xl font-bold">{title}</h2>
-      <p className="mt-2 text-sm text-white/60">
+      <p className="mt-2 text-sm text-muted-foreground">
         {message ?? friendlyError(error)}
       </p>
       <div className="mt-5 flex gap-3">
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold hover:opacity-90"
-          >
-            Try again
-          </button>
-        )}
+        {onRetry && <Button onClick={onRetry}>Try again</Button>}
         {children}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -153,7 +145,7 @@ export function EmptyState({
         🔍
       </div>
       <h2 className="mt-3 font-display text-xl font-bold">{title}</h2>
-      {hint && <p className="mt-2 text-sm text-white/50">{hint}</p>}
+      {hint && <p className="mt-2 text-sm text-muted-foreground">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )
@@ -165,12 +157,9 @@ export function NotFound() {
       title="Page not found"
       message="That page doesn’t exist — it may have moved or the link is wrong."
     >
-      <Link
-        to="/"
-        className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-brand"
-      >
-        Go home
-      </Link>
+      <Button asChild variant="outline">
+        <Link to="/">Go home</Link>
+      </Button>
     </ErrorState>
   )
 }

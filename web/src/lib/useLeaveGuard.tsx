@@ -1,5 +1,6 @@
 import { useBlocker } from '@tanstack/react-router'
 import { useRef } from 'react'
+import { Button } from '#/components/ui/button'
 
 /**
  * Ask before an in-progress run is abandoned: in-app navigation (including mode switches) and
@@ -30,29 +31,26 @@ export function LeaveConfirm({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="leave-title"
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-background/70 p-4"
     >
       <div className="glass w-full max-w-sm rounded-2xl p-6 text-center">
         <h2 id="leave-title" className="font-display text-xl font-bold">
           Leave this run?
         </h2>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm text-muted-foreground">
           You’re partway through. Leaving now ends the run early.
         </p>
         <div className="mt-5 flex justify-center gap-3">
-          <button
-            autoFocus
-            onClick={onStay}
-            className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold"
-          >
+          <Button autoFocus onClick={onStay}>
             Keep practising
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            className="hover:border-pink"
             onClick={onLeave}
-            className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-pink"
           >
             Leave
-          </button>
+          </Button>
         </div>
       </div>
     </div>

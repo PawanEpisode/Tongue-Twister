@@ -1,4 +1,5 @@
 """Verify Supabase-issued JWTs and map them to a local Profile."""
+
 import jwt
 from django.conf import settings
 from jwt import PyJWKClient
@@ -13,7 +14,9 @@ _jwks_client: PyJWKClient | None = None
 def _get_jwks_client() -> PyJWKClient | None:
     global _jwks_client
     if _jwks_client is None and settings.SUPABASE_URL:
-        _jwks_client = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json", cache_keys=True)
+        _jwks_client = PyJWKClient(
+            f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json", cache_keys=True
+        )
     return _jwks_client
 
 
@@ -32,7 +35,9 @@ def decode_supabase_token(token: str) -> dict:
                 raise AuthenticationFailed("SUPABASE_URL is not configured for asymmetric JWTs")
             key = client.get_signing_key_from_jwt(token).key
             algorithms = ["RS256", "ES256"]
-        return jwt.decode(token, key, algorithms=algorithms, audience=settings.SUPABASE_JWT_AUDIENCE)
+        return jwt.decode(
+            token, key, algorithms=algorithms, audience=settings.SUPABASE_JWT_AUDIENCE
+        )
     except jwt.PyJWTError as exc:
         raise AuthenticationFailed(f"Invalid token: {exc}") from exc
 
@@ -52,7 +57,11 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             id=claims["sub"],
             defaults={
                 "email": claims.get("email", ""),
-                "display_name": (meta.get("full_name") or meta.get("name") or claims.get("email", "").split("@")[0])[:40],
+                "display_name": (
+                    meta.get("full_name")
+                    or meta.get("name")
+                    or claims.get("email", "").split("@")[0]
+                )[:40],
             },
         )
         return profile, claims

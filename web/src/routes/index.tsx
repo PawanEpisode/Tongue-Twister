@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
+import { Button } from '#/components/ui/button'
+import { Card } from '#/components/ui/card'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import {
@@ -44,65 +46,69 @@ function Home() {
             <span className="text-gradient">“red lorry, yellow lorry”</span> ten
             times?
           </motion.h1>
-          <p className="mt-5 max-w-xl text-lg text-white/70">
+          <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Speak into your mic and watch every word light up live. Classic and
             modern tongue twisters, four difficulty levels, scores, streaks and
             XP.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             {daily.data && (
-              <Link
-                to="/twisters/$slug"
-                params={{ slug: daily.data.slug }}
-                className="rounded-2xl bg-brand px-6 py-3.5 font-semibold shadow-lg shadow-brand/30 hover:scale-[1.03] transition-transform"
+              <Button
+                asChild
+                size="lg"
+                className="shadow-lg shadow-primary/30 transition-transform hover:scale-[1.03]"
               >
-                🎤 Try today’s twister
-              </Link>
+                <Link to="/twisters/$slug" params={{ slug: daily.data.slug }}>
+                  🎤 Try today’s twister
+                </Link>
+              </Button>
             )}
-            <Link
-              to="/twisters"
-              className="rounded-2xl border border-line px-6 py-3.5 font-semibold hover:border-brand"
-            >
-              Browse all
-            </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link to="/twisters">Browse all</Link>
+            </Button>
           </div>
         </div>
         <motion.div
           animate={{ y: [0, -12, 0], rotate: [-2, 2, -2] }}
           transition={{ repeat: Infinity, duration: 6 }}
-          className="glass rounded-3xl p-7"
         >
-          <div className="text-xs font-semibold uppercase tracking-widest text-pink">
-            Today’s twister
-          </div>
-          {daily.isPending ? (
-            <div className="mt-4 space-y-3" aria-busy>
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-5/6" />
-              <Skeleton className="mt-5 h-3 w-2/3" />
+          <Card variant="glass" className="rounded-3xl p-7">
+            <div className="text-xs font-semibold uppercase tracking-widest text-pink">
+              Today’s twister
             </div>
-          ) : daily.isError ? (
-            <div role="alert" className="mt-3">
-              <p className="text-white/70">Couldn’t load today’s twister.</p>
-              <button
-                onClick={() => void daily.refetch()}
-                className="mt-3 rounded-lg border border-line px-3 py-1.5 text-sm hover:border-brand"
-              >
-                Try again
-              </button>
-            </div>
-          ) : (
-            <>
-              <p className="mt-3 line-clamp-4 font-display text-2xl leading-snug">
-                {daily.data.text}
-              </p>
-              {daily.data.tip && (
-                <p className="mt-4 text-sm text-white/50">
-                  💡 {daily.data.tip}
+            {daily.isPending ? (
+              <div className="mt-4 space-y-3" aria-busy>
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-5/6" />
+                <Skeleton className="mt-5 h-3 w-2/3" />
+              </div>
+            ) : daily.isError ? (
+              <div role="alert" className="mt-3">
+                <p className="text-muted-foreground">
+                  Couldn’t load today’s twister.
                 </p>
-              )}
-            </>
-          )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 rounded-lg"
+                  onClick={() => void daily.refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 line-clamp-4 font-display text-2xl leading-snug">
+                  {daily.data.text}
+                </p>
+                {daily.data.tip && (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    💡 {daily.data.tip}
+                  </p>
+                )}
+              </>
+            )}
+          </Card>
         </motion.div>
       </section>
 
@@ -121,13 +127,13 @@ function Home() {
               <Link
                 to="/twisters"
                 search={{ difficulty: String(l.d) }}
-                className="glass block rounded-2xl p-5 hover:border-brand/60"
+                className="glass block rounded-2xl p-5 hover:border-primary/60"
               >
                 <div className="text-3xl">{l.emoji}</div>
                 <div className="mt-2 font-display text-xl font-bold">
                   {l.name}
                 </div>
-                <div className="text-sm text-white/50">{l.blurb}</div>
+                <div className="text-sm text-muted-foreground">{l.blurb}</div>
               </Link>
             </motion.div>
           ))}
@@ -161,17 +167,17 @@ function Home() {
                     <Link
                       to="/twisters"
                       search={{ category: c.slug }}
-                      className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5 hover:border-brand/60"
+                      className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5 hover:border-primary/60"
                     >
                       <span className="text-3xl">{c.emoji}</span>
                       <span className="min-w-0">
                         <span className="block truncate font-display text-lg font-bold">
                           {c.name}{' '}
-                          <span className="text-sm font-normal text-white/40">
+                          <span className="text-sm font-normal text-muted-foreground">
                             · {c.count}
                           </span>
                         </span>
-                        <span className="line-clamp-2 text-sm text-white/50">
+                        <span className="line-clamp-2 text-sm text-muted-foreground">
                           {c.description}
                         </span>
                       </span>

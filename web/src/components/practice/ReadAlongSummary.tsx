@@ -1,3 +1,5 @@
+import { Button } from '#/components/ui/button'
+import { Card } from '#/components/ui/card'
 import { formatDuration } from '#/lib/readAlong/timeline'
 
 type Props = {
@@ -11,33 +13,30 @@ type Props = {
   onSpeak: () => void
 }
 
-const secondary =
-  'rounded-xl border border-line px-4 py-2 font-semibold hover:border-brand'
-
 /** Completion card (PRD 02 §6): no score by design, just pacing stats and the next step. */
 export default function ReadAlongSummary(p: Props) {
   return (
-    <div className="glass mx-auto mt-6 max-w-md rounded-2xl p-6 text-center">
+    <Card
+      variant="glass"
+      className="mx-auto mt-6 max-w-md rounded-2xl p-6 text-center"
+    >
       <p className="font-display text-2xl font-bold">✅ Nicely paced.</p>
-      <p className="mt-2 text-sm text-white/70">
+      <p className="mt-2 text-sm text-muted-foreground">
         {formatDuration(p.activeMs)} · {p.wpm} WPM · {p.passes}{' '}
         {p.passes === 1 ? 'loop' : 'loops'}
         {p.xp ? ` · +${p.xp} XP` : ''}
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
-        <button
-          className="rounded-xl bg-brand px-4 py-2 font-semibold"
-          onClick={p.onFaster}
-        >
+        <Button className="px-4 py-2" onClick={p.onFaster}>
           Faster (+{p.fasterBy} WPM)
-        </button>
-        <button className={secondary} onClick={p.onAgain}>
+        </Button>
+        <Button variant="outline" className="px-4 py-2" onClick={p.onAgain}>
           Again
-        </button>
-        <button className={secondary} onClick={p.onSpeak}>
+        </Button>
+        <Button variant="outline" className="px-4 py-2" onClick={p.onSpeak}>
           Try Speak &amp; score
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   )
 }

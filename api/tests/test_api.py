@@ -25,7 +25,15 @@ def test_attempt_requires_auth(seeded):
 
 def test_attempt_flow_awards_xp_and_streak(seeded, auth_client):
     c = auth_client()
-    r = c.post("/api/v1/attempts/", {"twister": "peter-piper", "transcript": "peter piper picked a peck of pickled peppers", "duration_ms": 3000}, format="json")
+    r = c.post(
+        "/api/v1/attempts/",
+        {
+            "twister": "peter-piper",
+            "transcript": "peter piper picked a peck of pickled peppers",
+            "duration_ms": 3000,
+        },
+        format="json",
+    )
     assert r.status_code == 201
     assert r.data["accuracy"] == 1.0 and r.data["personal_best"] is True
     assert r.data["profile"]["current_streak"] == 1 and r.data["profile"]["xp"] > 0
@@ -43,11 +51,14 @@ def test_import_command_validates_and_imports(db, tmp_path):
     from django.core.management.base import CommandError
 
     good = tmp_path / "good.csv"
-    good.write_text("text,difficulty,category,origin,tip,focus_sounds\nRed lorry yellow lorry,hard,newcat,classic,tip,r|l\n")
+    good.write_text(
+        "text,difficulty,category,origin,tip,focus_sounds\nRed lorry yellow lorry,hard,newcat,classic,tip,r|l\n"
+    )
     with pytest.raises(CommandError):
         call_command("import_twisters", str(good))  # unknown category
     call_command("import_twisters", str(good), "--dry-run", "--create-categories")
     from twisters.models import Twister
+
     assert Twister.objects.count() == 0
     call_command("import_twisters", str(good), "--create-categories")
     assert Twister.objects.get().focus_sounds == ["r", "l"]
@@ -59,6 +70,7 @@ def test_import_command_validates_and_imports(db, tmp_path):
 
 def test_seed_is_205_and_prune_unpublishes_extras(seeded):
     from twisters.models import Twister
+
     assert Twister.objects.filter(is_published=True).count() == 205
     Twister.objects.create(slug="legacy-extra", text="Extra one", difficulty=1)
     call_command("seed_twisters", "--prune")

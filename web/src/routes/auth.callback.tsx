@@ -31,5 +31,7 @@ function Callback() {
         </Link>
       </div>
     )
-  return <p className="mt-16 text-center text-white/60">Signing you in…</p>
+  return (
+    <p className="mt-16 text-center text-muted-foreground">Signing you in…</p>
+  )
 }

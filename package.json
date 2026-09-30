@@ -1,0 +1,14 @@
+{
+  "name": "twister",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm --prefix web run lint && npm --prefix web run check && uv run --directory api ruff check && uv run --directory api ruff format --check",
+    "format": "npm --prefix web run format && uv run --directory api ruff format"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  }
+}

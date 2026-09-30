@@ -1,16 +1,20 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useState  } from 'react'
+import type {ComponentProps} from 'react';
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import { browseContext } from '#/lib/browseContext'
 import { TwisterCard } from '#/components/ui'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 import {
   ChipsSkeleton,
   EmptyState,
   ErrorState,
   TwisterCardSkeleton,
 } from '#/components/feedback'
+import { cn } from '#/lib/utils'
 
 type Search = {
   difficulty?: string
@@ -35,8 +39,27 @@ export const Route = createFileRoute('/twisters/')({
   component: Browse,
 })
 
-const chip = (on: boolean) =>
-  `rounded-full border px-4 py-1.5 text-sm transition-colors ${on ? 'border-brand bg-brand/20 text-white' : 'border-line text-white/60 hover:border-brand/50'}`
+function Chip({
+  on,
+  className,
+  ...props
+}: { on: boolean } & ComponentProps<typeof Button>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={cn(
+        'px-4 py-1.5 font-normal',
+        on
+          ? 'border-primary bg-primary/20 text-foreground hover:border-primary'
+          : 'text-muted-foreground',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
 
 function Browse() {
   const s = Route.useSearch()
@@ -82,70 +105,61 @@ function Browse() {
           set({ q: q || undefined })
         }}
       >
-        <input
+        <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search — try “peter” or “lorry”"
-          className="glass w-full rounded-2xl px-5 py-3 outline-none focus:border-brand"
+          className="glass rounded-2xl px-5 py-3"
         />
       </form>
       <div className="mt-5 flex flex-wrap gap-2">
-        <button
-          className={chip(!s.difficulty)}
-          onClick={() => set({ difficulty: undefined })}
-        >
+        <Chip on={!s.difficulty} onClick={() => set({ difficulty: undefined })}>
           All levels
-        </button>
+        </Chip>
         {['Easy', 'Medium', 'Hard', 'Insane'].map((n, i) => (
-          <button
+          <Chip
             key={n}
-            className={chip(s.difficulty === String(i + 1))}
+            on={s.difficulty === String(i + 1)}
             onClick={() => set({ difficulty: String(i + 1) })}
           >
             {n}
-          </button>
+          </Chip>
         ))}
-        <span className="mx-2 w-px bg-line" />
-        <button
-          className={chip(!s.origin)}
-          onClick={() => set({ origin: undefined })}
-        >
+        <span className="mx-2 w-px bg-border" />
+        <Chip on={!s.origin} onClick={() => set({ origin: undefined })}>
           Classic + Modern
-        </button>
-        <button
-          className={chip(s.origin === 'classic')}
+        </Chip>
+        <Chip
+          on={s.origin === 'classic'}
           onClick={() => set({ origin: 'classic' })}
         >
           Classic
-        </button>
-        <button
-          className={chip(s.origin === 'modern')}
+        </Chip>
+        <Chip
+          on={s.origin === 'modern'}
           onClick={() => set({ origin: 'modern' })}
         >
           Modern
-        </button>
+        </Chip>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          className={chip(!s.category)}
-          onClick={() => set({ category: undefined })}
-        >
+        <Chip on={!s.category} onClick={() => set({ category: undefined })}>
           Every sound
-        </button>
+        </Chip>
         {cats.isPending && <ChipsSkeleton />}
         {cats.isError && (
-          <button className={chip(false)} onClick={() => void cats.refetch()}>
+          <Chip on={false} onClick={() => void cats.refetch()}>
             Couldn’t load sounds — retry
-          </button>
+          </Chip>
         )}
         {cats.data?.map((c) => (
-          <button
+          <Chip
             key={c.slug}
-            className={chip(s.category === c.slug)}
+            on={s.category === c.slug}
             onClick={() => set({ category: c.slug })}
           >
             {c.emoji} {c.name}
-          </button>
+          </Chip>
         ))}
       </div>
       {list.isError && !items.length ? (
@@ -165,17 +179,14 @@ function Browse() {
           title="No twisters match"
           hint="Try a different search or loosen a filter."
           action={
-            <button
-              onClick={clearFilters}
-              className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold hover:border-brand"
-            >
+            <Button variant="outline" onClick={clearFilters}>
               Clear filters
-            </button>
+            </Button>
           }
         />
       ) : (
         <>
-          <p className="mt-6 text-sm text-white/40" aria-live="polite">
+          <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">
             Showing {items.length} of {total}
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -197,13 +208,14 @@ function Browse() {
           )}
           {list.hasNextPage && !list.isError && (
             <div className="mt-8 text-center">
-              <button
+              <Button
+                variant="outline"
+                size="lg"
                 disabled={list.isFetchingNextPage}
                 onClick={() => void list.fetchNextPage()}
-                className="rounded-2xl border border-line px-6 py-3 font-semibold hover:border-brand disabled:opacity-50"
               >
                 {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
-              </button>
+              </Button>
             </div>
           )}
         </>

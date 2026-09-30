@@ -50,7 +50,7 @@ export default function SidePanel({ twister }: { twister: Twister }) {
   return (
     <aside
       aria-label="Your progress on this twister"
-      className="glass mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl px-5 py-3 text-sm text-white/70"
+      className="glass mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl px-5 py-3 text-sm text-muted-foreground"
     >
       {hasHistory && (
         <>
@@ -58,7 +58,7 @@ export default function SidePanel({ twister }: { twister: Twister }) {
             Best <b className="text-lime">{h.best_score}</b>
           </span>
           <span>
-            Attempts <b className="text-white">{h.count}</b>
+            Attempts <b className="text-foreground">{h.count}</b>
           </span>
           <Sparkline scores={scores} />
         </>
@@ -66,7 +66,7 @@ export default function SidePanel({ twister }: { twister: Twister }) {
       {twister.focus_sounds.length > 0 && (
         <span>
           Focus sounds{' '}
-          <b className="text-white">{twister.focus_sounds.join(' · ')}</b>
+          <b className="text-foreground">{twister.focus_sounds.join(' · ')}</b>
         </span>
       )}
     </aside>

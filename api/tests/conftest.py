@@ -23,7 +23,11 @@ def auth_client(db):
     """Factory: ``auth_client()`` is a new user, ``auth_client(sub)`` a repeat login of the same user."""
 
     def make(sub: str | None = None) -> APIClient:
-        token = jwt.encode({"sub": sub or str(uuid.uuid4()), "aud": "authenticated", "email": "a@b.co"}, SECRET, algorithm="HS256")
+        token = jwt.encode(
+            {"sub": sub or str(uuid.uuid4()), "aud": "authenticated", "email": "a@b.co"},
+            SECRET,
+            algorithm="HS256",
+        )
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         return client

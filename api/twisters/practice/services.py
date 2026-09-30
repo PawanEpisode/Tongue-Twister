@@ -3,6 +3,7 @@
 Every function here assumes the caller holds a row lock on the Profile (``select_for_update``)
 inside ``transaction.atomic`` so concurrent requests cannot double-count a day.
 """
+
 import datetime as dt
 from zoneinfo import ZoneInfo
 
@@ -19,7 +20,9 @@ def local_date(profile: Profile, now: dt.datetime | None = None) -> dt.date:
 
 
 def _today_row(profile: Profile, now: dt.datetime | None) -> DailyActivity:
-    return DailyActivity.objects.get_or_create(profile=profile, local_date=local_date(profile, now))[0]
+    return DailyActivity.objects.get_or_create(
+        profile=profile, local_date=local_date(profile, now)
+    )[0]
 
 
 def _mark_streak(profile: Profile, day: DailyActivity) -> None:
@@ -49,7 +52,9 @@ def read_along_xp_per_pass(difficulty: int) -> int:
     return round(settings.READ_ALONG_XP_RATIO * scoring.attempt_xp(100, difficulty, accuracy=0.0))
 
 
-def record_read_along(profile: Profile, session: PracticeSession, now: dt.datetime | None = None) -> int:
+def record_read_along(
+    profile: Profile, session: PracticeSession, now: dt.datetime | None = None
+) -> int:
     """Credit a finished Read-along session; returns XP awarded (0 when it doesn't qualify)."""
     day = _today_row(profile, now)
     day.active_ms += session.active_ms
@@ -60,7 +65,9 @@ def record_read_along(profile: Profile, session: PracticeSession, now: dt.dateti
     if session.passes_completed >= 1 and session.active_ms >= settings.READ_ALONG_MIN_ACTIVE_MS:
         _mark_streak(profile, day)
         room = max(0, settings.READ_ALONG_XP_DAILY_CAP - day.read_along_xp)
-        xp = min(room, read_along_xp_per_pass(session.twister.difficulty) * session.passes_completed)
+        xp = min(
+            room, read_along_xp_per_pass(session.twister.difficulty) * session.passes_completed
+        )
         day.read_along_xp += xp
         day.xp += xp
         profile.xp += xp
@@ -69,14 +76,18 @@ def record_read_along(profile: Profile, session: PracticeSession, now: dt.dateti
     return xp
 
 
-def apply_session_update(session: PracticeSession, data: dict, now: dt.datetime | None = None) -> int:
+def apply_session_update(
+    session: PracticeSession, data: dict, now: dt.datetime | None = None
+) -> int:
     """Apply a heartbeat/finish payload to an *active* session; returns XP awarded on completion.
 
     ``active_ms`` is monotonic and can never exceed wall-clock time since the session started,
     so a tampered client cannot claim minutes it did not spend.
     """
     now = now or timezone.now()
-    wall_ms = int((now - session.started_at).total_seconds() * 1000) + settings.SESSION_CLOCK_SKEW_MS
+    wall_ms = (
+        int((now - session.started_at).total_seconds() * 1000) + settings.SESSION_CLOCK_SKEW_MS
+    )
     if "active_ms" in data:
         data["active_ms"] = min(max(data["active_ms"], session.active_ms), wall_ms)
     for field in ("loops_completed", "passes_completed"):

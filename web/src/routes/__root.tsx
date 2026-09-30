@@ -10,6 +10,7 @@ import { AuthProvider } from '#/lib/auth'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, seo } from '#/lib/seo'
+import { ThemeProvider, THEME_COLORS, themeBootScript } from '#/lib/theme'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -22,7 +23,7 @@ export const Route = createRootRoute({
           name: 'viewport',
           content: 'width=device-width, initial-scale=1, viewport-fit=cover',
         },
-        { name: 'theme-color', content: '#0b0a16' },
+        { name: 'theme-color', content: THEME_COLORS.dark },
         { name: 'application-name', content: 'Twister' },
         { name: 'apple-mobile-web-app-title', content: 'Twister' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
@@ -97,21 +98,24 @@ function RootLayout() {
   )
   return (
     <QueryClientProvider client={qc}>
-      <AuthProvider>
-        <GuestSync />
-        <Header />
-        <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
-          <Outlet />
-        </main>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <GuestSync />
+          <Header />
+          <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
+            <Outlet />
+          </main>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <HeadContent />
       </head>
       <body>

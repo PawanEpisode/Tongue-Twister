@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '#/components/ui/button'
 
 /** Native share sheet where available (mobile), otherwise copies the canonical link. */
 export default function ShareButton({
@@ -27,15 +28,16 @@ export default function ShareButton({
     }
   }
   return (
-    <button
+    <Button
+      type="button"
+      variant="ghost"
       onClick={() => void share()}
       aria-label="Share this twister"
-      className="text-sm text-white/60 hover:text-white"
     >
       ⤴ Share
       <span role="status" className="ml-1 text-lime">
         {note}
       </span>
-    </button>
+    </Button>
   )
 }

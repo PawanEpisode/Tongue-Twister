@@ -1,4 +1,5 @@
 """Uniform error envelope (API contract 07 §1): {"error": {code, message, details, request_id}}."""
+
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.views import exception_handler as drf_exception_handler
@@ -34,8 +35,18 @@ def exception_handler(exc, context):
     if isinstance(exc, ValidationError):
         code, message, details = "validation_error", "Some fields are invalid.", response.data
     else:
-        code, message, details = CODES.get(response.status_code, "error"), _message(response.data), {}
+        code, message, details = (
+            CODES.get(response.status_code, "error"),
+            _message(response.data),
+            {},
+        )
     request = context.get("request")
-    response.data = {"error": {"code": code, "message": message, "details": details,
-                               "request_id": getattr(request, "request_id", None)}}
+    response.data = {
+        "error": {
+            "code": code,
+            "message": message,
+            "details": details,
+            "request_id": getattr(request, "request_id", None),
+        }
+    }
     return response

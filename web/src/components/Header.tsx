@@ -1,8 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
 import { api } from '#/lib/api'
 import { supabase } from '#/lib/supabase'
+import ThemeMenu from '#/components/ThemeMenu'
 
 export default function Header() {
   const { session, loading } = useAuth()
@@ -21,8 +23,8 @@ export default function Header() {
     meta.full_name ?? meta.name ?? session?.user.email?.split('@')[0] ?? 'You'
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line/60 bg-ink/70 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3">
         <Link
           to="/"
           className="font-display text-xl font-extrabold tracking-tight"
@@ -30,27 +32,28 @@ export default function Header() {
           <span className="text-gradient">Twister</span>
           <span className="ml-1">🌀</span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-white/70">
+        <nav className="flex items-center gap-3 text-sm text-muted-foreground">
+          <ThemeMenu />
           <Link
             to="/twisters"
-            className="hover:text-white"
-            activeProps={{ className: 'text-white' }}
+            className="hover:text-foreground"
+            activeProps={{ className: 'text-foreground' }}
           >
             Browse
           </Link>
           {loading ? (
             <span
-              className="h-8 w-24 animate-pulse rounded-full bg-panel"
+              className="h-8 w-24 animate-pulse rounded-full bg-card"
               aria-hidden
             />
           ) : session ? (
             <>
               {me && (
-                <span className="hidden rounded-full bg-panel px-3 py-1 text-xs sm:inline">
+                <span className="hidden rounded-full bg-card px-3 py-1 text-xs sm:inline">
                   🔥 {me.current_streak} · Lv {me.level} · {me.xp} XP
                 </span>
               )}
-              <span className="flex items-center gap-2 text-white">
+              <span className="flex items-center gap-2 text-foreground">
                 {meta.avatar_url ? (
                   <img
                     src={meta.avatar_url}
@@ -59,7 +62,7 @@ export default function Header() {
                     className="h-7 w-7 rounded-full"
                   />
                 ) : (
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand text-xs font-bold">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {name[0]?.toUpperCase()}
                   </span>
                 )}
@@ -67,21 +70,20 @@ export default function Header() {
                   {name}
                 </span>
               </span>
-              <button
-                className="rounded-full border border-line px-3 py-1 hover:border-brand"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => supabase?.auth.signOut()}
               >
                 Sign out
-              </button>
+              </Button>
             </>
           ) : (
-            <Link
-              to="/login"
-              search={{ redirect: here }}
-              className="rounded-full bg-brand px-4 py-1.5 font-semibold text-white hover:opacity-90"
-            >
-              Sign in
-            </Link>
+            <Button asChild size="sm">
+              <Link to="/login" search={{ redirect: here }}>
+                Sign in
+              </Link>
+            </Button>
           )}
         </nav>
       </div>

@@ -9,4 +9,13 @@ Practice classic and modern tongue twisters with live speech feedback, scores, s
 
 Quick start: see *Local development* in `docs/ARCHITECTURE.md`.
 
+## Checks
+
+From the repo root, `npm install` installs Husky. Commits then format and lint staged web files (Prettier, ESLint) and staged API files (Ruff). That API half needs [uv](https://docs.astral.sh/uv/) and `api/.venv` from the local-dev steps.
+
+```bash
+npm run lint      # web eslint, prettier, tsc, and api ruff
+npm run format    # write web and api formatting
+```
+
 API docs (when running): http://localhost:8000/api/docs/

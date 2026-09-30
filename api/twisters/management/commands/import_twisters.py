@@ -15,6 +15,7 @@ Examples:
   python manage.py import_twisters my_list.csv --create-categories
   python manage.py import_twisters my_list.json --update   # overwrite rows whose slug already exists
 """
+
 import csv
 import json
 from pathlib import Path
@@ -30,13 +31,18 @@ TRUTHY = {"", "1", "true", "yes", "y", "t"}
 
 
 def norm_row(raw: dict) -> dict:
-    row = {(k or "").strip().lower(): (v if isinstance(v, (list, bool)) else str(v or "").strip()) for k, v in raw.items()}
+    row = {
+        (k or "").strip().lower(): (v if isinstance(v, (list, bool)) else str(v or "").strip())
+        for k, v in raw.items()
+    }
     text = " ".join(str(row.get("text", "")).split())
     if not text:
         raise ValueError("text is required")
     diff = DIFFICULTY.get(str(row.get("difficulty", "")).lower())
     if not diff:
-        raise ValueError(f"difficulty must be 1-4 or easy/medium/hard/insane (got {row.get('difficulty')!r})")
+        raise ValueError(
+            f"difficulty must be 1-4 or easy/medium/hard/insane (got {row.get('difficulty')!r})"
+        )
     origin = (str(row.get("origin", "")) or "classic").lower()
     if origin not in ("classic", "modern"):
         raise ValueError("origin must be classic or modern")
@@ -51,8 +57,16 @@ def norm_row(raw: dict) -> dict:
     slug = slugify(str(row.get("slug", "")) or " ".join(text.split()[:8]))[:80]
     if not slug:
         raise ValueError("could not derive a slug")
-    return dict(slug=slug, text=text, difficulty=diff, origin=origin, tip=tip, focus_sounds=sounds,
-                is_published=published, category=str(row.get("category", "")).lower())
+    return dict(
+        slug=slug,
+        text=text,
+        difficulty=diff,
+        origin=origin,
+        tip=tip,
+        focus_sounds=sounds,
+        is_published=published,
+        category=str(row.get("category", "")).lower(),
+    )
 
 
 class Command(BaseCommand):
@@ -61,8 +75,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("path")
         parser.add_argument("--dry-run", action="store_true", help="validate only; write nothing")
-        parser.add_argument("--update", action="store_true", help="overwrite twisters whose slug already exists")
-        parser.add_argument("--create-categories", action="store_true", help="create unknown category slugs")
+        parser.add_argument(
+            "--update", action="store_true", help="overwrite twisters whose slug already exists"
+        )
+        parser.add_argument(
+            "--create-categories", action="store_true", help="create unknown category slugs"
+        )
 
     def handle(self, path, dry_run, update, create_categories, **_):
         p = Path(path)
@@ -86,7 +104,11 @@ class Command(BaseCommand):
             except ValueError as exc:
                 errors.append(f"row {i}: {exc}")
         if errors:
-            raise CommandError("Validation failed:\n  " + "\n  ".join(errors[:50]) + (f"\n  …and {len(errors) - 50} more" if len(errors) > 50 else ""))
+            raise CommandError(
+                "Validation failed:\n  "
+                + "\n  ".join(errors[:50])
+                + (f"\n  …and {len(errors) - 50} more" if len(errors) > 50 else "")
+            )
 
         created = updated = skipped = 0
         with transaction.atomic():
@@ -98,8 +120,12 @@ class Command(BaseCommand):
                     cat = cats.get(cat_slug)
                     if cat is None:
                         if not create_categories:
-                            raise CommandError(f"unknown category {cat_slug!r} (use --create-categories or fix the file)")
-                        cat = cats[cat_slug] = Category.objects.create(slug=cat_slug, name=cat_slug.replace("-", " ").title())
+                            raise CommandError(
+                                f"unknown category {cat_slug!r} (use --create-categories or fix the file)"
+                            )
+                        cat = cats[cat_slug] = Category.objects.create(
+                            slug=cat_slug, name=cat_slug.replace("-", " ").title()
+                        )
                 slug = r.pop("slug")
                 existing = Twister.objects.filter(slug=slug).first()
                 if existing and not update:
@@ -117,4 +143,8 @@ class Command(BaseCommand):
             if dry_run:
                 transaction.set_rollback(True)
         prefix = "[dry run] " if dry_run else ""
-        self.stdout.write(self.style.SUCCESS(f"{prefix}created {created}, updated {updated}, skipped {skipped} existing (of {len(rows)} valid rows)"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"{prefix}created {created}, updated {updated}, skipped {skipped} existing (of {len(rows)} valid rows)"
+            )
+        )

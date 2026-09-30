@@ -293,7 +293,7 @@ export default function ReadAlongMode({
   return (
     <div
       ref={focus.ref}
-      className={focus.active ? 'overflow-auto bg-ink p-6' : ''}
+      className={focus.active ? 'overflow-auto bg-background p-6' : ''}
     >
       <div onClick={() => status !== 'done' && toggle()} className="relative">
         <ReadAlongStage
@@ -318,7 +318,7 @@ export default function ReadAlongMode({
         {status === 'countdown' && (
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 grid place-items-center rounded-2xl bg-ink/60 font-display text-7xl font-extrabold text-lime"
+            className="pointer-events-none absolute inset-0 grid place-items-center rounded-2xl bg-background/60 font-display text-7xl font-extrabold text-lime"
           >
             {engine.countdown}
           </div>
@@ -339,7 +339,10 @@ export default function ReadAlongMode({
         </p>
       )}
       {engine.degraded && (
-        <p role="status" className="mt-3 text-center text-sm text-white/50">
+        <p
+          role="status"
+          className="mt-3 text-center text-sm text-muted-foreground"
+        >
           Smooth scroll turned off to keep up.
         </p>
       )}
@@ -389,7 +392,7 @@ export default function ReadAlongMode({
           {SHORTCUTS.map(([k, d]) => (
             <div key={k} className="contents">
               <dt className="font-mono text-brand">{k}</dt>
-              <dd className="text-white/70">{d}</dd>
+              <dd className="text-muted-foreground">{d}</dd>
             </div>
           ))}
         </dl>

@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 import type { DisplayStyle } from '#/lib/api'
 import { PREFERENCE_RANGES } from '#/lib/preferences'
 import { MAX_WPM, MIN_WPM } from '#/lib/readAlong/timeline'
+import { cn } from '#/lib/utils'
 
 const PRESETS = [
   ['Slow', 70],
@@ -93,13 +96,9 @@ export type ControlHandlers = {
   onVoice: (voiceURI: string) => void
 }
 
-const btn =
-  'rounded-xl border border-line px-3 py-2 text-sm font-semibold hover:border-brand disabled:opacity-40'
-const input = 'rounded-lg bg-panel px-2 py-1'
-
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex items-center justify-between gap-3 text-sm text-white/70">
+    <label className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
       {label}
       {children}
     </label>
@@ -121,13 +120,15 @@ export default function ReadAlongControls({
         role="group"
         aria-label="Speed"
       >
-        <button
-          className={btn}
+        <Button
+          type="button"
+          variant="outline"
+          className="px-3 py-2"
           onClick={() => h.onWpm(v.wpm - WPM_STEP)}
           aria-label="Slower"
         >
           −
-        </button>
+        </Button>
         <input
           type="range"
           min={MIN_WPM}
@@ -138,37 +139,46 @@ export default function ReadAlongControls({
           aria-label="Words per minute"
           className="w-40 accent-brand sm:w-64"
         />
-        <button
-          className={btn}
+        <Button
+          type="button"
+          variant="outline"
+          className="px-3 py-2"
           onClick={() => h.onWpm(v.wpm + WPM_STEP)}
           aria-label="Faster"
         >
           +
-        </button>
-        <span className="w-20 text-sm tabular-nums text-white/70">
+        </Button>
+        <span className="w-20 text-sm tabular-nums text-muted-foreground">
           {v.wpm} WPM
         </span>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {PRESETS.map(([name, wpm]) => (
-          <button
+          <Button
             key={name}
-            className={`${btn} ${v.wpm === wpm ? 'border-brand' : ''}`}
+            type="button"
+            variant="outline"
+            className={cn('px-3 py-2', v.wpm === wpm && 'border-primary')}
             onClick={() => h.onWpm(wpm)}
           >
             {name}
-          </button>
+          </Button>
         ))}
-        <span className="mx-1 w-px bg-line" />
+        <span className="mx-1 w-px bg-border" />
         {STYLES.map(([key, label]) => (
-          <button
+          <Button
             key={key}
+            type="button"
+            variant="outline"
             aria-pressed={v.style === key}
-            className={`${btn} ${v.style === key ? 'border-brand bg-brand/20' : ''}`}
+            className={cn(
+              'px-3 py-2',
+              v.style === key && 'border-primary bg-primary/20',
+            )}
             onClick={() => h.onStyle(key)}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
       <details className="glass rounded-2xl p-4">
@@ -178,16 +188,29 @@ export default function ReadAlongControls({
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {NUMBERS.map(({ key, label, range, step, slider, needs }) => (
             <Field key={key} label={label}>
-              <input
-                type={slider ? 'range' : 'number'}
-                min={PREFERENCE_RANGES[range][0]}
-                max={PREFERENCE_RANGES[range][1]}
-                step={step}
-                value={v.numbers[key]}
-                disabled={!!needs && !v.toggles[needs]}
-                onChange={(e) => h.onNumber(key, Number(e.target.value))}
-                className={slider ? 'accent-brand' : `w-16 ${input}`}
-              />
+              {slider ? (
+                <input
+                  type="range"
+                  min={PREFERENCE_RANGES[range][0]}
+                  max={PREFERENCE_RANGES[range][1]}
+                  step={step}
+                  value={v.numbers[key]}
+                  disabled={!!needs && !v.toggles[needs]}
+                  onChange={(e) => h.onNumber(key, Number(e.target.value))}
+                  className="accent-brand"
+                />
+              ) : (
+                <Input
+                  type="number"
+                  min={PREFERENCE_RANGES[range][0]}
+                  max={PREFERENCE_RANGES[range][1]}
+                  step={step}
+                  value={v.numbers[key]}
+                  disabled={!!needs && !v.toggles[needs]}
+                  onChange={(e) => h.onNumber(key, Number(e.target.value))}
+                  className="w-16 rounded-lg px-2 py-1"
+                />
+              )}
             </Field>
           ))}
           {TOGGLES.map(([key, label]) => (
@@ -206,7 +229,7 @@ export default function ReadAlongControls({
               <select
                 value={v.voiceURI}
                 onChange={(e) => h.onVoice(e.target.value)}
-                className={`max-w-44 ${input}`}
+                className="max-w-44 rounded-lg border border-input bg-card px-2 py-1"
               >
                 <option value="">Recommended</option>
                 {v.voices.map((voice) => (

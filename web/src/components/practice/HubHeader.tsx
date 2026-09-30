@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DifficultyBadge } from '#/components/ui'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { api } from '#/lib/api'
 import type { Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { guestQueue } from '#/lib/syncQueue'
 import ShareButton from './ShareButton'
-
-const iconBtn = 'text-lg text-white/60 hover:text-white'
 
 /** Difficulty, length, best score, favourite, share and previous/next for the current twister. */
 export default function HubHeader({
@@ -35,53 +35,50 @@ export default function HubHeader({
 
   return (
     <div className="mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-      <button
-        className={iconBtn}
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-1 text-lg"
         onClick={() => void previous()}
         aria-label="Previous twister"
       >
         ←
-      </button>
+      </Button>
       <DifficultyBadge level={t.difficulty} />
-      <span className="text-xs uppercase tracking-widest text-white/40">
+      <span className="text-xs uppercase tracking-widest text-muted-foreground">
         {t.origin}
       </span>
-      <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-white/60">
-        {t.word_count} words
-      </span>
+      <Badge>{t.word_count} words</Badge>
       {t.best_score != null && (
         <span className="text-xs text-lime">Best {t.best_score}</span>
       )}
-      <button
+      <Button
+        type="button"
+        variant="ghost"
         onClick={toggleFavorite}
         aria-pressed={starred}
         aria-label={starred ? 'Remove from favourites' : 'Add to favourites'}
         title={
           session ? undefined : 'Saved on this device — sign in to keep it'
         }
-        className={iconBtn}
+        className="px-1 text-lg"
       >
         {starred ? '★' : '☆'}
-      </button>
+      </Button>
       <ShareButton
         title={`“${t.text}” — tongue twister`}
         path={`/twisters/${t.slug}`}
       />
-      {settingsNotSynced && (
-        <span
-          role="status"
-          className="rounded-full border border-line px-2.5 py-0.5 text-xs text-white/50"
-        >
-          Settings not synced
-        </span>
-      )}
-      <button
-        className={iconBtn}
+      {settingsNotSynced && <Badge role="status">Settings not synced</Badge>}
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-1 text-lg"
         onClick={() => void next()}
         aria-label="Next twister"
       >
         →
-      </button>
+      </Button>
     </div>
   )
 }

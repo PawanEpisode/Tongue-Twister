@@ -1,4 +1,5 @@
 """Server-side scoring so leaderboards can't be trusted to the client."""
+
 import re
 from difflib import SequenceMatcher
 
@@ -32,4 +33,9 @@ def compute(target: str, spoken: str, duration_ms: int, difficulty: int) -> dict
     wpm = len(words(spoken)) / minutes
     speed = min(1.0, wpm / REFERENCE_WPM.get(difficulty, 130)) if acc >= 0.6 else 0.0
     score = round(acc * 70 + speed * 30)
-    return {"accuracy": round(acc, 4), "wpm": round(wpm, 1), "score": score, "xp": attempt_xp(score, difficulty, acc)}
+    return {
+        "accuracy": round(acc, 4),
+        "wpm": round(wpm, 1),
+        "score": score,
+        "xp": attempt_xp(score, difficulty, acc),
+    }

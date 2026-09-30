@@ -1,4 +1,5 @@
 """Django settings for Twister API. All config via environment variables."""
+
 import os
 from pathlib import Path
 
@@ -122,7 +123,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 24,
-    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle", "rest_framework.throttling.UserRateThrottle"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "300/min"},
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -130,10 +134,18 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {"TITLE": "Twister API", "VERSION": "0.1.0", "SERVE_INCLUDE_SCHEMA": False}
 
 # Practice rules (decisions D4/D5 in docs/features/11-decisions-log.md). Tunable without a migration.
-READ_ALONG_MIN_ACTIVE_MS = int(env("READ_ALONG_MIN_ACTIVE_MS", "30000"))  # streak needs >= 30 s active...
-READ_ALONG_XP_RATIO = float(env("READ_ALONG_XP_RATIO", "0.25"))  # ...and pays 25 % of a scored attempt,
-READ_ALONG_XP_DAILY_CAP = int(env("READ_ALONG_XP_DAILY_CAP", "50"))  # capped per local day (anti-farming)
-SESSION_CLOCK_SKEW_MS = int(env("SESSION_CLOCK_SKEW_MS", "5000"))  # tolerance when bounding client-reported active time
+READ_ALONG_MIN_ACTIVE_MS = int(
+    env("READ_ALONG_MIN_ACTIVE_MS", "30000")
+)  # streak needs >= 30 s active...
+READ_ALONG_XP_RATIO = float(
+    env("READ_ALONG_XP_RATIO", "0.25")
+)  # ...and pays 25 % of a scored attempt,
+READ_ALONG_XP_DAILY_CAP = int(
+    env("READ_ALONG_XP_DAILY_CAP", "50")
+)  # capped per local day (anti-farming)
+SESSION_CLOCK_SKEW_MS = int(
+    env("SESSION_CLOCK_SKEW_MS", "5000")
+)  # tolerance when bounding client-reported active time
 
 # Supabase auth (JWT verification). Provide SUPABASE_URL (JWKS, asymmetric keys)
 # and/or SUPABASE_JWT_SECRET (legacy HS256 secret).
