@@ -19,11 +19,11 @@ erDiagram
         uuid profile_id PK
         varchar default_mode "read_along speak_score record"
         varchar display_style "word line scroll"
-        smallint wpm "40..300"
-        smallint threshold_pct "20..80"
+        smallint wpm "40..300, null = auto by difficulty"
+        smallint threshold_pct "20..60"
         real font_scale "0.8..2.0"
         boolean mirror_text
-        smallint loop_count "0 = off"
+        smallint loop_count "1..10, 0 = loop forever"
         boolean punctuation_pauses
         boolean metronome
         boolean listen_first
@@ -136,7 +136,7 @@ erDiagram
 | Guest → account (D12) | `SyncBatch` idempotency (`UNIQUE(profile_id, client_batch_id)`) |
 
 ## Constraints & indexes
-- `UserPreference`: CHECKs `wpm BETWEEN 40 AND 300`, `threshold_pct BETWEEN 20 AND 80`, `font_scale BETWEEN 0.8 AND 2.0`.
+- `UserPreference`: CHECKs `wpm BETWEEN 40 AND 300`, `threshold_pct BETWEEN 20 AND 60`, `loop_count BETWEEN 0 AND 10`, `countdown_s BETWEEN 0 AND 5`, `tts_rate BETWEEN 0.5 AND 1.5`, `font_scale BETWEEN 0.8 AND 2.0`.
 - `PracticeSession`: `UNIQUE(profile_id, client_session_id)`; idx `(profile_id, started_at DESC)`, `(twister_id, mode)`.
 - `SyncBatch`: `UNIQUE(profile_id, client_batch_id)`.
 - Sessions are **append-mostly**; Read-along heartbeats update `active_ms` at most every 15 s and on pause/end (keeps write volume low).

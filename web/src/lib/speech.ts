@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type SpeechStatus = 'idle' | 'arming' | 'live'
 export type SpeechResult = { transcript: string; durationMs: number }
 

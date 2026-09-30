@@ -17,16 +17,20 @@ All new endpoints are documented in OpenAPI (`/api/docs/`) via drf-spectacular; 
 | Versioning | Additive changes only within `/v1`; breaking → `/v2` |
 | Guests | Endpoints marked 🔓 work unauthenticated; the client scores locally and syncs after sign-in |
 
+### 1.1 Shipped in 06a
+`GET /flags/` 🔓 → `{"flags":{"read_along":true,…}}` (evaluated for the caller; cache 60 s; `enabled=false` is a kill switch, then allow-list, then stable percentage rollout). `POST /sync/guest/` 🔐 `{client_batch_id, kind?, preferences?, favorites[≤200], attempts[≤50]}` → `201 {attempts_imported, favorites_imported, rejected}`; a repeated batch id returns `200` + `Idempotent-Replay: true` with the same counts; invalid rows are counted in `rejected`, not fatal; imported attempts are re-scored and earn no XP/streak. `GET /twisters/{slug}/history/?range=10|30|all` 🔐 → `{count, best_score, results[]}`. Every error uses the envelope above and every response carries `X-Request-Id`.
+
 ## 2. Preferences
 
 ### `GET /me/preferences/` 🔐 → `200`
 ```json
-{ "default_mode":"speak","accent_lang":"en-GB","display_style":"word","wpm":110,"threshold_pct":35,
+{ "default_mode":"speak_score","accent_lang":"en-GB","display_style":"word","wpm":null,"threshold_pct":35,
   "font_scale":1.0,"mirror_text":false,"loop_count":1,"punctuation_pauses":true,"metronome":false,
   "save_voice_default":false,"record_layout":"camera_text","record_resolution":"720p","countdown_s":3,
   "reduce_motion":false,"dyslexia_font":false,"high_contrast":false,"extra":{},"updated_at":"2026-09-29T10:00:00Z" }
 ```
-### `PATCH /me/preferences/` 🔐 — partial update, validates ranges (wpm 40–300, threshold 20–60, font 0.8–2.0). `If-Unmodified-Since` optional for optimistic concurrency → `409` on stale.
+`wpm: null` means automatic (by twister difficulty: 90/110/130/150).
+### `PATCH /me/preferences/` 🔐 — partial update, validates ranges (wpm 40–300, threshold 20–60, font 0.8–2.0, loop_count 0–10 where 0 = forever). `extra` is merged key-by-key; everything else is last-write-wins. `If-Unmodified-Since` optional for optimistic concurrency → `409` on stale.
 
 ## 3. Twisters (extensions)
 
@@ -48,6 +52,8 @@ All new endpoints are documented in OpenAPI (`/api/docs/`) via drf-spectacular; 
   "settings_snapshot":{"wpm":110,"lang":"en-GB"}, "engine":"webspeech", "user_agent_family":"chrome-131" }
 ```
 ### `PATCH /sessions/{id}/` — `{ "status":"completed", "active_ms":48210, "loops_completed":3 }`
+
+`PATCH` accepts `status` (`completed`|`abandoned`), `ended_reason`, `active_ms`, `loops_completed`, `passes_completed`, `avg_wpm`. `active_ms` is monotonic and capped at wall-clock time since start. The response adds `xp_awarded` and `profile`. Once a session is `completed`/`abandoned` it is immutable: repeat PATCHes return the stored state with `xp_awarded: 0` (safe retries). A Read-along session earns streak + XP only with ≥ 1 pass **and** ≥ 30 s active (`READ_ALONG_MIN_ACTIVE_MS`); XP = 25 % of a scored attempt, capped 50/day.
 
 Sessions are advisory analytics/records; **attempts remain valid without a session** (guests, offline).
 

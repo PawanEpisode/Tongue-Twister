@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import Attempt, Category, Favorite, Profile, Twister
+from .models import (
+    Attempt,
+    Category,
+    DailyActivity,
+    Favorite,
+    FeatureFlag,
+    Plan,
+    PracticeSession,
+    Profile,
+    SyncBatch,
+    Twister,
+    UserPreference,
+)
 
 
 @admin.register(Twister)
@@ -11,4 +23,4 @@ class TwisterAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("text",)}
 
 
-admin.site.register([Category, Profile, Attempt, Favorite])
+admin.site.register([Category, Profile, Attempt, Favorite, Plan, UserPreference, PracticeSession, DailyActivity, SyncBatch, FeatureFlag])

@@ -1,17 +1,16 @@
-import datetime as dt
-
 from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django_filters import rest_framework as filters
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from . import scoring
 from .models import Attempt, Category, Favorite, Profile, Twister
-from .serializers import (AttemptCreateSerializer, AttemptSerializer, CategorySerializer,
-                          ProfileSerializer, TwisterSerializer)
+from .practice import services
+from .serializers import AttemptCreateSerializer, AttemptSerializer, CategorySerializer, ProfileSerializer, TwisterSerializer
 
 
 class TwisterFilter(filters.FilterSet):
@@ -67,6 +66,17 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
             fav.delete()
         return Response({"is_favorite": created})
 
+    @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    def history(self, request, slug=None):
+        """The caller's attempts on this twister (newest first) plus totals for the side panel."""
+        limit = {"10": 10, "30": 30, "all": None}.get(request.query_params.get("range", "10"), "bad")
+        if limit == "bad":
+            raise ValidationError({"range": "Use 10, 30 or all."})
+        mine = Attempt.objects.filter(profile=request.user, twister=self.get_object())
+        stats = mine.aggregate(count=Count("id"), best=Max("score"))
+        rows = mine[:limit] if limit else mine
+        return Response({"count": stats["count"], "best_score": stats["best"], "results": AttemptSerializer(rows, many=True).data})
+
     @action(detail=True, methods=["get"])
     def leaderboard(self, request, slug=None):
         twister = self.get_object()
@@ -98,14 +108,7 @@ class AttemptViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Ge
             wpm=result["wpm"], score=result["score"], xp_awarded=result["xp"],
         )
         old_level = profile.level
-        today = timezone.now().date()
-        if profile.last_practice_date != today:
-            yesterday = today - dt.timedelta(days=1)
-            profile.current_streak = profile.current_streak + 1 if profile.last_practice_date == yesterday else 1
-            profile.best_streak = max(profile.best_streak, profile.current_streak)
-            profile.last_practice_date = today
-        profile.xp += result["xp"]
-        profile.save()
+        services.record_attempt(profile, result["xp"])
 
         data = AttemptSerializer(attempt).data
         data.update({

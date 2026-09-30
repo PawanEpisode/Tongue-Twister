@@ -1,30 +1,8 @@
-import uuid
-
-import jwt
 import pytest
 from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from twisters import scoring
-
-SECRET = "test-secret-test-secret-test-secret"
-
-
-@pytest.fixture(autouse=True)
-def _settings(settings):
-    settings.SUPABASE_JWT_SECRET = SECRET
-
-
-@pytest.fixture
-def seeded(db):
-    call_command("seed_twisters")
-
-
-def auth_client():
-    token = jwt.encode({"sub": str(uuid.uuid4()), "aud": "authenticated", "email": "a@b.co"}, SECRET, algorithm="HS256")
-    c = APIClient()
-    c.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-    return c
 
 
 def test_scoring_perfect_and_bad():
@@ -45,7 +23,7 @@ def test_attempt_requires_auth(seeded):
     assert APIClient().post("/api/v1/attempts/", {}, format="json").status_code in (401, 403)
 
 
-def test_attempt_flow_awards_xp_and_streak(seeded):
+def test_attempt_flow_awards_xp_and_streak(seeded, auth_client):
     c = auth_client()
     r = c.post("/api/v1/attempts/", {"twister": "peter-piper", "transcript": "peter piper picked a peck of pickled peppers", "duration_ms": 3000}, format="json")
     assert r.status_code == 201

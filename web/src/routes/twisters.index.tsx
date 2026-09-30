@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
+import { browseContext } from '#/lib/browseContext'
 import { TwisterCard } from '#/components/ui'
 import {
   ChipsSkeleton,
@@ -62,6 +63,10 @@ function Browse() {
   })
   const items = list.data?.pages.flatMap((p) => p.results) ?? []
   const total = list.data?.pages[0]?.count ?? 0
+  // Lets the twister page's next/previous follow this list (see lib/browseContext).
+  useEffect(() => {
+    if (items.length) browseContext.set(items.map((t) => t.slug))
+  }, [items])
   const clearFilters = () => {
     setQ('')
     nav({ search: {} })
