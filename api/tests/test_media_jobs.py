@@ -89,7 +89,7 @@ def test_enqueue_is_idempotent_and_the_database_enforces_it(queued):
     "fields",
     [
         {"status": "running"},  # running without a lease
-        {"kind": "transcode"},
+        {"kind": "other"},  # short enough to reach the CHECK (Postgres fails length first)
         {"status": "weird"},
         {"tries": 4},  # above max_tries
         {"max_tries": 0},

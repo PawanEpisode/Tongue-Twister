@@ -57,7 +57,9 @@ def request(profile: Profile, recording: Recording) -> tuple[dict, bool]:
         raise errors.feature_disabled("Analysis is not available right now.")
     with transaction.atomic():
         fresh = (
-            Recording.objects.select_for_update().select_related("audio_asset").get(pk=recording.pk)
+            Recording.objects.select_for_update(of=("self",))
+            .select_related("audio_asset")
+            .get(pk=recording.pk)
         )
         if fresh.status not in (RecordingStatus.READY, RecordingStatus.PROCESSING):
             raise errors.ApiProblem(409, "conflict", "This recording is not ready to analyse.")

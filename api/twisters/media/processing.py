@@ -355,7 +355,11 @@ def apply_processed(asset: MediaAsset, body: dict) -> tuple[MediaJob, bool]:
     gone = False
     with transaction.atomic():
         quota.lock_profile(asset.profile)
-        locked = MediaJob.objects.select_for_update().select_related("recording").get(pk=job.pk)
+        locked = (
+            MediaJob.objects.select_for_update(of=("self",))
+            .select_related("recording")
+            .get(pk=job.pk)
+        )
         if locked.status in (JobStatus.DONE, JobStatus.FAILED):
             return _replay_or_conflict(locked, ready)
         if rejection is not None:
