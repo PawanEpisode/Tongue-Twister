@@ -1,6 +1,6 @@
 # ERD 06 — Data Model for the Practice Suite
 
-**This file is the master model.** Per-feature slices with full attributes, traceability to PRD requirement IDs, constraints and edge-case rules live in: `06a` (Hub & Read-along) · `06b` (Speak & Score) · `06c` (Record & media) · `06d` (Progress, social & plans). If a slice and this file disagree, fix both in the same PR.
+**This file is the master model.** The per-slice ERDs (06a–06d) and the PRDs they traced to were retired on 2026-10-01 once shipped (git history: `git show e39ec68:docs/features/<file>`). The Django models are the source of truth for attributes and constraints; this file keeps the shape.
 
 Baseline: `docs/ERD.md` (Category, Twister, Profile, Attempt, Favorite). This document defines the **target model** and the migration path. Postgres (Supabase). Django models use `snake_case` table names prefixed `twisters_`.
 
@@ -580,7 +580,8 @@ Decision: `AttemptWord` rows are written for **Test and Record** attempts; Train
 | Consent log | UserConsent | Legal | 6 yrs after revoke (or per policy) | View |
 | Analytics | Third-party | Legitimate interest / consent | 13 months | Opt out |
 
-## 11. Coverage matrix — every PRD requirement has a home
+## 11. Coverage matrix (historical)
+The PRDs and slice ERDs named below are retired; every requirement was built (see `12-implementation-status.md`).
 | PRD | Requirements | Slice |
 |---|---|---|
 | 01 Practice Hub | H1–H12 | `06a` |

@@ -2,8 +2,7 @@
 
 **Target: content reported as unlawful, abusive or involving a child is made inaccessible within 24 hours of
 the report reaching us; the owner decides afterwards whether it is restored.** Everything else: respond within
-72 hours. This is the project's own target, not legal advice; the owner confirms the legal basis (spec 15 section 0,
-D21 notes on retention).
+72 hours. This is the project's own target, not legal advice; the owner confirms the legal basis (decision D21 in `11`, notes on retention).
 
 ## Symptom
 An e-mail, a share-page "Report" (stored as a `ModerationReport`), or a message asking for something to be removed.

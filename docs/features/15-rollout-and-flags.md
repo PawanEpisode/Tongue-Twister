@@ -1,6 +1,6 @@
 # 15 — Rollout and feature flags
 
-Operational companion to `15-round1-spec.md` and `09` section 7. Flags are rows of `FeatureFlag`
+Operational companion to `12-implementation-status.md`. Flags are rows of `FeatureFlag`
 (`code`, `enabled`, `rollout_pct`, `allow_list`), edited in the Django admin. Every fact below was read from the
 code; the "reads it" column names the file.
 
@@ -34,7 +34,7 @@ Seeded state is the migration's; "now" can differ if someone changed it in the a
 | `record_region` | on (0010) | web `lib/flags.ts` defaults only (no reader found) | Region capture option | n/a | none | no effect today |
 | `record_cloud` | off (0003) | API `media/uploads.py` `require_cloud`; web `Header`, `recordings` route, `lib/record/cloudGate.ts` | Saving recordings to cloud, `/recordings` page | when storage plan allows (decision D7: Supabase Pro) | Supabase Pro, `MEDIA_STORAGE_BACKEND=supabase`, `SUPABASE_SERVICE_ROLE_KEY`, `MEDIA_PATH_SECRET`; worker if `MEDIA_PROCESSING_ENABLED=1`; adult age band and consent are enforced per user | New cloud recordings answer 403 `feature_disabled`; local recording and existing data unaffected |
 | `share_links` | off (0003) | API `media/views.py` (`_require_sharing`); web `cloudGate.ts` | Share links for recordings and the public `/public/r/` page | after `record_cloud` is stable | `record_cloud` on; reports queue staffed (`runbooks/takedown-sla.md`) | Creating and resolving recording links answers 403 `feature_disabled` |
-| `score_cards` | on (0015, spec 15 D20) | web `ScoreCardShare`; API score-card endpoints (api-core, spec 15 section 1.1) | Score-card links and the public `/public/s/` page and image | always (stores no media) | `API_PUBLIC_URL` set so `images` URLs are emitted | Score-card create, JSON and image answer 403 `feature_disabled` |
+| `score_cards` | on (0015, D20) | web `ScoreCardShare`; API score-card endpoints  | Score-card links and the public `/public/s/` page and image | always (stores no media) | `API_PUBLIC_URL` set so `images` URLs are emitted | Score-card create, JSON and image answer 403 `feature_disabled` |
 | `achievements` | on (0013) | API `progress/achievements.py`; web `ProgressStrip`, `AchievementToaster` | Badge evaluation, XP rewards, toasts | always | `sync_achievements` run after catalogue edits | No new unlocks; existing ones stay; UI hidden |
 | `weekly_boards` | off (0013) | API `progress/boards.py`; web `routes/index.tsx`; cron `build_leaderboard` | Weekly leaderboard on the daily twister | when enough weekly active players | `build_leaderboard` cron (`37 * * * *`, harmless while off); `hide_from_boards` honoured | Endpoint 403 `feature_disabled`, UI hidden |
 | `generate_twister` | off (0003) | API `generate/views.py` (`POST /generate/`); web `/generate` and the header/home entry (round 2) | Generate Twister (private, LLM-written) | after `GEMINI_API_KEY` is set and a test generation works; stage by allow-list, watch the Gemini bill and the `generation_rejected` rate | `GEMINI_API_KEY` (blank means the canned `fake` backend: never enable for real users like that), `GEMINI_MODEL`, quota `GENERATE_DAILY_LIMIT` (5/day) and a 3/min throttle are built in; migration `0016` | `POST /generate/` answers 403 `feature_disabled`; people keep and can delete what they already generated (`/me/twisters/`) |
@@ -44,7 +44,7 @@ Other switches that are **not** flags (environment variables, need a redeploy): 
 `LEADERBOARD_REQUIRE_VERIFIED`, `MASTERY_ALLOW_PROVISIONAL`, `WORKER_ALLOW_LEGACY_SIGNATURE`; see
 `runbooks/secrets-and-rotation.md`.
 
-## 3. Staged rollout procedure (from `09` section 7)
+## 3. Staged rollout procedure 
 Applies to any flag whose seed is off. Each stage lasts **at least 3 days** and ends only when no stop-ship
 criterion is met.
 
@@ -94,7 +94,7 @@ Tick each; "how" is the check, not a promise.
 - [ ] Runbooks read once end to end (`docs/runbooks/README.md`).
 **Legal and product** (owner decisions, not engineering)
 - [ ] Privacy policy and terms published; consent texts at the versions in `CONSENT_VERSIONS`.
-- [ ] Retention of the consent log after account deletion decided (spec 15 D21 notes).
+- [ ] Retention of the consent log after account deletion decided (D21 in `11`).
 - [ ] Takedown contact address published; 24 h target understood (`runbooks/takedown-sla.md`).
 **Flags at launch**
 - [ ] Off until their prerequisites are met: `accurate_mode`, `spot_checks`, `record_cloud`, `share_links`,

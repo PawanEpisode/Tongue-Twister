@@ -1,6 +1,6 @@
 # Web CI, security headers and budgets
 
-Operational notes for the web app (`web/`). Everything here runs from `web/`. Spec: `docs/features/15-round1-spec.md` §4.
+Operational notes for the web app (`web/`). Everything here runs from `web/`. Spec: the retired round-1 spec (git history).
 
 ## Commands
 

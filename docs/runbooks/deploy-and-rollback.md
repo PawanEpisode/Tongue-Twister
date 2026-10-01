@@ -26,7 +26,7 @@ Postgres, worker ruff + pytest.
 4. **Deploy the web** project.
 5. Run `GET /api/health/`, `GET /api/v1/flags/`, and one real user flow (sign in, one attempt).
 
-## Worker signature cut-over (spec 15 section 2.1)
+## Worker signature cut-over (round 1, D-log in `11`)
 The API accepts the old body-only signature while `WORKER_ALLOW_LEGACY_SIGNATURE=1` (the default), so either
 side can deploy first.
 1. Deploy the API with the timestamp verifier (legacy still on).

@@ -1,6 +1,6 @@
 # 10 — In-house Pronunciation Engine (design)
 
-Status: **Design — approved direction** · Owner: Pawan · Feeds: `03` (Speak & Score), `06b` (data model), `07` (API), `09` (plan), `11` (decisions D3, D8–D10, D15)
+Status: **Design — approved direction** · Owner: Pawan · Feeds: `06` (data model), `07` (API), `12` (status and plan), `11` (decisions D3, D8–D10, D15)
 Supersedes the earlier vendor evaluation (removed). Facts about third-party projects were checked on 2026-09-30; items marked **(verify)** must be re-checked before relying on them.
 
 ---

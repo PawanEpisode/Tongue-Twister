@@ -7,17 +7,15 @@
 | File | Purpose | Read if you are… |
 |---|---|---|
 | `00-overview-and-roadmap.md` | Vision, principles, feature map, phasing, cross-cutting rules | Everyone |
-| `01-prd-practice-hub.md` | The twister page shell: mode switcher, shared settings, permissions | Frontend / design |
-| `02-prd-read-along-mode.md` | Mode A — no-mic teleprompter / karaoke reader with speed control | Frontend |
-| `03-prd-speak-and-score-mode.md` | Mode B — mic-checked practice (improves today's flow): mistakes view, train/test, history | Frontend + backend |
-| `04-prd-record-mode.md` | Mode C — Loom-style camera/screen recording with layouts and review | Frontend + backend + infra |
-| `05-prd-progress-and-gamification.md` | Results, history, mastery, streaks, achievements, favourites, stats, generate-a-twister | Product / backend |
 | `06-erd-practice-features.md` | Data model (Mermaid ERD), constraints, storage policies, migrations | Backend / DBA |
 | `07-api-contract.md` | REST endpoints, payloads, errors, upload flow | Backend + frontend |
 | `08-ux-flows-and-edge-cases.md` | State machines, copy, accessibility, QA matrix, edge-case catalogue | QA / design / everyone |
-| `09-implementation-plan.md` | Epics, ticket breakdown, sequencing, telemetry, rollout, risks | Eng lead |
+| `10-in-house-pronunciation-engine.md` | Design of the in-house pronunciation engine | Speech / backend |
+| `11-decisions-log.md` | Accepted decisions (ADRs) | Everyone |
+| `12-implementation-status.md` | What is shipped, what is left, files to implement | Eng lead |
+| `15-rollout-and-flags.md` | Feature flags, staged rollout, pre-launch checklist | Eng lead / ops |
 
-Existing docs (`docs/PRD.md`, `docs/ERD.md`, `docs/ARCHITECTURE.md`) remain the baseline; this set **extends** them. Where a table here has the same name as one in `docs/ERD.md`, this set describes the *target* shape and `06` includes the migration.
+The PRDs (01–05), slice ERDs (06a–06d), implementation plan (09) and build specs (13–17) were retired on 2026-10-01 once shipped; they are in git history (`git show e39ec68:docs/features/<file>`). Existing docs (`docs/PRD.md`, `docs/ERD.md`, `docs/ARCHITECTURE.md`) remain the baseline; this set **extends** them. Where a table here has the same name as one in `docs/ERD.md`, this set describes the *target* shape and `06` includes the migration.
 
 ## 1. Vision
 
@@ -46,14 +44,14 @@ The four screenshots show a mobile tongue-twister app. We take *ideas*, not bran
 
 | Reference feature | What we take | Where it lands |
 |---|---|---|
-| Home stats strip: Mastered `0/139`, Streak, Achievements `0/23` | A compact progress strip; "mastered" as a first-class concept | `05` §2–4 |
-| Favorites · Random · Stats quick actions | Same three shortcuts on Home and Browse | `05` §5–7 |
-| "Generate Twister — create a fresh tongue twister" | AI-generated twisters with safeguards | `05` §8 |
-| "Try this twister!" featured card with level badge, best score | Already have the daily twister; add best score + favourite star | `05` §2 |
-| Search + sort + difficulty tabs with counts (Easy 19 · Medium 63 · Hard 57 · All 139) | Counts on the level chips; sort menu | `05` §9 |
-| **See Your Mistakes** — target text with wrong words in red, score %, "New Best Score!", duration, dot on a 0–100% axis, "My Voice" player with the transcript of what was heard (wrong words in red), Share / Retry / Continue | Word-level diff, own-voice playback with synced transcript, three clear next actions | `03` §5–6 |
-| **Practice by Word** — one word highlighted, "Try to say this word…", play the word, big mic button | Drill mode for trouble words | `03` §7 |
-| **Track Your Scores** — score history line chart with date/score/time table, best score, language flag, Train and Test buttons | History chart + table; Train vs Test split | `03` §8–9 |
+| Home stats strip: Mastered `0/139`, Streak, Achievements `0/23` | A compact progress strip; "mastered" as a first-class concept | retired PRD |
+| Favorites · Random · Stats quick actions | Same three shortcuts on Home and Browse | retired PRD |
+| "Generate Twister — create a fresh tongue twister" | AI-generated twisters with safeguards | retired PRD |
+| "Try this twister!" featured card with level badge, best score | Already have the daily twister; add best score + favourite star | retired PRD |
+| Search + sort + difficulty tabs with counts (Easy 19 · Medium 63 · Hard 57 · All 139) | Counts on the level chips; sort menu | retired PRD |
+| **See Your Mistakes** — target text with wrong words in red, score %, "New Best Score!", duration, dot on a 0–100% axis, "My Voice" player with the transcript of what was heard (wrong words in red), Share / Retry / Continue | Word-level diff, own-voice playback with synced transcript, three clear next actions | retired PRD |
+| **Practice by Word** — one word highlighted, "Try to say this word…", play the word, big mic button | Drill mode for trouble words | retired PRD |
+| **Track Your Scores** — score history line chart with date/score/time table, best score, language flag, Train and Test buttons | History chart + table; Train vs Test split | retired PRD |
 
 Deliberate departures: (a) ours is web-first, so read-along and recording are new differentiators; (b) we keep scoring server-verified for signed-in users; (c) we add explicit privacy controls for voice/video.
 
@@ -82,7 +80,7 @@ Deliberate departures: (a) ours is web-first, so read-along and recording are ne
 | **P4** | Record (cloud) & sharing | Signed uploads, private/unlisted links, expiry, quotas, screen+cam layouts, transcoding worker | Storage cost/user within budget; zero P1 abuse reports unresolved |
 | **P5** | Progress & delight | Mastery, achievements, stats page, favourites list, random, share cards, Generate Twister | Retention D7 ≥ 12% |
 
-Each phase is independently shippable behind a feature flag (see `09`).
+Each phase is independently shippable behind a feature flag (see `15-rollout-and-flags.md`).
 
 ## 6. Cross-cutting requirements
 
@@ -123,7 +121,7 @@ Rule: unsupported ⇒ **hide the option and show an inline "Not available on thi
 - Text scaling to 200 % without loss; minimum tap target 44 px.
 
 ### 6.5 Analytics (privacy-respecting)
-Event taxonomy is in `09`. No raw audio/video/transcripts in analytics. IDs are the Supabase user id (hashed for third-party tools).
+The event allow-list lives in code (`web/src/lib/observability/`). No raw audio/video/transcripts in analytics. IDs are the Supabase user id (hashed for third-party tools).
 
 ### 6.6 Internationalisation
 English only for v1 but all strings externalised; the twister table already supports future `language` column (`06`). Speech `lang` derived from user preference (en-US, en-GB, en-IN, en-AU) — this materially affects recognition accuracy.

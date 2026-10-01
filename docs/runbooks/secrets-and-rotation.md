@@ -47,7 +47,7 @@ secrets apply on the next workflow run.
 | `LEADERBOARD_REQUIRE_VERIFIED`, `LEADERBOARD_TOP_N`, `STATS_MAX_POINTS` | Vercel API | Boards and stats |
 | `MIN_ENGINE_CONFIDENCE`, `MAX_PLAUSIBLE_WPM`, `SPAM_TRANSCRIPT_LIMIT`, `SPAM_WINDOW_MIN`, `OFFLINE_XP_MAX_AGE_DAYS`, `ATTEMPT_MAX_BACKDATE_DAYS`, `SPOT_CHECK_RATE`, `SPOT_CHECK_MIN_SCORE`, `SPOT_CHECK_MAX_DELTA`, `DEVICE_DISTRUST_AFTER`, `PENDING_RETRY_AFTER_MIN` | Vercel API | Scoring trust and abuse |
 | `STREAK_FREEZE_EVERY`, `STREAK_AT_RISK_HOUR`, `NIGHT_OWL_CUTOFF_HOUR` | Vercel API | Streaks |
-| `ACCOUNT_DELETION_GRACE_DAYS`, `EXPORT_MAX_ATTEMPTS`, `EXPORT_MAX_BYTES` | Vercel API | Account deletion/export (spec 15 section 1.2). `GET /me/export/` is capped by attempt count (20000) **and** by size (`EXPORT_MAX_BYTES`, 4,000,000): Vercel Functions reject response bodies over 4.5 MB, so keep `EXPORT_MAX_BYTES` below that. Whichever cap bites sets `truncated: true` (newest attempts are kept). |
+| `ACCOUNT_DELETION_GRACE_DAYS`, `EXPORT_MAX_ATTEMPTS`, `EXPORT_MAX_BYTES` | Vercel API | Account deletion/export (round 1). `GET /me/export/` is capped by attempt count (20000) **and** by size (`EXPORT_MAX_BYTES`, 4,000,000): Vercel Functions reject response bodies over 4.5 MB, so keep `EXPORT_MAX_BYTES` below that. Whichever cap bites sets `truncated: true` (newest attempts are kept). |
 | `GEMINI_MODEL`, `GEMINI_TIMEOUT_S`, `GENERATOR_BACKEND`, `GENERATE_DAILY_LIMIT`, `GENERATE_MAX_STORED`, `GENERATE_USAGE_RETENTION_DAYS` | Vercel API | Generate Twister (D24-D26): model (default `gemini-2.5-flash`), provider timeout (10 s, one retry on 5xx/timeout), `gemini` or `fake` (blank = `gemini` when the key is set, otherwise `fake`; the fake returns canned twisters, so set the key before turning the `generate_twister` flag on) generations per person per UTC day (5), private twisters one person may keep (50; `409 stored_limit` beyond it) and days of daily-usage history kept by the `prune_generation_usage` cron (90) |
 | `WORKER_SIGNATURE_MAX_SKEW_S`, `WORKER_ALLOW_LEGACY_SIGNATURE` | Vercel API | Worker signature window (300 s) and legacy acceptance (default `1`; see `deploy-and-rollback.md`) |
 | `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`, `SENTRY_TRACES_SAMPLE_RATE` | Vercel API | Used only when `SENTRY_DSN` is set |
@@ -81,6 +81,6 @@ change on the API and the workflow together or the workflow computes different f
 ## Replay of worker callbacks
 The HMAC covers `"<timestamp>." + body` and is rejected outside +/- `WORKER_SIGNATURE_MAX_SKEW_S` seconds
 (default 300) of the API's clock. **A captured request can be replayed inside that window; this is not
-prevented**, because the API is stateless serverless and keeps no nonce cache (spec 15 section 2.1). The
+prevented**, because the API is stateless serverless and keeps no nonce cache (round 1). The
 `processed` reports are idempotent (re-reporting a finished asset changes nothing) and a replayed `claim` can only take a job that is then re-queued when its lease lapses, so the exposure is bounded; HTTPS
 protects the transport. Rotate `WORKER_SHARED_SECRET` if a signature may have leaked.

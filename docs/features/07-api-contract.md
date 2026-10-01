@@ -219,7 +219,7 @@ Error codes added: `nonce_invalid`, `audio_hash_duplicate`, `model_unsupported` 
 
 ## 14. As built (06c) — where behaviour differs from §6, §7, §10, §11
 
-Source of truth is `13-06c-build-spec.md`; the notes below are the exact shapes shipped.
+The retired 06c build spec (git history) is superseded by the notes below, which are the exact shapes shipped.
 
 **§6 Recordings.** `POST /recordings/` gates in this order: flag `record_cloud` (`403 feature_disabled`) → `age_band` (`403 age_required` if unknown, `403 minor_not_allowed` if under 13) → `recording_upload` consent at the current version (`403 consent_required`) → `415`/`413` → plan limits (`402 quota_exceeded`, `details.limit` = `storage_bytes` | `recordings` | `recording_ms`). Idempotent on `client_recording_id` (or the `Idempotency-Key` header): replay → `200`, `Idempotent-Replay: true`, same recording, freshly signed `upload`. Response: `{"recording":{…list shape…},"upload":{provider,bucket,path,signed_url,token,expires_in,chunk_size,standard_url}|null,"quota":{used_bytes,limit_bytes,count,count_limit}}` (`upload` is `null` once the upload is no longer pending). `complete` body: `{size_bytes?, checksum_sha256?, thumbnail?}`; the stored size is authoritative and reconciled into the ledger. Returns the detail shape with `202` (first time) or `200` + `Idempotent-Replay` (repeat). `409 upload_incomplete` = object not stored yet (retry); `422 upload_rejected` `{details.reason}` = content sniff / checksum / size failed (recording becomes `failed`, bytes released, object deleted); `402` if the real size no longer fits. `expires_at` is set at `complete`. List row fields: `id, client_recording_id, twister (slug), twister_text, session_id, attempt_id, title, notes, layout, layout_settings, crop_rect, trim_start_ms, trim_end_ms, has_camera, has_screen, has_mic, has_system_audio, duration_ms, width, height, fps, mime_type, size_bytes, capture_source, status, failure_reason, recovered, captions_source, visibility, ended_reason, consented_at, expires_at, deleted_at, hidden_at, created_at, thumbnail_url`; detail adds `attempt {id,public_id,kind,score,accuracy,wpm,duration_ms,created_at}|null`, `words[] {target_index,target,spoken,status,reason,start_ms,end_ms}`, `playback {url,expires_at,mime}|null` (only when `ready`) and `captions_url`. `PATCH` accepts `title, notes, visibility (private|unlisted), expires_at, attempt (attempt id|null), trim_start_ms, trim_end_ms, crop_rect {x,y,w,h}, layout_settings` and returns the detail shape. `DELETE` → `200 {id, deleted_at, restorable_until}`; `POST …/restore/` → detail, `410` after 24 h, `402` if no slot. Analysis scoring stays a normal `kind=record` attempt (accepted by `POST /attempts/`) linked through `attempt`; `POST /recordings/{id}/analyse/` (below, §14.1) only prepares the audio for the future scoring worker. `GET /me/storage/` = `{used_bytes,limit_bytes,count,count_limit,expiring_soon:[{id,title,expires_at}]}` (expiring within 3 days); `GET /me/entitlements/` adds `usage:{used_bytes,count}`.
 
@@ -235,7 +235,7 @@ Source of truth is `13-06c-build-spec.md`; the notes below are the exact shapes 
 
 ### 14.1 Worker queue, analysis, reminders, privacy (addendum A2)
 
-Binding JSON for the worker lives in `13-06c-build-spec.md` A2.2; summary of what shipped:
+The worker's JSON shapes live in `worker/twister_worker/models.py` and `api/twisters/media/jobs.py`; summary of what shipped:
 
 - **Queue.** `MediaJob {id, recording, asset, kind process|analyse, status queued|running|done|failed, tries, max_tries (3), locked_until, error_code}`; one active job per `(recording, kind)` (partial unique index) so enqueue is idempotent. `complete` (and `retry-processing`) enqueue a `process` job when `MEDIA_PROCESSING_ENABLED=1`.
 - **`POST /internal/media/claim/`** (HMAC, body `{}`) → `200 {"job": null}` or `{"job": {id, kind, recording_id, asset_id, lease_s, source{url,mime,size_bytes}, outputs{mp4?,thumbnail?,captions?,audio?: {bucket,path,upload_url,token,mime}}, words[{target,start_ms,end_ms,status}]|null, limits{max_height,max_s}}}`. PostgreSQL claims with `FOR UPDATE SKIP LOCKED`; every database also wins the job with one conditional `UPDATE`. A lapsed lease is recovered at the start of the next claim.
@@ -252,7 +252,7 @@ Binding JSON for the worker lives in `13-06c-build-spec.md` A2.2; summary of wha
 
 ## 15. As built (06d core)
 
-Spec: `14-06d-build-spec.md`. Decisions: D16–D19 in `11`. Shapes below are what ships; where they differ from earlier sections of this file, this section wins.
+Decisions: D16–D19 in `11`. Shapes below are what ships; where they differ from earlier sections of this file, this section wins.
 
 ### Endpoints
 
@@ -290,7 +290,7 @@ Spec: `14-06d-build-spec.md`. Decisions: D16–D19 in `11`. Shapes below are wha
 
 ## 16. As built (round 1) — score cards, account deletion and export, night owl
 
-Decisions D20-D23 (`11`); build spec `15`. All paths are under `/api/v1`.
+Decisions D20-D23 (`11`). All paths are under `/api/v1`.
 
 ### New endpoints
 
@@ -325,7 +325,7 @@ Decisions D20-D23 (`11`); build spec `15`. All paths are under `/api/v1`.
 
 ## 17. As built (round 2) — Generate Twister
 
-Decisions D24-D26 (`11`); build spec `16`. All paths are under `/api/v1`. Reminders are §18.
+Decisions D24-D26 (`11`). All paths are under `/api/v1`. Reminders are §18.
 
 ### Endpoints
 
@@ -359,7 +359,7 @@ Decisions D24-D26 (`11`); build spec `16`. All paths are under `/api/v1`. Remind
 
 ## 18. As built (round 2) — practice reminders
 
-Decision D27 (`11`); build spec `16`. All paths are under `/api/v1`.
+Decision D27 (`11`). All paths are under `/api/v1`.
 
 ### Endpoints
 
