@@ -1,23 +1,27 @@
 import confetti from 'canvas-confetti'
-import { BicepsFlexed, Flame, PartyPopper, Tornado, Trophy } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { PartyPopper } from 'lucide-react'
 import { m } from 'motion/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { ScoreRing, StatTile } from '#/components/ScoreCardParts'
+import ScoreBar from '#/components/results/ScoreBar'
 import ScoreCardShare from '#/components/ScoreCardShare'
 import { achievementIcon } from '#/components/progress/achievementIcons'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import type { UnlockedAchievement } from '#/lib/api'
+import { headlineFor } from '#/lib/speak/coaching'
+import { tallyRows } from '#/lib/speak/display'
+import type { WordRow } from '#/lib/speak/display'
 import { readAccentColors } from '#/lib/theme'
 
-function grade(score: number): { label: string; Icon: LucideIcon } {
-  if (score >= 95) return { label: 'Tongue Titan!', Icon: Trophy }
-  if (score >= 80) return { label: 'Smooth talker', Icon: Flame }
-  if (score >= 60) return { label: 'Getting there', Icon: BicepsFlexed }
-  return { label: 'Tangled — try again', Icon: Tornado }
-}
+/** One quiet stat in the row under the score bar. */
+const Stat = ({ k, v }: { k: string; v: string }) => (
+  <div>
+    <span className="text-muted-foreground">{k}</span>{' '}
+    <b className="font-semibold">{v}</b>
+  </div>
+)
 
 export default function ResultCard({
   score,
@@ -29,6 +33,8 @@ export default function ResultCard({
   unlocked,
   notice,
   attemptId,
+  rows,
+  drill = false,
   children,
   onRetry,
   onNext,
@@ -45,12 +51,20 @@ export default function ResultCard({
   notice?: string
   /** The saved attempt this result came from; enables "Share score card" for signed-in users. */
   attemptId?: number | null
+  /** The scored words; drives the score bar and the one-line story. */
+  rows?: readonly WordRow[]
+  /** Offer the weak-words drill (needs a saved attempt and at least one slip). */
+  drill?: boolean
   /** Detail below the stats, e.g. the word-by-word view. */
   children?: ReactNode
   onRetry: () => void
   onNext: () => void
 }) {
-  const g = grade(score)
+  const tally = rows ? tallyRows(rows) : null
+  const head = headlineFor(
+    score,
+    tally ?? { correct: 0, near: 0, wrong: 0, missed: 0, extra: 0 },
+  )
   const perfect = Math.round(accuracy * 100) === 100
   useEffect(() => {
     if (score < 80) return
@@ -82,20 +96,28 @@ export default function ResultCard({
     >
       <Card
         variant="glass"
-        className="mx-auto max-w-md rounded-3xl p-8 text-center"
+        className="mx-auto max-w-md rounded-3xl p-6 text-left sm:p-8"
       >
-        <ScoreRing score={score} animated />
-        <h2 className="mt-4 flex items-center justify-center gap-2 text-2xl font-bold">
-          <g.Icon className="size-6 shrink-0" aria-hidden />
-          {g.label}
-        </h2>
-        {personalBest && (
-          <p className="mt-1 text-sm font-semibold text-lime">
-            New personal best!
-          </p>
+        <div className="flex items-end gap-3">
+          <span
+            aria-label={`Score ${score} out of 100`}
+            className="font-display text-7xl font-extrabold leading-none text-primary"
+          >
+            {score}
+          </span>
+          <span className="pb-1 text-sm text-muted-foreground">
+            out of 100
+            {personalBest && (
+              <b className="block font-semibold text-lime">New personal best</b>
+            )}
+          </span>
+        </div>
+        <h2 className="mt-5 font-display text-2xl font-bold">{head.title}</h2>
+        {head.story && (
+          <p className="mt-1 italic text-muted-foreground">{head.story}</p>
         )}
         {levelUp && (
-          <p className="mt-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-pink">
+          <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-pink">
             <PartyPopper className="size-4" aria-hidden />
             Level up!
           </p>
@@ -110,7 +132,7 @@ export default function ResultCard({
               return (
                 <li
                   key={a.code}
-                  className="flex items-center justify-center gap-1.5 font-semibold text-cyan"
+                  className="flex items-center gap-1.5 font-semibold text-cyan"
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
                   Unlocked: {a.name}
@@ -122,10 +144,15 @@ export default function ResultCard({
             })}
           </ul>
         )}
-        <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
-          <StatTile k="Accuracy" v={`${Math.round(accuracy * 100)}%`} />
-          <StatTile k="Speed" v={`${Math.round(wpm)} wpm`} />
-          <StatTile k="XP" v={xp != null ? `+${xp}` : '—'} />
+        {tally && (
+          <div className="mt-5">
+            <ScoreBar tally={tally} />
+          </div>
+        )}
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <Stat k="Accuracy" v={`${Math.round(accuracy * 100)}%`} />
+          <Stat k="Speed" v={`${Math.round(wpm)} wpm`} />
+          <Stat k="XP" v={xp != null ? `+${xp}` : '—'} />
         </div>
         {notice && (
           <p role="status" className="mt-4 text-xs text-muted-foreground">
@@ -134,15 +161,32 @@ export default function ResultCard({
         )}
         {children}
         <ScoreCardShare attemptId={attemptId} />
-        <div className="mt-6 flex gap-3">
-          {!perfect && (
-            <Button variant="outline" className="flex-1 py-3" onClick={onRetry}>
-              Retry
+        <div className="mt-6 space-y-3">
+          {drill && (
+            <Button asChild className="w-full py-3">
+              <Link to="/practice" search={{ drill: 1 }}>
+                Drill your weak words
+              </Link>
             </Button>
           )}
-          <Button className="flex-1 py-3" onClick={onNext}>
-            Next twister →
-          </Button>
+          <div className="flex gap-3">
+            {!perfect && (
+              <Button
+                variant="outline"
+                className="flex-1 py-3"
+                onClick={onRetry}
+              >
+                Retry
+              </Button>
+            )}
+            <Button
+              variant={drill ? 'outline' : 'default'}
+              className="flex-1 py-3"
+              onClick={onNext}
+            >
+              Next twister
+            </Button>
+          </div>
         </div>
       </Card>
     </m.div>

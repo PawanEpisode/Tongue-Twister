@@ -101,3 +101,64 @@ export function summarise(rows: readonly WordRow[]): string {
   if (extra) parts.push(`${extra} extra`)
   return parts.join(' · ')
 }
+
+/** Counts of target words by outcome, for the score bar. Extras have no target word and are counted apart. */
+export type Tally = Record<Exclude<WordStatus, 'extra'>, number> & {
+  extra: number
+}
+
+export function tallyStatuses(statuses: Iterable<WordStatus | null>): Tally {
+  const out: Tally = { correct: 0, near: 0, wrong: 0, missed: 0, extra: 0 }
+  for (const s of statuses) if (s) out[s]++
+  return out
+}
+
+export const tallyRows = (rows: readonly WordRow[]): Tally =>
+  tallyStatuses(
+    rows.map((r) =>
+      r.targetIndex != null || r.status === 'extra' ? r.status : null,
+    ),
+  )
+
+/** One word as the twister prints it, with everything the results view says about it. */
+export type WordEntry = {
+  text: string
+  /** `null`: not scored (pure punctuation). */
+  status: Exclude<WordStatus, 'extra'> | null
+  /** What the recogniser heard instead; empty when nothing was heard. */
+  heard: string
+  reason: WordReason
+  /** Scoring index of the token the verdict came from; what feedback is filed against. */
+  targetIndex: number | null
+}
+
+const stripEdges = (text: string) =>
+  text.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
+
+/** Each displayed word with its worst token's verdict. */
+export function wordEntries(
+  display: readonly DisplayWord[],
+  rows: readonly WordRow[],
+): WordEntry[] {
+  const byToken = new Map<number, WordRow>()
+  for (const r of rows) if (r.targetIndex != null) byToken.set(r.targetIndex, r)
+  return display.map((d) => {
+    let worst: { row: WordRow | null; index: number } | null = null
+    for (let i = d.from; i < d.to; i++) {
+      const row = byToken.get(i) ?? null
+      const sev = SEVERITY[row?.status ?? 'missed']
+      if (!worst || sev > SEVERITY[worst.row?.status ?? 'missed'])
+        worst = { row, index: i }
+    }
+    const status = worst
+      ? ((worst.row?.status ?? 'missed') as WordEntry['status'])
+      : null
+    return {
+      text: stripEdges(d.text) || d.text,
+      status,
+      heard: status === 'missed' ? '' : (worst?.row?.spoken ?? ''),
+      reason: worst?.row?.reason ?? '',
+      targetIndex: worst ? worst.index : null,
+    }
+  })
+}

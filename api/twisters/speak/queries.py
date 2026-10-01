@@ -109,20 +109,38 @@ def drill_targets(profile: Profile, words: list[str]) -> dict[str, dict]:
     return out
 
 
-def weak_word_rows(profile: Profile, *, limit: int, due: bool = False) -> list[dict]:
-    """The weakest words first, each with where to drill it. Shared by `GET /me/words/weak/` and the
-    Stats page, so the two can never disagree. ``due`` keeps only words whose review is due."""
-    qs = UserWordStat.objects.filter(profile=profile, weakness__gt=0)
+def _weak_qs(profile: Profile, *, due: bool = False):
+    """Words still to work on: some weakness, and not nailed in a drill since."""
+    qs = UserWordStat.objects.filter(profile=profile, weakness__gt=0, mastered_at__isnull=True)
     if due:
         qs = qs.filter(Q(next_review_at__isnull=True) | Q(next_review_at__lte=timezone.now()))
-    rows = list(qs.order_by("-weakness", "word_norm")[:limit])
-    hints = dict(
-        TwisterPronunciation.objects.filter(word__in=[r.word_norm for r in rows])
+    return qs
+
+
+def _respellings(words: list[str]) -> dict[str, str]:
+    return dict(
+        TwisterPronunciation.objects.filter(word__in=words)
         .exclude(respelling="")
         .order_by("-twister_id")  # global rows (NULL) sort last, so a twister-specific hint wins
         .values_list("word", "respelling")
     )
-    targets = drill_targets(profile, [r.word_norm for r in rows])
+
+
+def weak_word_count(profile: Profile, *, due: bool = False) -> int:
+    return _weak_qs(profile, due=due).count()
+
+
+def weak_word_rows(
+    profile: Profile, *, limit: int, offset: int = 0, due: bool = False
+) -> list[dict]:
+    """The weakest words first, each with where to drill it. Shared by `GET /me/words/weak/` and the
+    Stats page, so the two can never disagree. ``due`` keeps only words whose review is due."""
+    rows = list(
+        _weak_qs(profile, due=due).order_by("-weakness", "word_norm")[offset : offset + limit]
+    )
+    words = [r.word_norm for r in rows]
+    hints = _respellings(words)
+    targets = drill_targets(profile, words)
     return [
         {
             "word": r.word_norm,
@@ -132,6 +150,29 @@ def weak_word_rows(profile: Profile, *, limit: int, due: bool = False) -> list[d
             "next_review_at": r.next_review_at,
             "respelling": hints.get(r.word_norm, ""),
             "drill": targets.get(r.word_norm),
+        }
+        for r in rows
+    ]
+
+
+def nailed_word_count(profile: Profile) -> int:
+    return UserWordStat.objects.filter(profile=profile, mastered_at__isnull=False).count()
+
+
+def nailed_word_rows(profile: Profile, *, limit: int, offset: int = 0) -> list[dict]:
+    """Words passed in a drill and not slipped on since, most recently nailed first."""
+    rows = list(
+        UserWordStat.objects.filter(profile=profile, mastered_at__isnull=False).order_by(
+            "-mastered_at", "word_norm"
+        )[offset : offset + limit]
+    )
+    hints = _respellings([r.word_norm for r in rows])
+    return [
+        {
+            "word": r.word_norm,
+            "respelling": hints.get(r.word_norm, ""),
+            "mastered_at": r.mastered_at,
+            "seen": r.seen,
         }
         for r in rows
     ]

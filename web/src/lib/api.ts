@@ -144,6 +144,13 @@ export type WeakWord = {
   /** null when no published twister contains the word */
   drill: DrillTarget | null
 }
+/** A word passed in a drill and not slipped on since. */
+export type NailedWord = {
+  word: string
+  respelling: string
+  mastered_at: string
+  seen: number
+}
 export type WeakSound = {
   pair: string
   target: string
@@ -241,7 +248,8 @@ export type History = {
     created_at: string
   }[]
 }
-type Page<T> = { count: number; results: T[] }
+/** A page of a list; `count` is the whole list, not just this page. */
+export type Page<T> = { count: number; results: T[] }
 
 // ─── Progress, mastery, achievements, stats and discovery (docs/features/14-06d-build-spec.md §4) ───
 
@@ -675,13 +683,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ attempts }),
     }),
-  weakWords: (params: { due?: boolean; limit?: number } = {}) => {
+  weakWords: (
+    params: { due?: boolean; limit?: number; offset?: number } = {},
+  ) => {
     const qs = new URLSearchParams()
     if (params.due) qs.set('due', '1')
     if (params.limit) qs.set('limit', String(params.limit))
-    return request<{ results: WeakWord[] }>(`/me/words/weak/?${qs}`).then(
-      (r) => r.results,
-    )
+    if (params.offset) qs.set('offset', String(params.offset))
+    return request<Page<WeakWord>>(`/me/words/weak/?${qs}`)
+  },
+  nailedWords: (params: { limit?: number; offset?: number } = {}) => {
+    const qs = new URLSearchParams()
+    if (params.limit) qs.set('limit', String(params.limit))
+    if (params.offset) qs.set('offset', String(params.offset))
+    return request<Page<NailedWord>>(`/me/words/nailed/?${qs}`)
   },
   weakSounds: (limit?: number) =>
     request<{ results: WeakSound[] }>(

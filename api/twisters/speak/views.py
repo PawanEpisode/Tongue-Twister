@@ -49,11 +49,19 @@ from .serializers import (
 
 MAX_SYNC_ITEMS = 50
 DEFAULT_LIMIT, MAX_LIMIT = 10, 50
+MAX_OFFSET = 10_000
 
 
 def _locked(profile: Profile) -> Profile:
     """Serialise this user's writes (streak, XP, stats) — same order everywhere to avoid deadlocks."""
     return Profile.objects.select_for_update().get(pk=profile.pk)
+
+
+def _offset(request) -> int:
+    raw = request.query_params.get("offset", "0")
+    if not raw.isdigit() or int(raw) > MAX_OFFSET:
+        raise ValidationError({"offset": f"Use a whole number from 0 to {MAX_OFFSET}."})
+    return int(raw)
 
 
 def _limit(request) -> int:
@@ -261,10 +269,30 @@ class AttemptViewSet(
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def weak_words(request):
-    """The 'practise weak words' queue: weakest first; `?due=1` keeps only words whose review is due."""
+    """The 'practise weak words' queue: weakest first, paged with `limit`/`offset`; `count` is the
+    whole queue. `?due=1` keeps only words whose review is due."""
     due = request.query_params.get("due") in ("1", "true")
     return Response(
-        {"results": queries.weak_word_rows(request.user, limit=_limit(request), due=due)}
+        {
+            "count": queries.weak_word_count(request.user, due=due),
+            "results": queries.weak_word_rows(
+                request.user, limit=_limit(request), offset=_offset(request), due=due
+            ),
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def nailed_words(request):
+    """Words passed in a drill (and not slipped on since), most recent first, paged like the queue."""
+    return Response(
+        {
+            "count": queries.nailed_word_count(request.user),
+            "results": queries.nailed_word_rows(
+                request.user, limit=_limit(request), offset=_offset(request)
+            ),
+        }
     )
 
 

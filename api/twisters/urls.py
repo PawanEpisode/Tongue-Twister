@@ -39,6 +39,7 @@ urlpatterns = [
     path("me/preferences/", practice.preferences),
     path("me/entitlements/", practice.entitlements),
     path("me/words/weak/", speak.weak_words),
+    path("me/words/nailed/", speak.nailed_words),
     path("me/sounds/", speak.weak_sounds),
     path("me/consents/", media.consents),
     path("me/consents/<str:consent_type>/", media.consent_revoke),

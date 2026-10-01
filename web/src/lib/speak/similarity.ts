@@ -59,6 +59,11 @@ export function classify(
   accepted: readonly string[] = [],
 ): Match {
   if (spoken === target || accepted.includes(spoken)) return CORRECT
+  // Recognisers drop the apostrophe: "sams" for "sam's".
+  if (target.includes("'") && spoken === target.replaceAll("'", ''))
+    return CORRECT
+  // The possessive "s" is soft; the base word alone is close, not right.
+  if (target.endsWith("'s") && spoken === target.slice(0, -2)) return NEAR
   if (homophones(target).has(spoken)) return HOMOPHONE
   const span = singleEditSpan(target, spoken)
   if (!span) return WRONG

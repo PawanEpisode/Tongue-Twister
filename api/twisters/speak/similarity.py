@@ -66,6 +66,10 @@ def classify(
 ) -> Match:
     if spoken == target or spoken in accepted:
         return CORRECT
+    if "'" in target and spoken == target.replace("'", ""):
+        return CORRECT  # recognisers drop the apostrophe: "sams" for "sam's"
+    if target.endswith("'s") and spoken == target[:-2]:
+        return NEAR  # the possessive "s" is soft; the base word alone is close, not right
     if spoken in homophones(target):
         return HOMOPHONE
     span = single_edit_span(target, spoken)

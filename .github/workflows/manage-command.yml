@@ -106,6 +106,20 @@ jobs:
           echo "args=$args" >> "$GITHUB_OUTPUT"
           echo "### \`manage.py $command $args\`" >> "$GITHUB_STEP_SUMMARY"
 
+      # Settings refuse to start without these, and a missing DATABASE_URL would quietly fall back to an
+      # empty local sqlite file, so a "successful" run would touch nothing. Fail first, say which one.
+      - name: Check required secrets
+        working-directory: .
+        run: |
+          missing=""
+          for name in DJANGO_SECRET_KEY DATABASE_URL MEDIA_PATH_SECRET; do
+            [ -n "${!name:-}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error title=Missing secrets::Add these to the 'production' environment (Settings → Environments → production → Environment secrets) or to the repository secrets:$missing"
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:

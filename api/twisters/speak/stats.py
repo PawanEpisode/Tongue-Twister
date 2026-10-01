@@ -53,8 +53,22 @@ def _clamp(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
-def apply_word_outcome(stat: UserWordStat, status: str, when: dt.datetime) -> None:
-    """One occurrence of a word. weakness = 0.6 * recent_error_rate + 0.4 * lifetime_error_rate."""
+def graduates(kind: str, confidence: float | None) -> bool:
+    """Does a (correct or close) word in this attempt count as nailing it? Only a drill the
+    recogniser was sure about does; a shaky match is not a pass."""
+    return kind == AttemptKind.DRILL and (
+        confidence is None or confidence >= settings.DRILL_MIN_CONFIDENCE
+    )
+
+
+def apply_word_outcome(
+    stat: UserWordStat, status: str, when: dt.datetime, *, graduate: bool = False
+) -> None:
+    """One occurrence of a word. weakness = 0.6 * recent_error_rate + 0.4 * lifetime_error_rate.
+
+    ``graduate``: this occurrence came from a confident drill, so a correct or close word is nailed.
+    A wrong or missed word, from any attempt, takes the word out of 'nailed' again.
+    """
     stat.seen += 1
     setattr(stat, status, getattr(stat, status) + 1)
     error = ERROR_WEIGHT[status]
@@ -65,6 +79,10 @@ def apply_word_outcome(stat: UserWordStat, status: str, when: dt.datetime) -> No
     lifetime = (stat.near * ERROR_WEIGHT[WordStatus.NEAR] + stat.wrong + stat.missed) / stat.seen
     stat.weakness = _clamp(RECENT_WEIGHT * stat.recent_error_rate + LIFETIME_WEIGHT * lifetime)
     stat.last_seen_at = when
+    if status in (WordStatus.WRONG, WordStatus.MISSED):
+        stat.mastered_at = None
+    elif graduate and status in (WordStatus.CORRECT, WordStatus.NEAR):
+        stat.mastered_at = when
 
     ladder = settings.WEAK_WORD_LADDER_DAYS
     if status == WordStatus.CORRECT:
@@ -77,10 +95,17 @@ def apply_word_outcome(stat: UserWordStat, status: str, when: dt.datetime) -> No
         stat.next_review_at = when + ONE_DAY * ladder[0]
 
 
-def apply_words(profile: Profile, outcomes: Iterable[WordOutcome], when: dt.datetime) -> None:
+def apply_words(
+    profile: Profile,
+    outcomes: Iterable[WordOutcome],
+    when: dt.datetime,
+    *,
+    graduate: bool = False,
+) -> None:
     outcomes = list(outcomes)
     if not outcomes:
         return
+    graduate = graduate and len(outcomes) == 1  # a drill is one word; anything else is not
     rows = {
         r.word_norm: r
         for r in UserWordStat.objects.filter(
@@ -92,7 +117,7 @@ def apply_words(profile: Profile, outcomes: Iterable[WordOutcome], when: dt.date
         stat = rows.get(word) or created.get(word)
         if stat is None:
             stat = created[word] = UserWordStat(profile=profile, word_norm=word[:64])
-        apply_word_outcome(stat, status, when)
+        apply_word_outcome(stat, status, when, graduate=graduate)
     UserWordStat.objects.bulk_create(created.values())
     UserWordStat.objects.bulk_update(
         rows.values(),
@@ -107,6 +132,7 @@ def apply_words(profile: Profile, outcomes: Iterable[WordOutcome], when: dt.date
             "last_seen_at",
             "next_review_at",
             "streak_correct",
+            "mastered_at",
         ],
     )
 
@@ -253,7 +279,12 @@ def rebuild_profile_stats(profile: Profile) -> None:
         .order_by("created_at", "id")
     )
     for attempt in attempts.iterator(chunk_size=200):
-        apply_words(profile, outcomes_from_attempt(attempt), attempt.created_at)
+        apply_words(
+            profile,
+            outcomes_from_attempt(attempt),
+            attempt.created_at,
+            graduate=graduates(attempt.kind, attempt.engine_confidence),
+        )
         apply_phonemes(profile, phoneme_observations(attempt))
     for twister in Twister.objects.filter(attempts__profile=profile).distinct():
         rebuild_twister_stats(profile, twister)

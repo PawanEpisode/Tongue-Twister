@@ -138,6 +138,11 @@ class Twister(models.Model):
         self.word_count = len(self.text.split())
         super().save(*args, **kwargs)
 
+    @classmethod
+    def slug_taken(cls, slug: str) -> bool:
+        """Slugs are unique across every twister, private ones included, so this looks at all rows."""
+        return cls.objects.filter(slug=slug).exists()
+
 
 def validate_timezone(value: str) -> None:
     try:
@@ -851,6 +856,12 @@ class UserWordStat(models.Model):
     last_seen_at = models.DateTimeField(null=True, blank=True)
     next_review_at = models.DateTimeField(null=True, blank=True)
     streak_correct = models.PositiveSmallIntegerField(default=0)
+    mastered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Set by a confident drill pass; cleared by the next wrong or missed word. "
+        "While set, the word is 'nailed' and leaves the weak-word queue.",
+    )
 
     class Meta:
         constraints = [
@@ -862,6 +873,7 @@ class UserWordStat(models.Model):
         indexes = [
             models.Index(fields=["profile", "-weakness"]),
             models.Index(fields=["profile", "next_review_at"]),
+            models.Index(fields=["profile", "-mastered_at"]),
         ]
 
     def __str__(self):

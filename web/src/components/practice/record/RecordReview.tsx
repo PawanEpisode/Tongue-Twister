@@ -179,14 +179,11 @@ export default function RecordReview(p: ReviewProps) {
           xp={p.xp}
           unlocked={p.unlocked}
           attemptId={take.attemptId}
+          rows={analysis.rows}
           onRetry={p.onReRecord}
           onNext={p.onNext}
         >
-          <WordBreakdown
-            display={analysis.display}
-            statuses={analysis.statuses}
-            rows={analysis.rows}
-          />
+          <WordBreakdown display={analysis.display} rows={analysis.rows} />
         </ResultCard>
       ) : (
         !p.pending && (

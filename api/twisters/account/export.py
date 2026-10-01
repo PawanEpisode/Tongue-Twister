@@ -191,6 +191,7 @@ WORD_STATS: Spec = _same(
     "last_seen_at",
     "next_review_at",
     "streak_correct",
+    "mastered_at",
 )
 
 PHONEME_STATS: Spec = _same("phoneme_pair", "occurrences", "errors", "error_rate")

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { api } from '#/lib/api'
 import type { Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
-import { displayStatuses, displayWords, rowsFromApi } from '#/lib/speak/display'
+import { displayWords, rowsFromApi } from '#/lib/speak/display'
 import WordBreakdown from './WordBreakdown'
 
 const W = 120
@@ -62,7 +62,6 @@ function AttemptDetailView({ id, twister }: { id: number; twister: Twister }) {
   return (
     <WordBreakdown
       display={display}
-      statuses={displayStatuses(display, rows)}
       rows={rows}
       onFeedback={async (index, feedback) => {
         await api.wordFeedback(id, index, feedback)

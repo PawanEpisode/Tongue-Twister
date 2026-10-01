@@ -33,7 +33,7 @@ export default function WordDrill({
   const [index, setIndex] = useState(0)
   const [misses, setMisses] = useState(0)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
-  const [nailed, setNailed] = useState(0)
+  const [nailed, setNailed] = useState<string[]>([])
   const save = usePracticeSubmit()
   const voice = useModelVoice(prefs.accent_lang, prefs.tts_voice)
 
@@ -57,7 +57,7 @@ export default function WordDrill({
       const sure = r.confidence == null || r.confidence >= DRILL_MIN_CONFIDENCE
       const passed = (status === 'correct' || status === 'near') && sure
       setOutcome({ kind: passed ? 'passed' : 'missed', heard: r.transcript })
-      if (passed) setNailed((n) => n + 1)
+      if (passed) setNailed((n) => [...n, item.word])
       else {
         const total = misses + 1
         setMisses(total)
@@ -91,10 +91,26 @@ export default function WordDrill({
       <div className="mx-auto max-w-md text-center">
         <h2 className="text-2xl font-bold">Drill done</h2>
         <p className="mt-2 text-muted-foreground">
-          You nailed {nailed} of {items.length}{' '}
-          {items.length === 1 ? 'word' : 'words'}. Words you got right will come
-          up less often.
+          You nailed {nailed.length} of {items.length}{' '}
+          {items.length === 1 ? 'word' : 'words'}.
+          {nailed.length > 0 && ' They move to Nailed.'}
         </p>
+        {nailed.length > 0 && (
+          <ul
+            aria-label="Nailed words"
+            className="mt-4 flex flex-wrap justify-center gap-2"
+          >
+            {nailed.map((w, i) => (
+              <li
+                key={`${w}-${i}`}
+                className="inline-flex items-center gap-1 rounded-full bg-lime/15 px-3 py-1 text-sm font-semibold text-lime"
+              >
+                <Check className="size-3.5" aria-hidden />
+                {w}
+              </li>
+            ))}
+          </ul>
+        )}
         <Button className="mt-6 px-6 py-3" onClick={onExit}>
           Back to my practice
         </Button>

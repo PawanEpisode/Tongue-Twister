@@ -15,6 +15,12 @@ COST_NEAR = 3
 COST_WRONG = 10
 COST_GAP = 10
 
+# Order lock (mirrors web/src/lib/speak/align.ts): a pair may sit at most MAX_SKIP target words past
+# the last accepted one. A longer jump is believed only when RESYNC_RUN correct words follow it;
+# otherwise it is an echo of a repeated word and is undone.
+MAX_SKIP = 6
+RESYNC_RUN = 3
+
 
 @dataclass(frozen=True)
 class SpokenToken:
@@ -46,14 +52,31 @@ class Aligned:
         return self.match.reason
 
 
+# Words a recogniser writes where a contraction's "'s" was said: "Sam is", "Sam has", "Sam s".
+CONTRACTION_TAILS = frozenset({"is", "has", "s"})
+
+
+def _merged(spoken: Sequence[str], i: int, wanted: set[str]) -> str:
+    """The twister word that `spoken[i]` and `spoken[i + 1]` jointly say, or ''."""
+    if i + 1 >= len(spoken) or spoken[i] in wanted:
+        return ""
+    compound = spoken[i] + spoken[i + 1]
+    if compound in wanted:
+        return compound  # 'sea' + 'shells' -> 'seashells'
+    contraction = f"{spoken[i]}'s"
+    if spoken[i + 1] in CONTRACTION_TAILS and contraction in wanted:
+        return contraction  # 'sam' + 'is' -> "sam's"
+    return ""
+
+
 def merge_split_compounds(targets: Sequence[str], spoken: Sequence[str]) -> list[SpokenToken]:
-    """'sea' + 'shells' -> 'seashells' when the twister has that compound (recognisers split them)."""
+    """Rejoin words a recogniser splits: 'sea' + 'shells' -> 'seashells', 'sam' + 'is' -> "sam's"."""
     wanted = set(targets)
     out: list[SpokenToken] = []
     i = 0
     while i < len(spoken):
-        joined = spoken[i] + spoken[i + 1] if i + 1 < len(spoken) else ""
-        if joined and joined in wanted and spoken[i] not in wanted:
+        joined = _merged(spoken, i, wanted)
+        if joined:
             out.append(SpokenToken(joined, i, f"{spoken[i]} {spoken[i + 1]}"))
             i += 2
         else:
@@ -66,6 +89,42 @@ def _pair_cost(match: Match) -> int:
     if match.status == WordStatus.CORRECT:
         return 0
     return COST_NEAR if match.status == WordStatus.NEAR else COST_WRONG
+
+
+def _is_pair(row: Aligned) -> bool:
+    return row.target_index is not None and row.spoken_index is not None
+
+
+def _is_credited(row: Aligned) -> bool:
+    return _is_pair(row) and row.status in (WordStatus.CORRECT, WordStatus.NEAR)
+
+
+def _demote(row: Aligned) -> list[Aligned]:
+    """Split a pair that broke the order lock into the target it did not earn and the stray word."""
+    return [
+        Aligned(row.target_index, None, row.target_word, "", Match(WordStatus.MISSED)),
+        Aligned(None, row.spoken_index, "", row.spoken_word, Match(WordStatus.EXTRA)),
+    ]
+
+
+def enforce_order(rows: Sequence[Aligned]) -> list[Aligned]:
+    """Keep credit in reading order: a repeated word cannot be claimed far from the speaker."""
+    out: list[Aligned] = []
+    last = -1
+    for k, row in enumerate(rows):
+        if not _is_pair(row):
+            out.append(row)
+            continue
+        jump = row.target_index - last - 1
+        run = 0
+        while k + run < len(rows) and _is_credited(rows[k + run]):
+            run += 1
+        if jump <= MAX_SKIP or (_is_credited(row) and run >= RESYNC_RUN):
+            last = row.target_index
+            out.append(row)
+        else:
+            out.extend(_demote(row))
+    return out
 
 
 def align(
@@ -120,4 +179,4 @@ def align(
             tok = spoken[j]
             out.append(Aligned(None, tok.index, "", tok.heard, Match(WordStatus.EXTRA)))
             j += 1
-    return out
+    return enforce_order(out)

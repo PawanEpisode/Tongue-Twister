@@ -144,6 +144,13 @@
         "the",
         "1234567th"
       ]
+    },
+    {
+      "in": "Sam’s seashells",
+      "out": [
+        "sam's",
+        "seashells"
+      ]
     }
   ],
   "classify": [
@@ -266,6 +273,30 @@
       "spoken": "see",
       "status": "near",
       "reason": "homophone"
+    },
+    {
+      "target": "sam's",
+      "spoken": "sams",
+      "status": "correct",
+      "reason": ""
+    },
+    {
+      "target": "sam's",
+      "spoken": "sam",
+      "status": "near",
+      "reason": ""
+    },
+    {
+      "target": "don't",
+      "spoken": "dont",
+      "status": "correct",
+      "reason": ""
+    },
+    {
+      "target": "sam's",
+      "spoken": "sand",
+      "status": "wrong",
+      "reason": ""
     }
   ],
   "align": [
@@ -467,6 +498,390 @@
           null,
           5,
           "extra",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "Seven sleepy cats slip silently since several sleek cats slide suddenly such sleeping cats start sweeping soft shelves so sleepy cats see some simple signs slide sideways",
+      "spoken": "seven sleepy cats slip silently since several sleek cats slide suddenly such slide sideways",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
+          ""
+        ],
+        [
+          2,
+          2,
+          "correct",
+          ""
+        ],
+        [
+          3,
+          3,
+          "correct",
+          ""
+        ],
+        [
+          4,
+          4,
+          "correct",
+          ""
+        ],
+        [
+          5,
+          5,
+          "correct",
+          ""
+        ],
+        [
+          6,
+          6,
+          "correct",
+          ""
+        ],
+        [
+          7,
+          7,
+          "correct",
+          ""
+        ],
+        [
+          8,
+          8,
+          "correct",
+          ""
+        ],
+        [
+          9,
+          9,
+          "correct",
+          ""
+        ],
+        [
+          10,
+          10,
+          "correct",
+          ""
+        ],
+        [
+          11,
+          11,
+          "correct",
+          ""
+        ],
+        [
+          12,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          13,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          14,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          15,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          16,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          17,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          18,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          19,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          20,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          21,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          22,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          23,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          24,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          25,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          null,
+          12,
+          "extra",
+          ""
+        ],
+        [
+          26,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          null,
+          13,
+          "extra",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "Seven sleepy cats slip silently since several sleek cats slide suddenly such sleeping cats start sweeping soft shelves so sleepy cats see some simple signs slide sideways",
+      "spoken": "seven sleepy cats slip see some simple signs",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
+          ""
+        ],
+        [
+          2,
+          2,
+          "correct",
+          ""
+        ],
+        [
+          3,
+          3,
+          "correct",
+          ""
+        ],
+        [
+          4,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          5,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          6,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          7,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          8,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          9,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          10,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          11,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          12,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          13,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          14,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          15,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          16,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          17,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          18,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          19,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          20,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          21,
+          4,
+          "correct",
+          ""
+        ],
+        [
+          22,
+          5,
+          "correct",
+          ""
+        ],
+        [
+          23,
+          6,
+          "correct",
+          ""
+        ],
+        [
+          24,
+          7,
+          "correct",
+          ""
+        ],
+        [
+          25,
+          null,
+          "missed",
+          ""
+        ],
+        [
+          26,
+          null,
+          "missed",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "Sam's seashells",
+      "spoken": "sam is seashells",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          2,
+          "correct",
+          ""
+        ]
+      ]
+    },
+    {
+      "target": "Sam's seashells",
+      "spoken": "sams seashells",
+      "rows": [
+        [
+          0,
+          0,
+          "correct",
+          ""
+        ],
+        [
+          1,
+          1,
+          "correct",
           ""
         ]
       ]

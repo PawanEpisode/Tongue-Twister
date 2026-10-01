@@ -219,6 +219,9 @@ WEAK_WORD_LADDER_DAYS = (
     7,
     14,
 )  # spaced review: next_review_at after 1, 2, 3, 4+ correct in a row
+DRILL_MIN_CONFIDENCE = float(
+    env("DRILL_MIN_CONFIDENCE", "0.6")
+)  # a drill pass only counts when the recogniser was at least this sure
 XP_KIND_MULTIPLIER = {"test": 1.0, "train": 0.5, "drill": 0.25, "record": 1.0}
 
 # Progress, achievements & discovery (docs/features/14-06d-build-spec.md). Rules, not secrets: safe

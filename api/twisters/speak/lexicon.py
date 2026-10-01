@@ -46,6 +46,7 @@ def _with(suffix: list[str]) -> Callable[[list[str]], list[str]]:
 
 # (spelling suffix, spelling of the base to try, phone builder). Tried in order; first hit wins.
 _SUFFIXES: list[tuple[str, list[str], Callable[[list[str]], list[str]]]] = [
+    ("'s", [""], _plural),  # possessives and "is"/"has" contractions: Sam's, pickle's
     ("ies", ["y"], _plural),
     ("es", ["", "e"], _plural),
     ("s", [""], _plural),

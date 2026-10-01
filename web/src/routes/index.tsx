@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { Suspense, lazy } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Flame, Lightbulb, Mic, Skull, Sprout, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -7,7 +8,6 @@ import { FavoriteButton } from '#/components/progress/FavoriteButton'
 import { MasteryBadge } from '#/components/progress/MasteryBadge'
 import { ProgressStrip } from '#/components/progress/ProgressStrip'
 import { StreakBanner } from '#/components/progress/StreakBanner'
-import { WeeklyBoard } from '#/components/progress/WeeklyBoard'
 import { DifficultyBadge } from '#/components/ui'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -22,6 +22,13 @@ import {
   ErrorState,
   Skeleton,
 } from '#/components/feedback'
+
+// Behind a flag and built on the checkbox/label primitives: keep both out of the first-load bundle.
+const WeeklyBoard = lazy(() =>
+  import('#/components/progress/WeeklyBoard').then((m) => ({
+    default: m.WeeklyBoard,
+  })),
+)
 
 export const Route = createFileRoute('/')({
   head: () => seo({ title: 'Twister — Say it fast. Say it right.', path: '/' }),
@@ -204,7 +211,11 @@ function Home() {
         </m.div>
       </section>
 
-      {weeklyBoards && <WeeklyBoard />}
+      {weeklyBoards && (
+        <Suspense fallback={null}>
+          <WeeklyBoard />
+        </Suspense>
+      )}
 
       <section>
         <h2 className="mb-5 text-2xl font-bold">Pick your level</h2>

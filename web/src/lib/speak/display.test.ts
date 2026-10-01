@@ -7,6 +7,8 @@ import {
   problemRows,
   rowsFromApi,
   summarise,
+  tallyRows,
+  wordEntries,
 } from './display'
 
 describe('displayWords', () => {
@@ -105,5 +107,46 @@ describe('rowsFromApi', () => {
     ])
     expect(summarise(rows)).toBe('1 of 2 words correct · 1 wrong · 1 extra')
     expect(problemRows(rows).map((r) => r.reason)).toEqual(['focus_swap'])
+  })
+})
+
+describe('wordEntries', () => {
+  it('gives each printed word its worst verdict and what was heard', () => {
+    const text = 'Red well-known lorry'
+    const { rows } = scoreLocally({
+      text,
+      spoken: 'red well known lorry',
+      durationMs: 3000,
+      difficulty: 2,
+    })
+    const entries = wordEntries(displayWords(text), rows)
+    expect(entries.map((e) => [e.text, e.status])).toEqual([
+      ['Red', 'correct'],
+      ['well-known', 'correct'],
+      ['lorry', 'correct'],
+    ])
+  })
+  it('marks unspoken words missed and keeps heard words that were wrong', () => {
+    const text = 'peter piper picked'
+    const { rows } = scoreLocally({
+      text,
+      spoken: 'peter piper',
+      durationMs: 3000,
+      difficulty: 2,
+    })
+    const [, , last] = wordEntries(displayWords(text), rows)
+    expect(last).toMatchObject({ status: 'missed', heard: '' })
+  })
+})
+
+describe('tallyRows', () => {
+  it('counts target outcomes and extras apart', () => {
+    const { rows } = scoreLocally({
+      text: 'red lorry',
+      spoken: 'red um lorry yellow',
+      durationMs: 3000,
+      difficulty: 2,
+    })
+    expect(tallyRows(rows).correct).toBe(2)
   })
 })

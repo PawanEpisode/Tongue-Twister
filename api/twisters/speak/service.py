@@ -340,7 +340,12 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
             for w in evaluation.words
             if w.target_index is not None and w.status != WordStatus.EXTRA
         ]
-        stats.apply_words(profile, outcomes, when)
+        stats.apply_words(
+            profile,
+            outcomes,
+            when,
+            graduate=stats.graduates(submission.kind, submission.confidence),
+        )
         stats.apply_phonemes(
             profile,
             [(p.target, p.heard, p.verdict) for r in reports.values() for p in r.phonemes],

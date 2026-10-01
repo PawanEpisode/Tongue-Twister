@@ -8,6 +8,7 @@ import { track } from './observability/analytics'
 import { scoreBand } from './observability/events'
 import { invalidateProgress } from './progress/invalidate'
 import { announceAchievements } from './progress/useAchievementToasts'
+import { invalidateWordQueues } from './wordQueues'
 
 export type PracticeTake = {
   twister: string
@@ -58,7 +59,7 @@ export function usePracticeSubmit() {
         })
         announceAchievements(r.achievements_unlocked)
         void invalidateProgress(qc)
-        void qc.invalidateQueries({ queryKey: ['weak-words'] })
+        void invalidateWordQueues(qc)
         return r
       } catch (err) {
         if (isTransient(err)) attemptQueue.add(userId, body)

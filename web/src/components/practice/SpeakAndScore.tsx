@@ -7,6 +7,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ResultCard from '#/components/ResultCard'
+import ResultSkeleton from '#/components/results/ResultSkeleton'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { api } from '#/lib/api'
@@ -22,21 +23,16 @@ import { attemptQueue, isTransient } from '#/lib/attemptQueue'
 import { unsavedReason } from '#/lib/submitNotice'
 import { useFlag } from '#/lib/flags'
 import { SCORE_VERSION, scoreLocally } from '#/lib/scoring'
-import {
-  displayStatuses,
-  displayWords,
-  problemRows,
-  rowsFromApi,
-} from '#/lib/speak/display'
+import { displayWords, problemRows, rowsFromApi } from '#/lib/speak/display'
 import { unscorableReason } from '#/lib/speak/score'
 import type { DisplayWord, WordRow } from '#/lib/speak/display'
-import type { WordStatus } from '#/lib/speak/similarity'
 import type { SpeechResult } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { draft } from '#/lib/draft'
 import { invalidateProgress } from '#/lib/progress/invalidate'
 import { announceAchievements } from '#/lib/progress/useAchievementToasts'
 import { guestQueue } from '#/lib/syncQueue'
+import { useAfter } from '#/lib/useAfter'
 import { useTake } from '#/lib/useTake'
 import { cn } from '#/lib/utils'
 import MicStage from './MicStage'
@@ -54,11 +50,12 @@ type Result = {
   attemptId?: number | null
   breakdown?: {
     display: DisplayWord[]
-    statuses: (WordStatus | null)[]
     rows: WordRow[]
   }
 }
 
+/** Past this, the wait gets a reassuring second line. */
+const SLOW_SCORE_MS = 4000
 const GATED_NOTICE =
   'Score capped at 79 — a slip on this twister’s focus sound. Nail that sound to go higher.'
 const UNSAVED_NOTICE =
@@ -117,11 +114,7 @@ export default function SpeakAndScore({
       notice: [notice, local.evaluation.score.focusGated && GATED_NOTICE]
         .filter(Boolean)
         .join(' '),
-      breakdown: {
-        display: local.display,
-        statuses: local.statuses,
-        rows: local.rows,
-      },
+      breakdown: { display: local.display, rows: local.rows },
     })
     return true
   }
@@ -148,17 +141,15 @@ export default function SpeakAndScore({
         unlocked: r.achievements_unlocked,
         attemptId: r.id,
         notice: r.focus_gated ? GATED_NOTICE : undefined,
-        breakdown: rows && {
-          display,
-          statuses: displayStatuses(display, rows),
-          rows,
-        },
+        breakdown: rows && { display, rows },
       })
       announceAchievements(r.achievements_unlocked)
       void invalidateProgress(qc)
       void qc.invalidateQueries({ queryKey: ['history'] })
     },
   })
+
+  const slowScore = useAfter(submit.isPending, SLOW_SCORE_MS)
 
   const finish = (
     spoken: string,
@@ -271,6 +262,12 @@ export default function SpeakAndScore({
               unlocked={result.unlocked}
               notice={result.notice}
               attemptId={result.attemptId}
+              rows={result.breakdown?.rows}
+              drill={
+                !!session &&
+                !!result.breakdown &&
+                problemRows(result.breakdown.rows).length > 0
+              }
               onRetry={retry}
               onNext={() => void twisterNav.next()}
             >
@@ -290,17 +287,6 @@ export default function SpeakAndScore({
                   }
                 />
               )}
-              {session &&
-                result.breakdown &&
-                problemRows(result.breakdown.rows).length > 0 && (
-                  <Link
-                    to="/practice"
-                    search={{ drill: 1 }}
-                    className="mt-4 inline-block text-sm underline underline-offset-2"
-                  >
-                    Drill your weak words →
-                  </Link>
-                )}
             </ResultCard>
             {twisterNav.failed && (
               <p role="alert" className="mt-4 text-sm text-pink">
@@ -309,6 +295,8 @@ export default function SpeakAndScore({
               </p>
             )}
           </div>
+        ) : submit.isPending ? (
+          <ResultSkeleton key="s" slow={slowScore} />
         ) : unclear ? (
           <div key="u" role="alert" className="mx-auto max-w-md">
             <h2 className="text-2xl font-bold">We couldn’t hear you clearly</h2>

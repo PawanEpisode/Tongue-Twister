@@ -1,27 +1,33 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Link,
   createFileRoute,
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PracticeSkeleton } from '#/components/feedback'
+import NailedWordsPanel from '#/components/practice/words/NailedWordsPanel'
+import PracticeTabs from '#/components/practice/words/PracticeTabs'
+import SoundsPanel from '#/components/practice/words/SoundsPanel'
+import WeakWordsPanel, {
+  canDrill,
+} from '#/components/practice/words/WeakWordsPanel'
 import WordDrill from '#/components/practice/WordDrill'
 import type { DrillItem } from '#/components/practice/WordDrill'
 import { Button } from '#/components/ui/button'
-import { Checkbox } from '#/components/ui/checkbox'
-import { Label } from '#/components/ui/label'
-import { api } from '#/lib/api'
-import type { WeakWord } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
-import { dueLabel } from '#/lib/dueLabel'
 import { usePreferences } from '#/lib/preferences'
 import { seo } from '#/lib/seo'
 import { PracticeLockProvider } from '#/lib/tabLock'
+import {
+  invalidateWordQueues,
+  useNailedWords,
+  useWeakWords,
+} from '#/lib/wordQueues'
 
 const QUICK_DRILL_WORDS = 3
-const LIST_SIZE = 20
+type TabId = 'weak' | 'nailed' | 'sounds'
 
 export const Route = createFileRoute('/practice')({
   head: () =>
@@ -37,8 +43,6 @@ export const Route = createFileRoute('/practice')({
   component: PracticePage,
 })
 
-const canDrill = (w: WeakWord): w is DrillItem => w.drill !== null
-
 function PracticePage() {
   const { session, loading } = useAuth()
   const userId = session?.user.id
@@ -47,25 +51,14 @@ function PracticePage() {
   const nav = useNavigate({ from: Route.fullPath })
   const qc = useQueryClient()
   const { prefs } = usePreferences()
+  const [tab, setTab] = useState<TabId>('weak')
   const [dueOnly, setDueOnly] = useState(false)
   const [items, setItems] = useState<DrillItem[] | null>(null)
   const autoStarted = useRef(false)
-  const dueId = useId()
 
-  const words = useQuery({
-    queryKey: ['weak-words', userId, dueOnly],
-    queryFn: () => api.weakWords({ due: dueOnly, limit: LIST_SIZE }),
-    enabled: !!userId,
-  })
-  const sounds = useQuery({
-    queryKey: ['weak-sounds', userId],
-    queryFn: () => api.weakSounds(8),
-    enabled: !!userId,
-  })
-  const drillable = useMemo(
-    () => (words.data ?? []).filter(canDrill),
-    [words.data],
-  )
+  const weak = useWeakWords(userId, dueOnly)
+  const nailed = useNailedWords(userId)
+  const drillable = weak.items.filter(canDrill)
 
   // Arrive from the results screen: start on the weakest words once, then drop the flag from the URL.
   useEffect(() => {
@@ -99,7 +92,7 @@ function PracticePage() {
           prefs={prefs}
           onExit={() => {
             setItems(null)
-            void qc.invalidateQueries({ queryKey: ['weak-words'] })
+            void invalidateWordQueues(qc)
           }}
         />
       </PracticeLockProvider>
@@ -110,136 +103,33 @@ function PracticePage() {
       <h1 className="text-center font-display text-3xl font-extrabold">
         Your practice
       </h1>
-
-      <section aria-labelledby="weak-words" className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="weak-words" className="text-xl font-bold">
-            Words to work on
-          </h2>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              id={dueId}
-              checked={dueOnly}
-              onCheckedChange={(value) => setDueOnly(value === true)}
-            />
-            <Label
-              htmlFor={dueId}
-              className="font-normal text-muted-foreground"
-            >
-              Due for review only
-            </Label>
-          </div>
-        </div>
-
-        {words.isPending ? (
-          <p className="mt-4 text-muted-foreground">Loading…</p>
-        ) : words.isError ? (
-          <p role="alert" className="mt-4 text-pink">
-            Couldn’t load your words.{' '}
-            <button className="underline" onClick={() => void words.refetch()}>
-              Try again
-            </button>
-          </p>
-        ) : words.data.length === 0 ? (
-          <p className="mt-4 text-muted-foreground">
-            {dueOnly
-              ? 'Nothing is due for review right now.'
-              : 'No trouble words yet — say a few twisters and the ones you trip on will show up here.'}
-          </p>
-        ) : (
-          <>
-            {drillable.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Button
-                  className="px-5 py-2.5"
-                  onClick={() =>
-                    setItems(drillable.slice(0, QUICK_DRILL_WORDS))
-                  }
-                >
-                  Drill my {Math.min(QUICK_DRILL_WORDS, drillable.length)}{' '}
-                  weakest
-                </Button>
-                {drillable.length > QUICK_DRILL_WORDS && (
-                  <Button
-                    variant="outline"
-                    className="px-5 py-2.5"
-                    onClick={() => setItems(drillable)}
-                  >
-                    Drill all {drillable.length}
-                  </Button>
-                )}
-              </div>
-            )}
-            <ul className="mt-4 space-y-2">
-              {words.data.map((w) => (
-                <li
-                  key={w.word}
-                  className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3"
-                >
-                  <div>
-                    <b className="text-lg">{w.word}</b>
-                    {w.respelling && (
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        {w.respelling}
-                      </span>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Missed {Math.round(w.miss_rate * 100)}% of {w.seen}{' '}
-                      {w.seen === 1 ? 'time' : 'times'} ·{' '}
-                      {dueLabel(w.next_review_at)}
-                    </p>
-                  </div>
-                  {canDrill(w) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setItems([w])}
-                      aria-label={`Drill ${w.word}`}
-                    >
-                      Drill
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-
-      <section aria-labelledby="weak-sounds" className="mt-10">
-        <h2 id="weak-sounds" className="text-xl font-bold">
-          Sounds you swap
-        </h2>
-        {sounds.isPending ? (
-          <p className="mt-4 text-muted-foreground">Loading…</p>
-        ) : sounds.isError ? (
-          <p role="alert" className="mt-4 text-pink">
-            Couldn’t load your sounds.
-          </p>
-        ) : sounds.data.length === 0 ? (
-          <p className="mt-4 text-muted-foreground">
-            Sound-by-sound feedback (like “you say s where it should be sh”)
-            arrives with the accurate engine. Until then, your words above are
-            the best guide.
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-2">
-            {sounds.data.map((s) => (
-              <li
-                key={s.pair}
-                className="glass flex items-center justify-between rounded-2xl px-4 py-3"
-              >
-                <span>
-                  <b>{s.target}</b> → <b>{s.heard ?? 'dropped'}</b>
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {Math.round(s.error_rate * 100)}% of {s.occurrences}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <PracticeTabs
+        tabs={[
+          {
+            id: 'weak',
+            label: 'To work on',
+            count: weak.query.isSuccess ? weak.count : undefined,
+          },
+          {
+            id: 'nailed',
+            label: 'Nailed',
+            count: nailed.query.isSuccess ? nailed.count : undefined,
+          },
+          { id: 'sounds', label: 'Sounds' },
+        ]}
+        value={tab}
+        onChange={(id) => setTab(id as TabId)}
+      />
+      {tab === 'weak' && (
+        <WeakWordsPanel
+          queue={weak}
+          dueOnly={dueOnly}
+          onDueOnly={setDueOnly}
+          onDrill={setItems}
+        />
+      )}
+      {tab === 'nailed' && <NailedWordsPanel queue={nailed} />}
+      {tab === 'sounds' && <SoundsPanel userId={userId} />}
     </div>
   )
 }

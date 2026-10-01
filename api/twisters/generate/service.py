@@ -32,7 +32,7 @@ def _new_slug(topic_text: str) -> str:
     base = (slugify(topic_text) or "twister").strip("-")[:SLUG_MAX].strip("-") or "twister"
     candidate = base
     number = 2
-    while Twister.objects.filter(slug=candidate).exists():
+    while Twister.slug_taken(candidate):
         suffix = f"-{number}"
         stem = base[: SLUG_MAX - len(suffix)].strip("-") or "twister"
         candidate = f"{stem}{suffix}"

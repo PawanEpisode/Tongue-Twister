@@ -166,7 +166,6 @@ export default function TrainMode({
         <>
           <WordBreakdown
             display={scored.local.display}
-            statuses={scored.local.statuses}
             rows={scored.local.rows}
           />
           <p

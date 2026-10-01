@@ -9,6 +9,14 @@ const COST_NEAR = 3
 const COST_WRONG = 10
 const COST_GAP = 10
 
+/**
+ * Order lock: after the cheapest alignment is found, a pair may only sit this many target words
+ * past the last accepted one. A longer jump is believed only when a run of correct words follows
+ * (the speaker really resumed there); otherwise it is an echo of a repeated word and is undone.
+ */
+export const MAX_SKIP = 6
+export const RESYNC_RUN = 3
+
 /** One recognised word; `raw` differs from `text` when several spoken words were merged. */
 export type SpokenToken = { text: string; index: number; raw?: string }
 export type Aligned = {
@@ -19,7 +27,21 @@ export type Aligned = {
   match: Match
 }
 
-/** 'sea' + 'shells' -> 'seashells' when the twister has that compound. */
+/** Words a recogniser writes where a contraction's "'s" was said: "Sam is", "Sam has", "Sam s". */
+const CONTRACTION_TAILS = new Set(['is', 'has', 's'])
+
+/** The twister word that `spoken[i]` and `spoken[i + 1]` jointly say, or ''. */
+function merged(spoken: readonly string[], i: number, wanted: Set<string>) {
+  if (i + 1 >= spoken.length || wanted.has(spoken[i])) return ''
+  const compound = spoken[i] + spoken[i + 1] // 'sea' + 'shells' -> 'seashells'
+  if (wanted.has(compound)) return compound
+  const contraction = `${spoken[i]}'s` // 'sam' + 'is' -> "sam's"
+  return CONTRACTION_TAILS.has(spoken[i + 1]) && wanted.has(contraction)
+    ? contraction
+    : ''
+}
+
+/** Rejoins words a recogniser splits: 'sea' + 'shells' -> 'seashells', 'sam' + 'is' -> "sam's". */
 export function mergeSplitCompounds(
   targets: readonly string[],
   spoken: readonly string[],
@@ -27,8 +49,8 @@ export function mergeSplitCompounds(
   const wanted = new Set(targets)
   const out: SpokenToken[] = []
   for (let i = 0; i < spoken.length;) {
-    const joined = i + 1 < spoken.length ? spoken[i] + spoken[i + 1] : ''
-    if (joined && wanted.has(joined) && !wanted.has(spoken[i])) {
+    const joined = merged(spoken, i, wanted)
+    if (joined) {
       out.push({ text: joined, index: i, raw: `${spoken[i]} ${spoken[i + 1]}` })
       i += 2
     } else {
@@ -36,6 +58,47 @@ export function mergeSplitCompounds(
       i += 1
     }
   }
+  return out
+}
+
+const isPair = (r: Aligned) => r.targetIndex !== null && r.spokenIndex !== null
+const isCredited = (r: Aligned) =>
+  isPair(r) && (r.match.status === 'correct' || r.match.status === 'near')
+
+/** Splits a pair that broke the order lock into the target it did not earn and the word that strayed. */
+function demote(r: Aligned): Aligned[] {
+  return [
+    {
+      targetIndex: r.targetIndex,
+      spokenIndex: null,
+      targetWord: r.targetWord,
+      spokenWord: '',
+      match: MISSED,
+    },
+    {
+      targetIndex: null,
+      spokenIndex: r.spokenIndex,
+      targetWord: '',
+      spokenWord: r.spokenWord,
+      match: EXTRA,
+    },
+  ]
+}
+
+/** Keeps credit in reading order: a repeated word cannot be claimed far from where the speaker is. */
+export function enforceOrder(rows: readonly Aligned[]): Aligned[] {
+  const out: Aligned[] = []
+  let last = -1
+  rows.forEach((r, k) => {
+    if (!isPair(r)) return void out.push(r)
+    const jump = r.targetIndex! - last - 1
+    let run = 0
+    while (k + run < rows.length && isCredited(rows[k + run])) run++
+    if (jump <= MAX_SKIP || (isCredited(r) && run >= RESYNC_RUN)) {
+      last = r.targetIndex!
+      out.push(r)
+    } else out.push(...demote(r))
+  })
   return out
 }
 
@@ -115,7 +178,7 @@ export function align(
       j++
     }
   }
-  return out
+  return enforceOrder(out)
 }
 
 export { classify }

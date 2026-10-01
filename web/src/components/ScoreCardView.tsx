@@ -1,16 +1,18 @@
 import { Link, useRouter } from '@tanstack/react-router'
 import { ErrorState } from '#/components/feedback'
 import { ScoreRing, StatTile } from '#/components/ScoreCardParts'
-import { WORD_LOOK } from '#/components/practice/WordBreakdown'
+import ScoreBar from '#/components/results/ScoreBar'
+import StaticPassage from '#/components/results/StaticPassage'
+import { WORD_LOOK } from '#/components/results/wordLook'
+import type { TargetStatus } from '#/components/results/wordLook'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import type { ScoreCardPublic, WordStatus } from '#/lib/api'
 import { scoreCardTitle } from '#/lib/scoreCard'
 import type { ScoreCardState } from '#/lib/scoreCard'
-import { cn } from '#/lib/utils'
+import { tallyStatuses } from '#/lib/speak/display'
 
-const isTargetStatus = (s: WordStatus): s is Exclude<WordStatus, 'extra'> =>
-  s in WORD_LOOK
+const isTargetStatus = (s: WordStatus): s is TargetStatus => s in WORD_LOOK
 
 function Unavailable({ title, body }: { title: string; body: string }) {
   return (
@@ -27,30 +29,16 @@ function Unavailable({ title, body }: { title: string; body: string }) {
   )
 }
 
-function WordChips({ words }: { words: ScoreCardPublic['words'] }) {
+function Passage({ words }: { words: ScoreCardPublic['words'] }) {
   const shown = words.flatMap((w) =>
-    isTargetStatus(w.status) ? [{ ...w, look: WORD_LOOK[w.status] }] : [],
+    isTargetStatus(w.status) ? [{ text: w.target, status: w.status }] : [],
   )
-  if (shown.length === 0) return null
+  if (!shown.length) return null
   return (
-    <ul
-      aria-label="Word by word"
-      className="flex flex-wrap justify-center gap-2"
-    >
-      {shown.map((w, i) => {
-        const { Icon, label, className } = w.look
-        return (
-          <li
-            key={`${i}-${w.target}`}
-            className="inline-flex items-center gap-1 rounded-full bg-background/60 px-3 py-1 text-sm"
-          >
-            <Icon className={cn('size-3.5 shrink-0', className)} aria-hidden />
-            {w.target}
-            <span className="sr-only"> ({label})</span>
-          </li>
-        )
-      })}
-    </ul>
+    <div className="space-y-4 text-left">
+      <ScoreBar tally={tallyStatuses(shown.map((w) => w.status))} />
+      <StaticPassage words={shown} />
+    </div>
   )
 }
 
@@ -69,7 +57,7 @@ function ScoreCardBody({ card }: { card: ScoreCardPublic }) {
           <StatTile k="Accuracy" v={`${Math.round(card.accuracy * 100)}%`} />
           <StatTile k="Speed" v={`${Math.round(card.wpm)} wpm`} />
         </div>
-        <WordChips words={card.words} />
+        <Passage words={card.words} />
       </Card>
       <div>
         <Button asChild className="px-6 py-3">
