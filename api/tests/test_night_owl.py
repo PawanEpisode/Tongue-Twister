@@ -140,7 +140,9 @@ def test_mastery_days_use_the_shifted_date(seeded):
 
 def test_insights_bucket_by_the_shifted_day(user):
     client, profile = user
-    Profile.objects.filter(pk=profile.pk).update(timezone="Asia/Kolkata", night_owl=True)
+    Profile.objects.filter(pk=profile.pk).update(
+        timezone_confirmed=True, timezone="Asia/Kolkata", night_owl=True
+    )
     profile.refresh_from_db()
     tw = twister()
     make_attempt(profile, tw, when=local(KOLKATA, 2026, 9, 1, 22, 0))
@@ -274,7 +276,7 @@ def test_a_real_attempt_at_night_unlocks_only_while_the_flag_is_on(user, monkeyp
     from .speak_helpers import submit
 
     client, profile = user
-    Profile.objects.filter(pk=profile.pk).update(timezone="Asia/Kolkata")
+    Profile.objects.filter(pk=profile.pk).update(timezone_confirmed=True, timezone="Asia/Kolkata")
     FeatureFlag.objects.filter(code="achievements").update(enabled=flag_on)
     freeze_time(monkeypatch, local(KOLKATA, 2026, 9, 2, 1, 0))
     made = submit(client)

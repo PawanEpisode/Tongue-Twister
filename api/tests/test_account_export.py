@@ -29,12 +29,10 @@ pytestmark = pytest.mark.django_db
 SECTIONS = [
     "schema_version",
     "generated_at",
-    "truncated",
     "profile",
     "preferences",
     "reminders",
     "favorites",
-    "attempts",
     "sessions",
     "daily_activity",
     "generated_twisters",
@@ -42,6 +40,8 @@ SECTIONS = [
     "achievements",
     "recordings",
     "consents",
+    "attempts",  # last: they take what the byte budget has left
+    "truncated",  # last of all: only known once the attempts are written
 ]
 # Nothing like these may appear as a key anywhere in an export (hashes, storage, worker internals).
 FORBIDDEN_KEYS = {

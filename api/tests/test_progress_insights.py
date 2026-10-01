@@ -128,7 +128,7 @@ def test_a_lapsed_streak_reads_zero_but_is_not_rewritten(user, clock, last, free
 
 def test_today_is_the_profiles_local_day(user, monkeypatch):
     client, profile = user
-    Profile.objects.filter(pk=profile.pk).update(timezone="Asia/Kolkata")
+    Profile.objects.filter(pk=profile.pk).update(timezone_confirmed=True, timezone="Asia/Kolkata")
     freeze_time(monkeypatch, at(2026, 9, 10, 20, 0))  # 01:30 on the 11th in Kolkata
     assert get(client, "/me/summary/").data["today"] == "2026-09-11"
 
@@ -162,7 +162,9 @@ def stats_user(user, clock):
     7 Sep local: a record at 80, a train (10, partial), a legacy-version test (5) and a flagged one.
     """
     client, profile = user
-    Profile.objects.filter(pk=profile.pk).update(timezone="Asia/Kolkata", xp=420, best_streak=6)
+    Profile.objects.filter(pk=profile.pk).update(
+        timezone_confirmed=True, timezone="Asia/Kolkata", xp=420, best_streak=6
+    )
     tw = twister(category__slug="hissers")
     for second in range(3):
         make_attempt(

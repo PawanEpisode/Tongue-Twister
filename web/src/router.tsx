@@ -1,10 +1,14 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { ErrorState, NotFound, PracticeSkeleton } from '#/components/feedback'
+import { parseSearch, stringifySearch } from '#/lib/searchParams'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
+    // Clean URLs: `?difficulty=1`, not `?difficulty=%221%22` (see lib/searchParams.ts).
+    parseSearch,
+    stringifySearch,
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,

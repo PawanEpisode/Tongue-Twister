@@ -25,6 +25,11 @@ vi.mock('#/lib/api', () => ({
   api: { createScoreCard: (...a: unknown[]) => createScoreCard(...a) },
 }))
 
+const track = vi.fn()
+vi.mock('#/lib/observability/analytics', () => ({
+  track: (...a: unknown[]) => track(...a),
+}))
+
 const writeText = vi.fn()
 beforeEach(() => {
   session = { user: { id: 'u1' } }
@@ -68,6 +73,16 @@ describe('ScoreCardShare', () => {
     await waitFor(() => expect(screen.getByText('Link copied')).toBeTruthy())
     expect(createScoreCard).toHaveBeenCalledWith(5)
     expect(writeText).toHaveBeenCalledWith('https://twister.example/s/abc')
+    expect(track).toHaveBeenCalledExactlyOnceWith('score_card_shared')
+  })
+
+  it('does not count a share when only the link was created', async () => {
+    writeText.mockRejectedValue(new Error('denied'))
+    render(<ScoreCardShare attemptId={5} />)
+    fireEvent.click(shareButton())
+    await waitFor(() => expect(screen.getByText('Couldn’t share')).toBeTruthy())
+    expect(createScoreCard).toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
   })
 
   it('reuses the link for the same attempt', async () => {
@@ -97,6 +112,7 @@ describe('ScoreCardShare', () => {
       expect(screen.getByText(/Couldn’t make the link/)).toBeTruthy(),
     )
     expect(writeText).not.toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
     fireEvent.click(shareButton())
     await waitFor(() => expect(screen.getByText('Link copied')).toBeTruthy())
   })
@@ -113,6 +129,7 @@ describe('ScoreCardShare', () => {
       }),
     )
     expect(writeText).not.toHaveBeenCalled()
+    expect(track).toHaveBeenCalledExactlyOnceWith('score_card_shared')
   })
 
   it('does not copy when the share sheet is dismissed', async () => {
@@ -122,6 +139,7 @@ describe('ScoreCardShare', () => {
     fireEvent.click(shareButton())
     await waitFor(() => expect(navigator.share).toHaveBeenCalled())
     expect(writeText).not.toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
   })
 
   it('copies instead when the share sheet refuses', async () => {

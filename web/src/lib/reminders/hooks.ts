@@ -2,18 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { SaveStatus } from '#/lib/account/optimistic'
 import { useAuth } from '#/lib/auth'
-import { useFlag } from '#/lib/flags'
 import { getReminders, putReminders } from './api'
 import type { ReminderPrefs } from './api'
 
-export const useRemindersEnabled = () => useFlag('reminders')
-
-export function useReminders(enabled: boolean) {
+export function useReminders() {
   const { session } = useAuth()
   return useQuery({
     queryKey: ['reminders', session?.user.id ?? 'guest'],
     queryFn: getReminders,
-    enabled: enabled && !!session,
+    enabled: !!session,
   })
 }
 

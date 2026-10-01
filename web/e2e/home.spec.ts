@@ -24,7 +24,7 @@ test('home renders the hero, today’s twister and the four level cards', async 
     ).toBeVisible()
   await expect(levels.getByRole('link', { name: /Hard/ })).toHaveAttribute(
     'href',
-    /difficulty=(%22)?3/,
+    /difficulty=3$/,
   )
 
   await expect(

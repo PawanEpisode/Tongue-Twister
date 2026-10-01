@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { getAccessToken } from './supabase'
 
 const BASE =
   (import.meta.env.VITE_API_URL as string | undefined) ??
@@ -575,11 +575,8 @@ async function authedFetch(
 ): Promise<Response> {
   const headers = new Headers(init.headers)
   if (json) headers.set('Content-Type', 'application/json')
-  const { data } = (await supabase?.auth.getSession()) ?? {
-    data: { session: null },
-  }
-  if (data.session)
-    headers.set('Authorization', `Bearer ${data.session.access_token}`)
+  const token = await getAccessToken()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
   const res = await fetch(`${BASE}/api/v1${path}`, { ...init, headers })
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {
@@ -780,8 +777,10 @@ export const api = {
     request<ScoreCardLink>(`/attempts/${attemptId}/score-card/`, {
       method: 'POST',
     }),
-  publicScoreCard: (token: string) =>
-    request<ScoreCardPublic>(`/public/s/${encodeURIComponent(token)}/`),
+  publicScoreCard: (token: string, signal?: AbortSignal) =>
+    request<ScoreCardPublic>(`/public/s/${encodeURIComponent(token)}/`, {
+      signal,
+    }),
   publicRecording: (token: string) =>
     request<PublicRecording>(`/public/r/${encodeURIComponent(token)}/`),
   reportRecording: (

@@ -133,7 +133,7 @@ export function AuthShowcase() {
                 className={
                   s === 'ok'
                     ? 'rounded-lg bg-lime/15 px-2 py-1 text-lime'
-                    : 'rounded-lg bg-pink/15 px-2 py-1 text-pink underline decoration-wavy underline-offset-4'
+                    : 'rounded-lg bg-pink/10 px-2 py-1 text-pink underline decoration-wavy underline-offset-4'
                 }
               >
                 {w}

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '#/components/ui/button'
@@ -114,7 +114,7 @@ export function AchievementToaster() {
     >
       <AnimatePresence mode="wait">
         {current && (
-          <motion.div
+          <m.div
             key={current.code}
             initial={reduce ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,7 +126,7 @@ export function AchievementToaster() {
               waiting={waiting}
               onClose={() => close(current.code)}
             />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

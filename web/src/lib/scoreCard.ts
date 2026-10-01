@@ -2,6 +2,9 @@ import { ApiError, api } from '#/lib/api'
 import type { ScoreCardPublic } from '#/lib/api'
 import { SITE_NAME, seo } from '#/lib/seo'
 
+/** How long the server waits for the API before the page shows its retry state instead of hanging. */
+export const SCORE_CARD_TIMEOUT_MS = 5000
+
 /** What the public score-card page can be in. Plain data, so the router can serialise it from the server. */
 export type ScoreCardState =
   | { kind: 'ok'; card: ScoreCardPublic }
@@ -19,13 +22,23 @@ export function classifyScoreCardError(err: unknown): ScoreCardState {
   return { kind: 'error' }
 }
 
-/** Never throws: the page always has something to render, and the head always has something to read. */
+/**
+ * Never throws: the page always has something to render, and the head always has something to read.
+ * The call is abandoned after `timeoutMs`; that becomes the retryable `error` state.
+ */
 export async function loadScoreCard(
   token: string,
-  fetchCard: (token: string) => Promise<ScoreCardPublic> = api.publicScoreCard,
+  fetchCard: (
+    token: string,
+    signal?: AbortSignal,
+  ) => Promise<ScoreCardPublic> = api.publicScoreCard,
+  timeoutMs = SCORE_CARD_TIMEOUT_MS,
 ): Promise<ScoreCardState> {
   try {
-    return { kind: 'ok', card: await fetchCard(token) }
+    return {
+      kind: 'ok',
+      card: await fetchCard(token, AbortSignal.timeout(timeoutMs)),
+    }
   } catch (err) {
     return classifyScoreCardError(err)
   }
@@ -64,7 +77,7 @@ const GENERIC_DESCRIPTION = 'Someone shared a tongue twister score with you.'
 
 /**
  * Title and link-preview tags. Crawlers read these from the server-rendered HTML, so they come from
- * the loader's data. The page is never indexed, and it has no canonical URL (every link is unique).
+ * the loader's data. The page is never indexed, and it has no canonical URL (every link is unique, and the root route adds none).
  * Like `/r/$token` it asks browsers not to leak the link in the Referer header.
  */
 export function scoreCardHead(

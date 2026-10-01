@@ -2,7 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Flame, Lightbulb, Mic, Skull, Sprout, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
+import { m, useReducedMotion } from 'motion/react'
 import { FavoriteButton } from '#/components/progress/FavoriteButton'
 import { MasteryBadge } from '#/components/progress/MasteryBadge'
 import { ProgressStrip } from '#/components/progress/ProgressStrip'
@@ -82,14 +82,14 @@ function Home() {
       </div>
       <section className="relative grid items-center gap-10 pt-6 md:grid-cols-[1.2fr_1fr]">
         <div>
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="mb-3 text-sm font-semibold uppercase tracking-widest text-brand"
           >
             Say it fast. Say it right.
-          </motion.p>
-          <motion.h1
+          </m.p>
+          <m.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl font-extrabold leading-[1.05] md:text-7xl"
@@ -97,7 +97,7 @@ function Home() {
             Can you say{' '}
             <span className="text-gradient">“red lorry, yellow lorry”</span> ten
             times?
-          </motion.h1>
+          </m.h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Speak into your mic and watch every word light up live. Classic and
             modern tongue twisters, four difficulty levels, scores, streaks and
@@ -126,7 +126,7 @@ function Home() {
             )}
           </div>
         </div>
-        <motion.div
+        <m.div
           animate={
             reduceMotion ? undefined : { y: [0, -12, 0], rotate: [-2, 2, -2] }
           }
@@ -183,7 +183,7 @@ function Home() {
               </>
             )}
           </Card>
-        </motion.div>
+        </m.div>
       </section>
 
       {weeklyBoards && <WeeklyBoard />}
@@ -192,7 +192,7 @@ function Home() {
         <h2 className="mb-5 text-2xl font-bold">Pick your level</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {LEVELS.map((l, i) => (
-            <motion.div
+            <m.div
               key={l.d}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -211,7 +211,7 @@ function Home() {
                 </div>
                 <div className="text-sm text-muted-foreground">{l.blurb}</div>
               </Link>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </section>
@@ -232,7 +232,7 @@ function Home() {
                   <CategoryCardSkeleton key={i} />
                 ))
               : cats.data.map((c, i) => (
-                  <motion.div
+                  <m.div
                     key={c.slug}
                     className="h-full"
                     initial={{ opacity: 0, y: 14 }}
@@ -261,7 +261,7 @@ function Home() {
                         </span>
                       </span>
                     </Link>
-                  </motion.div>
+                  </m.div>
                 ))}
           </div>
         )}

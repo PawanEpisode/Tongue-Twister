@@ -1,8 +1,14 @@
 {
-  "$comment": "First-load JS per route, gzip, in KB (docs/features/00 §6.3). `maxGzipKB` is the enforced ratchet; `targetGzipKB` is the product budget it must reach. The build measured 278.1 KB (Home) and 313.0 KB (Practice Hub) on 2026-10-01, so the ratchet is current + 5 %. Lower maxGzipKB whenever a change makes the bundle smaller; never raise it to make a build pass.",
+  "$comment": "First-load JS per route, gzip, in KB (docs/features/00 §6.3). `maxGzipKB` is the enforced ratchet; `targetGzipKB` is the product budget it must reach. Round 4 (2026-10-01) measured 193.1 KB (Home) and 230.1 KB (Practice Hub) after lazy supabase-js, LazyMotion and a lazy theme menu (from 282.1 and 318.9), so the ratchet is current + 5 %. Lower maxGzipKB whenever a change makes the bundle smaller; never raise it to make a build pass.",
   "targetGzipKB": 180,
   "routes": {
-    "/": { "label": "Home", "maxGzipKB": 292 },
-    "/twisters/$slug": { "label": "Practice Hub", "maxGzipKB": 329 }
+    "/": {
+      "label": "Home",
+      "maxGzipKB": 203
+    },
+    "/twisters/$slug": {
+      "label": "Practice Hub",
+      "maxGzipKB": 242
+    }
   }
 }

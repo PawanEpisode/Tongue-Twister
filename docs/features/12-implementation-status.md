@@ -191,30 +191,34 @@ Actions → **Management command** → *Run workflow*: pick a command from the a
 - Worker HMAC has no timestamp/nonce (same scheme as the scoring callback), so a captured request could be replayed over a broken TLS channel; add a signed `ts` if that matters.
 - Run `storage_policies.sql` again in the Supabase SQL editor: it drops the old `own upload/read/delete` policies and adds the deny-all one; the `voice` bucket limit is now 100 MiB (analysis WAVs).
 
-## Pending from the docs (as of 2026-10-01)
+## Pending from the docs (as of 2026-10-01, after Round 4)
 
-**Next 06d round (PRD 05 G8–G10, ERD 06d M5)**
-1. Score-card images (1200×630 and 1080×1080) and the public `/s/:token` page with OG tags (API endpoints already exist from 06c).
-2. Generate Twister: `TwisterGeneration`, `POST /twisters/generate/`, `POST /twisters/{slug}/save/`, prompt and output safety pipeline, alliteration quality check, 10/day quota and cost cap, `generate_twister` kill switch, under-13 block, LLM provider choice (not yet made).
-3. Reminders: `NotificationChannel`, `PUT /me/notifications/`, one-tap unsubscribe token, email + web-push, `reminders` flag, send window and DND rules.
-4. Night owl mode (+ two achievements), CSV export, `GET /me/export/` (JSON export) and `DELETE /me/` (D14; `purge_profile_media` exists as a service only).
+Done and removed from this list: score cards and `/s/:token`, account deletion and JSON export, night owl mode, Generate Twister (Gemini), reminders (e-mail only; web-push and `NotificationChannel` dropped, D32), worker HMAC timestamp, Sentry/PostHog scaffolding, Playwright + axe + bundle budget + CSP report-only in CI, incident runbooks, model-export tool, Fly worker deploy runbook.
 
-**Speech engine (doc 10, E3-3 … E3-6, flag `accurate_mode` off)**
-5. (E3-2 model-free engine logic is done: `twisters/speak/engine` + `web/src/lib/speak/engine`, spec `17` A6, D29-D31, not wired.) Model export/quantise (your machine), on-device engine in a Web Worker (ONNX Runtime Web) with "Accurate mode" UI, `/dev/calibrate` gold-set page and threshold tuning, scoring-worker container with queue, spot-check flow and the `verified` level.
-6. Once the worker ships: set `LEADERBOARD_REQUIRE_VERIFIED=1`, turn `MASTERY_ALLOW_PROVISIONAL` off, enable the `*/10` `sweep_pending_attempts` cron, then turn the `weekly_boards` flag on.
-7. The scoring step that turns the analysis audio into an `Attempt(kind=record)` (06c leftover).
+**Speech engine (doc 10, E3-3 to E3-6, flag `accurate_mode` off)**
+1. On-device engine in a Web Worker (ONNX Runtime Web) with "Accurate mode" UI (E3-3/E3-4, wiring the unwired groundwork D29-D31); `/dev/calibrate` gold-set page and threshold tuning (E3-5; thresholds are placeholders); scoring-worker container with queue, spot-check flow and the `verified` level (E3-6).
+2. Once the worker ships: set `LEADERBOARD_REQUIRE_VERIFIED=1`, turn `MASTERY_ALLOW_PROVISIONAL` off, enable the `*/10` `sweep_pending_attempts` cron, then turn the `weekly_boards` flag on (prerequisites for `weekly_boards`).
+3. The scoring step that turns the analysis audio into an `Attempt(kind=record)` (06c leftover).
 
-**Record / cloud (06c leftovers, not code)**
-8. Upgrade Supabase to Pro (D7), run `storage_policies.sql` again, verify `SupabaseStorage` (TUS, `object/info`, signed URLs) against the real project, then enable `record_cloud` and `share_links`.
-9. Real-device QA for Record (Chrome/Edge/Firefox/Safari, phone portrait, Element Capture, long takes, device unplug); real ffmpeg worker, Postgres and SMTP runs; deploy `MEDIA_PATH_SECRET` before the API.
-10. Worker HMAC has no timestamp/nonce (replay over a broken TLS channel) — add a signed `ts` if it matters.
+**Record / cloud and live verification (not code)**
+4. Upgrade Supabase to Pro (D7), run `storage_policies.sql` again, verify `SupabaseStorage` (TUS, `object/info`, signed URLs) against the real project, then enable `record_cloud` and `share_links`.
+5. Real-device QA for Record (Chrome/Edge/Firefox/Safari, phone portrait, Element Capture, long takes, device unplug).
+6. Live verification never done: Postgres (CI runs it, production does not yet), SMTP delivery and unsubscribe, Fly worker deploy (`docs/runbooks/worker-deploy-fly.md`), a real Gemini call; deploy `MEDIA_PATH_SECRET` before the API.
 
-**Platform and ops (doc 09 E7, not started)**
-11. Error tracking and observability (Sentry, structured logs dashboards for attempt latency, recording success, upload failures, storage growth); analytics provider (the telemetry sink is a no-op); Playwright e2e with fake media, visual snapshots, axe a11y checks and a bundle-size budget in CI; CSP and `Permissions-Policy` headers; incident runbooks (worker down, model rollback, storage full, abuse wave); cost dashboard and takedown-SLA doc.
-12. Rollout mechanics from doc 09 §7 (internal allow-list → 10 % → 50 % → 100 % with stop-ship criteria) and the changelog / "What's new" surface.
+**Platform and product**
+7. Rollout mechanics from doc 09 section 7 (internal allow-list, 10 %, 50 %, 100 % with stop-ship criteria) and the changelog / "What's new" surface.
+8. CSV export (the JSON export exists).
+9. Cost dashboard.
+10. Bundle target 180 KB for first load (Home ~282 KB, Hub ~319 KB before Round 4 reductions; the ratchet in `bundle-budget.json` enforces no regression).
 
 **Open questions that need data, not docs (doc 11)**
-13. Whether the phoneme model meets accuracy on en-IN speakers; its size after int8 export; whether a paid Pro plan is worth building (after 60 days of cloud-recording cap-hit data).
+11. Whether the phoneme model meets accuracy on en-IN speakers; its size after int8 export; whether a paid Pro plan is worth building (after 60 days of cloud-recording cap-hit data).
+
+### Round 4 (hardening), delivered by api-fix and web-fix
+
+- api-fix: CSP report endpoint; pending-deletion accounts treated as anonymous on public endpoints; stored-twister cap and usage pruning; reminders `timezone_confirmed`; export byte guard.
+- web-fix: `/s` page SEO, status handling and timeout; reminders card visibility; login contrast; clean search params; Lottie offline fix; bundle reductions; analytics events.
+- ci-docs: web CI wired into `.github/workflows/ci.yml` (`web` build + size + script tests, new `web-e2e` job), go-live checklist in `docs/runbooks/README.md`.
 
 ## Rounds 1–3 (2026-10-01)
 

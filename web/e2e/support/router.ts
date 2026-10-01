@@ -4,7 +4,10 @@ import {
   DAILY,
   FACETS,
   FLAGS,
+  GONE_TOKEN,
   PREFERENCES,
+  SCORE_CARD,
+  SCORE_CARD_TOKEN,
   TWISTER,
   TWISTERS,
 } from '../fixtures'
@@ -49,6 +52,13 @@ export function route(
   if (path === '/daily/') return json(DAILY)
   if (path === '/flags/') return json({ flags: FLAGS })
   if (path === '/me/preferences/') return json(PREFERENCES)
+  const card = /^\/public\/s\/([^/]+)\/$/.exec(path)
+  if (card) {
+    if (card[1] === SCORE_CARD_TOKEN) return json(SCORE_CARD)
+    if (card[1] === GONE_TOKEN)
+      return json({ error: { code: 'gone', request_id: 'e2e' } }, 410)
+    return notFound()
+  }
   const one = /^\/twisters\/([^/]+)\/$/.exec(path)
   if (one) {
     const t = TWISTERS.find((x) => x.slug === one[1])
@@ -64,4 +74,5 @@ export const MOCKED_PREFIXES = [
   '/daily/',
   '/flags/',
   '/me/preferences/',
+  '/public/s/',
 ]

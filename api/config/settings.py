@@ -148,6 +148,7 @@ REST_FRAMEWORK = {
         "export": "3/h",  # GET /me/export/ per user (round 1, spec 15)
         "unsubscribe": "600/min",  # GET|POST /public/unsubscribe/{token}/ per IP (round 2, D27)
         "generate": "3/min",  # POST /generate/ per user (round 2, spec 16 D26)
+        "csp_report": "60/min",  # POST /csp-report/ per IP (round 4, spec 07 section 19)
     },
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -242,6 +243,9 @@ API_PUBLIC_URL = env("API_PUBLIC_URL", "" if not DEBUG else "http://localhost:80
 ACCOUNT_DELETION_GRACE_DAYS = int(env("ACCOUNT_DELETION_GRACE_DAYS", "30"))
 # Hard cap on attempts in `GET /me/export/` (newest first); `truncated: true` when it bites.
 EXPORT_MAX_ATTEMPTS = int(env("EXPORT_MAX_ATTEMPTS", "20000"))
+# Vercel Functions cap a response body at 4.5 MB, so the export also stops adding attempts once the
+# serialised JSON would pass this many bytes (round 4); `truncated: true` then. Keep it below 4.5 MB.
+EXPORT_MAX_BYTES = int(env("EXPORT_MAX_BYTES", "4000000"))
 EXPORT_CHUNK_SIZE = 500  # rows per database round trip while streaming an export section
 # Public score-card images are cacheable by browsers and crawlers for this long (the ETag covers the rest).
 SCORE_CARD_IMAGE_MAX_AGE_S = int(env("SCORE_CARD_IMAGE_MAX_AGE_S", "3600"))
@@ -347,6 +351,9 @@ API_CSP_REPORT_ONLY = os.getenv(
     "API_CSP_REPORT_ONLY", "default-src 'none'; frame-ancestors 'none'"
 ).strip()
 
+# Largest CSP violation report body `POST /csp-report/` will read (round 4); bigger ones are dropped.
+CSP_REPORT_MAX_BYTES = 16 * 1024
+
 if not DEBUG:
     # Vercel terminates TLS and sets X-Forwarded-Proto. Not set in dev, where the header is spoofable.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -389,3 +396,7 @@ GEMINI_TIMEOUT_S = float(env("GEMINI_TIMEOUT_S", "10"))
 GENERATOR_BACKEND = env("GENERATOR_BACKEND", "").lower()
 # Generations per person per UTC day (D26); a rejected result still counts, a provider outage does not.
 GENERATE_DAILY_LIMIT = int(env("GENERATE_DAILY_LIMIT", "5"))
+# Private generated twisters one person may keep at a time (round 4); delete one to make another.
+GENERATE_MAX_STORED = int(env("GENERATE_MAX_STORED", "50"))
+# Daily usage rows older than this are deleted by `manage.py prune_generation_usage` (round 4).
+GENERATE_USAGE_RETENTION_DAYS = int(env("GENERATE_USAGE_RETENTION_DAYS", "90"))

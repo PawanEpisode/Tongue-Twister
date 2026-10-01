@@ -1,15 +1,17 @@
 import { ErrorState, Skeleton } from '#/components/feedback'
 import { Card } from '#/components/ui/card'
 import { useDeletionState } from '#/lib/account/useDeletion'
+import { useFlags } from '#/lib/flags'
 import { useMe } from '#/lib/useMe'
 import { cn } from '#/lib/utils'
 import { ACCOUNT_SECTIONS } from './sections'
+import { visibleSections } from './types'
 
-function AccountSkeleton() {
+function AccountSkeleton({ count }: { count: number }) {
   return (
     <div className="space-y-5" aria-busy aria-label="Loading your account">
-      {ACCOUNT_SECTIONS.map((s) => (
-        <Skeleton key={s.id} className="h-40 w-full rounded-2xl" />
+      {Array.from({ length: count }, (_, i) => (
+        <Skeleton key={i} className="h-40 w-full rounded-2xl" />
       ))}
     </div>
   )
@@ -19,6 +21,7 @@ function AccountSkeleton() {
 export default function AccountPage() {
   const me = useMe()
   const deletion = useDeletionState()
+  const sections = visibleSections(ACCOUNT_SECTIONS, useFlags())
 
   return (
     <div className="mx-auto max-w-2xl text-left">
@@ -30,7 +33,7 @@ export default function AccountPage() {
       )}
       <div className="mt-6 space-y-5">
         {me.isPending ? (
-          <AccountSkeleton />
+          <AccountSkeleton count={sections.length} />
         ) : me.isError ? (
           <ErrorState
             title="Couldn’t load your account"
@@ -38,7 +41,7 @@ export default function AccountPage() {
             onRetry={() => void me.refetch()}
           />
         ) : (
-          ACCOUNT_SECTIONS.map(({ id, title, tone, Component }) => (
+          sections.map(({ id, title, tone, Component }) => (
             <Card
               key={id}
               asChild

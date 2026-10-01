@@ -10,7 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import MyTwistersList from './MyTwistersList'
 
-vi.mock('#/lib/supabase', () => ({ supabase: null }))
+vi.mock('#/lib/supabase', () => ({ getAccessToken: async () => null }))
 vi.mock('#/lib/auth', () => ({
   useAuth: () => ({ session: { user: { id: 'u1' } }, loading: false }),
 }))

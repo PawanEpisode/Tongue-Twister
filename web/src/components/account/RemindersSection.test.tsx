@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Profile } from '#/lib/api'
 import RemindersSection from './RemindersSection'
 
-let flag = true
 const save = vi.fn()
 let q: {
   isPending: boolean
@@ -17,24 +16,16 @@ let q: {
   data: { enabled: false, hour_local: 18 },
 }
 vi.mock('#/lib/reminders/hooks', () => ({
-  useRemindersEnabled: () => flag,
   useReminders: () => q,
   useSaveReminders: () => ({ save, status: 'idle' }),
 }))
 afterEach(() => {
   cleanup()
-  flag = true
   save.mockReset()
 })
 const me = {} as Profile
 
 describe('RemindersSection', () => {
-  it('is inert behind the flag', () => {
-    flag = false
-    render(<RemindersSection me={me} locked={false} />)
-    expect(screen.getByText(/aren’t available yet/)).toBeTruthy()
-    expect(screen.queryByRole('switch')).toBeNull()
-  })
   it('toggles and changes the hour with the PUT shape', () => {
     render(<RemindersSection me={me} locked={false} />)
     fireEvent.click(screen.getByRole('switch'))

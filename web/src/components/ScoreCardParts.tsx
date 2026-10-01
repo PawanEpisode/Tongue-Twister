@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue, useTransform } from 'motion/react'
+import { animate, m, useMotionValue, useTransform } from 'motion/react'
 import { useEffect, useId } from 'react'
 import type { ReactNode } from 'react'
 
@@ -43,7 +43,7 @@ export function ScoreRing({
           strokeWidth="12"
           fill="none"
         />
-        <motion.circle
+        <m.circle
           cx="80"
           cy="80"
           r={RADIUS}
@@ -65,9 +65,9 @@ export function ScoreRing({
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <div>
-          <motion.span className="font-display text-5xl font-extrabold">
+          <m.span className="font-display text-5xl font-extrabold">
             {shown}
-          </motion.span>
+          </m.span>
           <div className="text-xs text-muted-foreground">/ 100</div>
         </div>
       </div>

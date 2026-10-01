@@ -208,6 +208,11 @@ class Profile(models.Model):
         validators=[validate_timezone],
         help_text="IANA name; decides what 'today' means",
     )
+    timezone_confirmed = models.BooleanField(
+        default=False,
+        help_text="True once the person (or their browser) has set `timezone`: until then 'UTC' is a "
+        "placeholder, and clock-based rules (reminders, hour badges) must not trust it",
+    )
     plan = models.ForeignKey(
         Plan,
         to_field="code",

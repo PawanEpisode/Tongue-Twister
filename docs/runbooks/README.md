@@ -22,3 +22,15 @@ Actions** (`.github/workflows/manage-command.yml`, environment `production`). He
 `GET /api/health/` on the API returns `{"status":"ok"}` (it does not touch the database).
 Flags are rows in the `FeatureFlag` table, edited in the Django admin (`/admin/`); see
 [../features/15-rollout-and-flags.md](../features/15-rollout-and-flags.md).
+
+## Go-live checklist
+
+Do these in order; stop at the first failure and use the linked runbook.
+
+1. **Migrate.** Back up, then run `migrate` against production Postgres via the `manage-command` workflow; migrations apply before the new API code serves traffic ([deploy-and-rollback.md](deploy-and-rollback.md)).
+2. **Seeds.** Run `seed_twisters` (and any other seed commands) from the same workflow, then create the feature flag rows; confirm twisters list and flags exist in `/admin/`.
+3. **Secrets.** Set every variable before deploying, API first for `MEDIA_PATH_SECRET`: Django `SECRET_KEY`, database URL, Supabase URL and keys, worker HMAC secret, SMTP credentials, `GEMINI_API_KEY`, `VITE_SENTRY_DSN` / `VITE_POSTHOG_KEY` (web). Where each lives and how to rotate: [secrets-and-rotation.md](secrets-and-rotation.md).
+4. **Flags.** Leave `record_cloud`, `share_links`, `accurate_mode` and `weekly_boards` off. Enable `generate_twister` and `reminders` only after steps 6 and 7; roll out gradually ([../features/15-rollout-and-flags.md](../features/15-rollout-and-flags.md)).
+5. **Worker deploy.** Deploy the media worker to Fly and run its smoke test ([worker-deploy-fly.md](worker-deploy-fly.md)); recovery in [worker-down.md](worker-down.md).
+6. **Smoke.** `GET /api/health/` returns `ok`; sign in, practise a twister, open a score card `/s/<token>`, generate a twister, send yourself a reminder and click unsubscribe. Web side: CSP and CI notes in [web-ci.md](web-ci.md).
+7. **Monitoring.** Confirm Sentry receives a test error and PostHog an event; watch the CSP console for a week before enforcing; know the incident runbooks ([incident-template.md](incident-template.md), [storage-full.md](storage-full.md), [abuse-wave.md](abuse-wave.md), [takedown-sla.md](takedown-sla.md)).

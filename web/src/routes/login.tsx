@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { AuthShowcase } from '#/components/auth/AuthShowcase'
@@ -7,7 +8,7 @@ import { Input } from '#/components/ui/input'
 import { useAuth } from '#/lib/auth'
 import { returnTo, safePath } from '#/lib/returnTo'
 import { seo } from '#/lib/seo'
-import { supabase } from '#/lib/supabase'
+import { getSupabase, supabaseConfigured } from '#/lib/supabase'
 
 export const Route = createFileRoute('/login')({
   head: () =>
@@ -20,6 +21,26 @@ export const Route = createFileRoute('/login')({
 
 type Note = { kind: 'error' | 'info'; text: string }
 
+/** Runs a supabase-js call; a failed download of the library becomes a normal, retryable error. */
+async function withClient(
+  fn: (
+    sb: SupabaseClient,
+  ) => PromiseLike<{ error: { message: string } | null }>,
+): Promise<{ error: { message: string } | null }> {
+  try {
+    const sb = await getSupabase()
+    if (sb) return await fn(sb)
+  } catch {
+    /* falls through */
+  }
+  return {
+    error: {
+      message:
+        'Couldn’t reach the sign-in service. Check your connection and try again.',
+    },
+  }
+}
+
 function Login() {
   const nav = useNavigate()
   const { session } = useAuth()
@@ -29,6 +50,8 @@ function Login() {
   useEffect(() => {
     if (session) void nav({ href: returnTo.take(), replace: true })
   }, [session, nav])
+  // Start downloading the sign-in library while the person types.
+  useEffect(() => void getSupabase().catch(() => undefined), [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -38,7 +61,7 @@ function Login() {
 
   const signUp = mode === 'up'
 
-  if (!supabase)
+  if (!supabaseConfigured)
     return (
       <div className="mx-auto mt-10 max-w-md rounded-2xl border border-border bg-card p-6 text-sm">
         <p className="font-semibold">Sign-in isn’t configured yet</p>
@@ -54,9 +77,11 @@ function Login() {
     e.preventDefault()
     setNote(null)
     setBusy('password')
-    const { error } = signUp
-      ? await supabase!.auth.signUp({ email, password })
-      : await supabase!.auth.signInWithPassword({ email, password })
+    const { error } = await withClient((sb) =>
+      signUp
+        ? sb.auth.signUp({ email, password })
+        : sb.auth.signInWithPassword({ email, password }),
+    )
     setBusy(null)
     if (error) setNote({ kind: 'error', text: error.message })
     else if (signUp)
@@ -69,10 +94,12 @@ function Login() {
   const google = async () => {
     setNote(null)
     setBusy('google')
-    const { error } = await supabase!.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
+    const { error } = await withClient((sb) =>
+      sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      }),
+    )
     if (error) {
       setBusy(null)
       setNote({ kind: 'error', text: error.message })

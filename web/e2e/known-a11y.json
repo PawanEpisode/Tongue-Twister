@@ -1,10 +1,4 @@
 {
-  "$comment": "Pre-existing serious/critical axe findings that need a design decision. Each entry excludes ONE rule on ONE selector (never a whole rule). Delete the entry when the issue is fixed.",
-  "exceptions": [
-    {
-      "rule": "color-contrast",
-      "selector": ".bg-pink\\/15",
-      "reason": "Login page showcase sample word 'shells' (AuthShowcase), light theme only: text-pink #be185d on a pink/15 tint is 4.46:1, 0.04 under the 4.5:1 AA threshold. Needs a design decision on the light-theme --pink token or the tint opacity."
-    }
-  ]
+  "$comment": "Pre-existing serious/critical axe findings that need a design decision. Each entry excludes ONE rule on ONE selector (never a whole rule). Delete the entry when the issue is fixed. Empty on 2026-10-01: the last one (login 'shells' sample) was fixed by lowering the tint to pink/10 (4.7:1).",
+  "exceptions": []
 }

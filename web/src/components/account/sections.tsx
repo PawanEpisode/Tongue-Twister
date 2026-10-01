@@ -13,7 +13,12 @@ import type { AccountSection } from './types'
 export const ACCOUNT_SECTIONS: readonly AccountSection[] = [
   { id: 'profile', title: 'Profile', Component: ProfileSection },
   { id: 'streak', title: 'Streak', Component: StreakSection },
-  { id: 'reminders', title: 'Reminders', Component: RemindersSection },
+  {
+    id: 'reminders',
+    title: 'Reminders',
+    flag: 'reminders',
+    Component: RemindersSection,
+  },
   { id: 'privacy', title: 'Privacy', Component: PrivacySection },
   { id: 'data', title: 'Your data', Component: DataSection },
   {

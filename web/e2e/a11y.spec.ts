@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { TWISTER } from './fixtures'
+import { SCORE_CARD_TOKEN, TWISTER } from './fixtures'
 import { blockingViolations } from './support/axe'
 import { openApp } from './support/setup'
 
@@ -78,6 +78,14 @@ const PAGES: Target[] = [
     path: '/login',
     ready: async (p) =>
       expect(p.getByRole('heading', { name: 'Welcome back' })).toBeVisible(),
+  },
+  {
+    name: 'shared score card',
+    path: `/s/${SCORE_CARD_TOKEN}`,
+    ready: async (p) =>
+      expect(
+        p.getByRole('heading', { name: /Scored 87 on a tongue twister/ }),
+      ).toBeVisible(),
   },
 ]
 

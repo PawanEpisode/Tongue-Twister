@@ -1,9 +1,10 @@
+import { usePracticeStarted } from '#/lib/observability/usePracticeStarted'
 import { track } from '#/lib/observability/analytics'
 import { scoreBand } from '#/lib/observability/events'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Lightbulb } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
@@ -89,7 +90,7 @@ export default function SpeakAndScore({
    */
   const showLocal = (
     spoken: string,
-    m: { durationMs: number; longPauseMs: number },
+    timing: { durationMs: number; longPauseMs: number },
     confidence: number | null | undefined,
     notice?: string,
   ): boolean => {
@@ -98,7 +99,7 @@ export default function SpeakAndScore({
       spoken,
       difficulty: t.difficulty,
       focusSounds: t.focus_sounds,
-      ...m,
+      ...timing,
     })
     const unclearReason = unscorableReason(local.evaluation, confidence)
     if (unclearReason) {
@@ -229,6 +230,7 @@ export default function SpeakAndScore({
     onFinish: (r) => finish(r.transcript, r.durationMs, r),
   })
   const { speech, hits, matched, currentIdx, arming, live } = take
+  usePracticeStarted('speak_score', live)
 
   // Keep the current word in view for long passages.
   useEffect(() => {
@@ -319,7 +321,7 @@ export default function SpeakAndScore({
             </Button>
           </div>
         ) : (
-          <motion.div
+          <m.div
             key="p"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -336,7 +338,7 @@ export default function SpeakAndScore({
                 className={`font-display font-bold leading-snug ${textSize} ${isLong ? 'leading-relaxed' : ''} ${arming ? 'opacity-60' : ''}`}
               >
                 {display.map((w, i) => (
-                  <motion.span
+                  <m.span
                     key={i}
                     ref={i === currentIdx ? currentRef : undefined}
                     animate={{ scale: hits[i] ? 1.04 : 1 }}
@@ -349,7 +351,7 @@ export default function SpeakAndScore({
                     )}
                   >
                     {w.text}
-                  </motion.span>
+                  </m.span>
                 ))}
               </p>
             </div>
@@ -365,7 +367,7 @@ export default function SpeakAndScore({
 
             {live && (
               <div className="mx-auto mt-5 h-1.5 max-w-md overflow-hidden rounded-full bg-card">
-                <motion.div
+                <m.div
                   className="h-full bg-gradient-to-r from-primary to-pink"
                   animate={{
                     width: `${(matched / Math.max(1, hits.length)) * 100}%`,
@@ -410,7 +412,7 @@ export default function SpeakAndScore({
                 to save scores, streaks and XP.
               </p>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

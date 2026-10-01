@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Trophy } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import type { Twister } from '#/lib/api'
 import { Badge } from '#/components/ui/badge'
 import { Card } from '#/components/ui/card'
@@ -21,7 +21,7 @@ export function DifficultyBadge({ level }: { level: 1 | 2 | 3 | 4 }) {
 
 export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
   return (
-    <motion.div
+    <m.div
       className="h-full"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -63,6 +63,6 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
         </Link>
         <FavoriteButton twister={t} className="absolute right-1.5 top-1.5" />
       </Card>
-    </motion.div>
+    </m.div>
   )
 }

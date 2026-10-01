@@ -20,6 +20,7 @@ import { browserDeps, openSession, SessionOpenError } from './session'
 import type { Session, SessionEvent } from './session'
 import type { RecordSettings } from './settings'
 import type { Take } from './take'
+import { track as trackEvent } from '#/lib/observability/analytics'
 import { track } from './telemetry'
 
 /** Tell the user how long has been recorded every this often (a per-second timer would flood screen readers). */
@@ -310,6 +311,7 @@ export function useRecorder(o: RecorderOptions) {
         started.current = true
         void s.begin().then(
           () => {
+            trackEvent('practice_started', { mode: 'record' })
             track('record_start', {
               layout: s.layout.id,
               res: `${s.size.width}x${s.size.height}`,

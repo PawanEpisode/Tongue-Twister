@@ -7,7 +7,7 @@ import {
   Trash2,
   TriangleAlert,
 } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '#/components/ui/button'
@@ -113,7 +113,7 @@ export default function RecordingStage({
         {overlay}
         <AnimatePresence>
           {phase === 'countdown' && (
-            <motion.div
+            <m.div
               key={state.countdown}
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -122,7 +122,7 @@ export default function RecordingStage({
               className="pointer-events-none absolute inset-0 grid place-items-center bg-black/40 font-display text-8xl font-extrabold text-white"
             >
               {state.countdown}
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
         {live && (

@@ -1,10 +1,6 @@
 import { useId } from 'react'
 import { friendlyError } from '#/components/feedback'
-import {
-  useRemindersEnabled,
-  useReminders,
-  useSaveReminders,
-} from '#/lib/reminders/hooks'
+import { useReminders, useSaveReminders } from '#/lib/reminders/hooks'
 import SettingSwitch from './SettingSwitch'
 import type { AccountSectionProps } from './types'
 
@@ -14,19 +10,13 @@ const hourLabel = (h: number) =>
     minute: '2-digit',
   })
 
-/** One daily email at the learner's chosen local hour, only if they haven't practised yet. Flag `reminders`. */
+/** One daily email at the learner's chosen local hour, only if they haven't practised yet. Gated by the `reminders` flag in the registry
+ * (`sections.tsx`), so it is only rendered while the flag is on. */
 export default function RemindersSection({ locked }: AccountSectionProps) {
-  const flagOn = useRemindersEnabled()
-  const prefs = useReminders(flagOn)
+  const prefs = useReminders()
   const { save, status } = useSaveReminders()
   const id = useId()
 
-  if (!flagOn)
-    return (
-      <p className="text-sm text-muted-foreground">
-        Email reminders aren’t available yet.
-      </p>
-    )
   if (prefs.isPending)
     return (
       <p className="text-sm text-muted-foreground" aria-busy>

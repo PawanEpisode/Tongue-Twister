@@ -95,8 +95,10 @@ def test_hsts_header_is_emitted_over_https_in_production(settings, client):
 def test_json_responses_carry_the_report_only_csp(client):
     response = client.get("/api/health/")
     assert response["Content-Security-Policy-Report-Only"] == (
-        "default-src 'none'; frame-ancestors 'none'"
+        "default-src 'none'; frame-ancestors 'none'; "
+        "report-uri /api/v1/csp-report/; report-to csp-endpoint"
     )
+    assert response["Reporting-Endpoints"] == 'csp-endpoint="/api/v1/csp-report/"'
     assert "Content-Security-Policy" not in response  # report-only: never enforcing
 
 

@@ -2,7 +2,7 @@ import Lottie from '#/components/ClientLottie'
 import confetti from 'canvas-confetti'
 import { BicepsFlexed, Flame, PartyPopper, Tornado, Trophy } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import success from '#/assets/lottie/success.json'
@@ -77,7 +77,7 @@ export default function ResultCard({
   }, [score])
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
     >
@@ -152,6 +152,6 @@ export default function ResultCard({
           </Button>
         </div>
       </Card>
-    </motion.div>
+    </m.div>
   )
 }

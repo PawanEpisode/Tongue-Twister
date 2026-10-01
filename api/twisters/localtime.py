@@ -23,16 +23,15 @@ from django.utils import timezone
 
 from .models import Profile
 
-# What `Profile.timezone` holds until a browser reports the real zone; clock-based rules must not trust it.
-UNCONFIRMED_TIMEZONE = "UTC"
-
 
 def tzinfo_for(profile: Profile) -> ZoneInfo:
     return ZoneInfo(profile.timezone)
 
 
 def timezone_confirmed(profile: Profile) -> bool:
-    return profile.timezone != UNCONFIRMED_TIMEZONE
+    """Whether `Profile.timezone` was actually chosen (`PATCH /me/`) rather than the `UTC` default.
+    Clock-based rules must not trust an unconfirmed zone; a person who confirmed `UTC` is trusted."""
+    return profile.timezone_confirmed
 
 
 def local_now(profile: Profile, now: dt.datetime | None = None) -> dt.datetime:

@@ -1,5 +1,5 @@
 import { Loader2, Mic, Square } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import pulse from '#/assets/lottie/pulse.json'
 import AudioVisualizer from '#/components/AudioVisualizer'
 import Lottie from '#/components/ClientLottie'
@@ -27,6 +27,12 @@ export default function MicStage({
             animationData={pulse}
             loop
             className="absolute inset-0 h-full w-full"
+            fallback={
+              <span
+                aria-hidden
+                className="absolute inset-[48px] animate-ping rounded-full bg-primary/25 motion-reduce:animate-none"
+              />
+            }
           />
         )}
         {live && (
@@ -37,7 +43,7 @@ export default function MicStage({
         )}
         <AnimatePresence>
           {showGo && (
-            <motion.div
+            <m.div
               key="go"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1.15, opacity: 1 }}
@@ -45,10 +51,10 @@ export default function MicStage({
               className="pointer-events-none absolute inset-0 z-10 grid place-items-center font-display text-5xl font-extrabold text-lime hit-glow"
             >
               GO!
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
-        <motion.button
+        <m.button
           whileTap={{ scale: 0.92 }}
           whileHover={{ scale: 1.05 }}
           disabled={!speech.supported || arming || (lock.blocked && !live)}
@@ -63,7 +69,7 @@ export default function MicStage({
           ) : (
             <Mic className="size-8" aria-hidden />
           )}
-        </motion.button>
+        </m.button>
       </div>
 
       <p className="mt-1 text-sm text-muted-foreground" aria-live="polite">

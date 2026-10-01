@@ -10,7 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GenerateForm from './GenerateForm'
 
-vi.mock('#/lib/supabase', () => ({ supabase: null }))
+vi.mock('#/lib/supabase', () => ({ getAccessToken: async () => null }))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>

@@ -4,6 +4,7 @@ import type {
   Facets,
   FeatureFlags,
   Preferences,
+  ScoreCardPublic,
   Twister,
 } from '../../src/lib/api'
 
@@ -151,3 +152,18 @@ export const PREFERENCES = {
   tts_rate: 1,
   speed_ladder: {},
 } satisfies Preferences
+
+/** What `GET /public/s/{token}/` returns for the token `SCORE_CARD_TOKEN`. */
+export const SCORE_CARD_TOKEN = 'e2e-card'
+/** A token the mock API answers 410 for (expired or revoked). */
+export const GONE_TOKEN = 'e2e-gone'
+export const SCORE_CARD = {
+  score: 87,
+  accuracy: 0.92,
+  wpm: 118,
+  kind: 'test',
+  twister: { slug: TWISTERS[0].slug, text: TWISTERS[0].text },
+  words: [{ target: 'red', status: 'correct' }],
+  created_at: '2026-10-01T10:00:00Z',
+  owner: { display_name: null },
+} satisfies ScoreCardPublic

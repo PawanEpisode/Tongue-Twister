@@ -187,10 +187,33 @@ def test_disabled_pending_deletion_no_email_and_unconfirmed_zone_are_skipped(fla
         deletion_scheduled_for=dt.datetime(2026, 10, 1, tzinfo=dt.UTC),
     )
     person(email="")
-    person(tz="UTC", hour=12, email="utc@example.com")
+    person(tz="UTC", hour=12, email="utc@example.com", timezone_confirmed=False)
     assert service.send_due(local(KOLKATA, 2026, 9, 10, 18)).sent == 0
     assert service.send_due(dt.datetime(2026, 9, 10, 12, 7, tzinfo=dt.UTC)).sent == 0
     assert mailoutbox == []
+
+
+def test_a_person_who_confirmed_utc_is_mailed(flag_on, mailoutbox):
+    """Round 4: confirmation is the stored flag, not 'the zone is not the literal UTC'."""
+    person(tz="UTC", hour=12, email="utc@example.com", timezone_confirmed=True)
+    assert service.send_due(dt.datetime(2026, 9, 10, 12, 7, tzinfo=dt.UTC)).sent == 1
+    assert [m.to for m in mailoutbox] == [["utc@example.com"]]
+
+
+def test_patching_the_timezone_confirms_it_even_for_utc(user):
+    client, profile = user
+    assert client.get(f"{API}/me/reminders/").json()["timezone_confirmed"] is False
+    assert client.patch(f"{API}/me/", {"display_name": "Zed"}, format="json").status_code == 200
+    assert client.get(f"{API}/me/reminders/").json()["timezone_confirmed"] is False
+    body = client.patch(f"{API}/me/", {"timezone": "UTC"}, format="json").json()
+    assert body["timezone_confirmed"] is True
+    assert client.get(f"{API}/me/reminders/").json()["timezone_confirmed"] is True
+
+
+def test_timezone_confirmed_is_read_only(user):
+    client, _ = user
+    body = client.patch(f"{API}/me/", {"timezone_confirmed": True}, format="json").json()
+    assert body["timezone_confirmed"] is False
 
 
 def test_someone_who_practised_today_is_not_nagged(flag_on, mailoutbox):

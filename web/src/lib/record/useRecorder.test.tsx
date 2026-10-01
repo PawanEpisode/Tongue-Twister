@@ -6,6 +6,11 @@ import { DEFAULT_SETTINGS } from './settings'
 import type { Session } from './session'
 import { useRecorder } from './useRecorder'
 
+const track = vi.fn()
+vi.mock('#/lib/observability/analytics', () => ({
+  track: (...a: unknown[]) => track(...a),
+}))
+
 const dispose = vi.fn()
 let releaseOpen: (() => void) | null = null
 let holdOpen = false
@@ -18,6 +23,10 @@ const fakeSession = (): Session =>
     canReconnect: true,
     elapsed: () => 0,
     acquired: {},
+    begin: async () => undefined,
+    layout: { id: 'camera' },
+    size: { width: 1280, height: 720 },
+    mime: 'video/webm',
   }) as unknown as Session
 
 vi.mock('./session', () => ({
@@ -49,6 +58,7 @@ const options = () => ({
 
 beforeEach(() => {
   dispose.mockClear()
+  track.mockClear()
   holdOpen = false
   releaseOpen = null
 })
@@ -88,5 +98,31 @@ describe('useRecorder teardown', () => {
       await opening
     })
     expect(dispose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useRecorder analytics', () => {
+  it('reports practice_started (record) once the take has really begun', async () => {
+    const { result } = renderHook(() =>
+      useRecorder({
+        ...options(),
+        settings: { ...DEFAULT_SETTINGS, countdownS: 0 },
+      }),
+    )
+    await act(async () => {
+      await result.current.open()
+    })
+    expect(track).not.toHaveBeenCalledWith(
+      'practice_started',
+      expect.anything(),
+    )
+    await act(async () => {
+      await result.current.begin()
+    })
+    expect(result.current.state.phase).toBe('recording')
+    expect(track).toHaveBeenCalledWith('practice_started', { mode: 'record' })
+    expect(
+      track.mock.calls.filter(([n]) => n === 'practice_started'),
+    ).toHaveLength(1)
   })
 })

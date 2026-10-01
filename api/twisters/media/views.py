@@ -478,13 +478,18 @@ def voice_complete(request, asset_id):
 
 class OptionalJWTAuthentication(SupabaseJWTAuthentication):
     """Identify the caller when a valid token is sent, but treat a bad or expired one as anonymous:
-    a public page must not break because the browser holds a stale session."""
+    a public page must not break because the browser holds a stale session. An account that is pending
+    deletion is anonymous here too: a public endpoint is open to everyone, so the write-block of the
+    account (`account.pending`) must not turn it into a 403."""
 
     def authenticate(self, request):
         try:
             return super().authenticate(request)
         except AuthenticationFailed:
             return None
+
+    def accept(self, request, profile) -> bool:
+        return not profile.pending_deletion
 
 
 class PublicView(APIView):

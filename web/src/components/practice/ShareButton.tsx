@@ -16,12 +16,15 @@ export default function ShareButton({
   title,
   label = 'Share',
   ariaLabel = 'Share this twister',
+  onShared,
   ...target
 }: {
   title: string
   /** Visible text. */
   label?: string
   ariaLabel?: string
+  /** Called once the link has actually gone out: the share sheet completed, or the copy succeeded. */
+  onShared?: () => void
 } & Target) {
   const [note, setNote] = useState('')
   const say = (msg: string) => {
@@ -31,6 +34,7 @@ export default function ShareButton({
   const copy = async (url: string) => {
     await navigator.clipboard.writeText(url)
     say('Link copied')
+    onShared?.()
   }
   const share = async () => {
     let url: string
@@ -45,8 +49,10 @@ export default function ShareButton({
       return
     }
     try {
-      if (navigator.share) await navigator.share({ title, url })
-      else await copy(url)
+      if (navigator.share) {
+        await navigator.share({ title, url })
+        onShared?.()
+      } else await copy(url)
     } catch (err) {
       if (isAbort(err)) return
       // The share sheet can refuse once a slow request has used up the tap; copying still works.

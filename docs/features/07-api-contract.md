@@ -365,7 +365,7 @@ Decision D27 (`11`); build spec `16`. All paths are under `/api/v1`.
 
 | Endpoint | Auth | Behaviour |
 |---|---|---|
-| `GET /me/reminders/` | yes | `200 {"enabled": false, "hour_local": 18, "timezone": "Asia/Kolkata", "timezone_confirmed": true}`. A profile with no row reads as `enabled: false`, `hour_local: 18`. `timezone` is the profile's IANA zone (set through `PATCH /me/`); `timezone_confirmed` is `false` while it is still the `UTC` placeholder (no mail is sent in that state, so the UI should ask for the zone first). Works while the flag is off. |
+| `GET /me/reminders/` | yes | `200 {"enabled": false, "hour_local": 18, "timezone": "Asia/Kolkata", "timezone_confirmed": true}`. A profile with no row reads as `enabled: false`, `hour_local: 18`. `timezone` is the profile's IANA zone (set through `PATCH /me/`); `timezone_confirmed` is `false` until a zone has been stored through `PATCH /me/` (any zone, `UTC` included; round 4, §19) (no mail is sent in that state, so the UI should ask for the zone first). Works while the flag is off. |
 | `PUT /me/reminders/` | yes | Body `{enabled: bool, hour_local: 0-23}`, **both required** (a full replace). `200` with the same shape as `GET`. Anything else is `400 validation_error`. A profile pending deletion gets `403 account_pending_deletion` like every write. Works while the flag is off (the flag only gates *sending*). |
 | `GET /public/unsubscribe/{token}/` and `POST /public/unsubscribe/{token}/` | none | One-click unsubscribe (RFC 8058). `200 {"unsubscribed": true}`; switches `enabled` off and keeps the hour. Idempotent, so a second call and a call for an account that has since been purged answer the same `200`. A malformed or tampered token is `404 not_found`. The `POST` body (`List-Unsubscribe=One-Click`) is ignored. `Cache-Control: no-store`, `X-Robots-Tag: noindex`; throttled per IP (`unsubscribe`, 600/min, because mail providers post from shared addresses). It works for an account pending deletion. |
 
@@ -392,6 +392,36 @@ All of: flag `reminders` on for that person (allow-list / rollout apply), `enabl
 ### Deviations and notes
 
 - "Verified e-mail" is "non-blank `Profile.email`" (taken from the Supabase token; Supabase confirms addresses on sign-up). The API stores no separate verified flag.
-- Profiles whose timezone is still the `UTC` placeholder are not mailed (a wrong hour is worse than none). A person who really lives on UTC will not get reminders until a zone other than the literal `UTC` is stored; accepted for now.
+- Profiles whose timezone is still the `UTC` placeholder are not mailed (a wrong hour is worse than none). (Superseded in round 4, §19: confirmation is now the stored flag `Profile.timezone_confirmed`, so a person who confirmed the zone `UTC` is mailed.)
 - Expiry reminders from `expire_recordings` are unrelated, transactional and not affected by this preference or flag.
 
+## 19. As built (round 4) — hardening and loose ends
+
+All paths are under `/api/v1`.
+
+### CSP violation reports
+
+| Endpoint | Auth | Behaviour |
+|---|---|---|
+| `POST /csp-report/` | none | Collects browser CSP reports. Accepts `application/csp-report` (`report-uri`, `{"csp-report": {...}}`), `application/reports+json` (`report-to`, a list of `{type: "csp-violation", body}`) and `application/json`. **Always `204`**, whatever the body (malformed, wrong type, over `CSP_REPORT_MAX_BYTES` = 16 KB, which is checked from `Content-Length` before the body is read). The only exception is the per-IP throttle (`csp_report`, 60/min), which answers the usual `429`. Nothing is stored. Each report logs one warning line `csp.violation directive=<name> blocked_host=<host>`: only the directive name and the host of the blocked URI (or a keyword such as `inline`/`eval`, or `other`); never a path, query string, document URL, referrer or script sample. A Reporting API batch is read up to 10 entries. |
+
+The report-only CSP on JSON responses now ends with `report-uri /api/v1/csp-report/; report-to csp-endpoint` (each appended only if the configured `API_CSP_REPORT_ONLY` does not already name it) and the response carries `Reporting-Endpoints: csp-endpoint="/api/v1/csp-report/"`. A blank `API_CSP_REPORT_ONLY` still disables all of it. No new environment variable.
+
+### Pending-deletion accounts on public endpoints
+
+`OptionalJWTAuthentication` (used by the public report endpoint) treats a signed-in account that is pending deletion as **anonymous**, not `403 account_pending_deletion`: a public endpoint is open to everyone, so the write-block of §16 applies to the authenticated API only. Such a report is filed as an anonymous (IP-hash) report. Public `GET`s never needed this and are unchanged.
+
+### Generate Twister limits
+
+- `POST /generate/` checks the stored-twister cap right after the topic check and **before** a quota slot is taken: at `GENERATE_MAX_STORED` (default 50) private twisters it answers `409 stored_limit` with `error.details = {limit, stored}`; nothing is spent and the model is not called. Deleting a twister makes room (and still does not refund the daily quota). Under heavy concurrency one person could overshoot the cap by a request or two; this is a cost guard, not a security boundary.
+- `quota` (on `POST /generate/` and `GET /me/twisters/`) gains `stored: {limit, used, remaining}`.
+- `manage.py prune_generation_usage` (workflow allow-list, cron `19 5 * * *`) deletes `GenerationUsage` rows older than `GENERATE_USAGE_RETENTION_DAYS` (90); output `pruned=N`. Only today's row affects the quota.
+
+### Reminders and the timezone flag
+
+- New `Profile.timezone_confirmed` (boolean, default false; migration `0018_round4_timezone_confirmed`, which sets it true for existing rows whose zone is not `UTC`, so nobody loses or gains anything at deploy). `PATCH /me/` with a `timezone` sets it, including for `UTC`. `GET /me/` and `GET /me/reminders/` return it (read-only in `PATCH /me/`); the export profile section lists it.
+- `send_reminders` and the hour-of-day badges now test this flag instead of comparing the zone to the literal `UTC`, so a genuine UTC user who confirmed the zone is mailed. The web client reports the browser zone with `PATCH /me/`; an account that never did stays unconfirmed and unmailed.
+
+### Export size guard
+
+`GET /me/export/` is limited by `EXPORT_MAX_ATTEMPTS` (now documented as an env setting, default 20000) **and** `EXPORT_MAX_BYTES` (new, default 4,000,000): Vercel Functions reject response bodies over 4.5 MB. `attempts` is written after every other section and takes the remaining byte budget, newest first; when a row would not fit the array is closed and `truncated: true`. `truncated` is now the last key of the document (it is only known at the end); JSON consumers are unaffected. `schema_version` stays 1.

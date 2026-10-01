@@ -54,13 +54,23 @@ describe('loadScoreCard', () => {
       kind: 'ok',
       card: card(),
     })
-    expect(fetchCard).toHaveBeenCalledWith('t')
+    expect(fetchCard).toHaveBeenCalledWith('t', expect.any(AbortSignal))
   })
 
   it('never throws', async () => {
     const fetchCard = vi.fn().mockRejectedValue(new ApiError(410, 'gone'))
     await expect(loadScoreCard('t', fetchCard)).resolves.toEqual({
       kind: 'gone',
+    })
+  })
+
+  it('gives up on a hung API and shows the retry state', async () => {
+    const hung = (_token: string, signal?: AbortSignal) =>
+      new Promise<ScoreCardPublic>((_, reject) =>
+        signal?.addEventListener('abort', () => reject(signal.reason)),
+      )
+    await expect(loadScoreCard('t', hung, 20)).resolves.toEqual({
+      kind: 'error',
     })
   })
 })

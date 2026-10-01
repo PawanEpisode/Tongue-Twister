@@ -1,86 +1,43 @@
-import { Button } from '#/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '#/components/ui/dropdown-menu'
-import type { ThemePreference } from '#/lib/theme'
-import {
-  DAY_START_HOUR,
-  NIGHT_START_HOUR,
-  THEME_COLORS,
-  THEME_OPTIONS,
-  useTheme,
-} from '#/lib/theme'
+import { useState } from 'react'
+import type { ComponentType } from 'react'
+import { ThemeTrigger } from './ThemeMenuParts'
 
-const LABELS: Record<ThemePreference, string> = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-  reading: 'Reading',
-}
+type Impl = ComponentType<{ defaultOpen?: boolean }>
+const loadMenu = () => import('./ThemeMenuImpl').then((m) => m.default as Impl)
 
-function clockHour(hour: number) {
-  const h = hour % 12 || 12
-  return `${h}:00 ${hour < 12 ? 'am' : 'pm'}`
-}
-
-const SYSTEM_HINT = `Light ${clockHour(DAY_START_HOUR)}–${clockHour(NIGHT_START_HOUR)}, your local time`
-
-function swatchStyle(option: ThemePreference) {
-  if (option === 'system') {
-    return {
-      background: `linear-gradient(135deg, ${THEME_COLORS.light} 50%, ${THEME_COLORS.dark} 50%)`,
-    }
-  }
-  return { background: THEME_COLORS[option] }
-}
-
+/**
+ * The theme picker in the header, on every page. The dropdown library is a large chunk that only matters
+ * once someone opens the menu, so until then this renders a plain button; pointing at it or focusing it
+ * warms the chunk, and pressing it loads the real menu and opens it. If the download fails the button
+ * stays and the next press tries again.
+ */
 export default function ThemeMenu() {
-  const { preference, setPreference } = useTheme()
+  const [Menu, setMenu] = useState<Impl | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  if (Menu) return <Menu defaultOpen />
+
+  const warm = () => void loadMenu().catch(() => undefined)
+  const open = () => {
+    if (loading) return
+    setLoading(true)
+    loadMenu().then(
+      (m) => setMenu(() => m),
+      () => setLoading(false),
+    )
+  }
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label={`Theme: ${LABELS[preference]}`}
-          className="gap-2"
-        >
-          <span
-            aria-hidden
-            className="size-3 rounded-full border border-border"
-            style={swatchStyle(preference)}
-          />
-          <span className="hidden sm:inline">{LABELS[preference]}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup
-          value={preference}
-          onValueChange={(value) => setPreference(value as ThemePreference)}
-        >
-          {THEME_OPTIONS.map((option) => (
-            <DropdownMenuRadioItem key={option} value={option}>
-              <span
-                aria-hidden
-                className="size-3 shrink-0 rounded-full border border-border"
-                style={swatchStyle(option)}
-              />
-              <span>
-                {LABELS[option]}
-                {option === 'system' && (
-                  <span className="block text-xs font-normal text-muted-foreground">
-                    {SYSTEM_HINT}
-                  </span>
-                )}
-              </span>
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ThemeTrigger
+      aria-busy={loading || undefined}
+      onPointerEnter={warm}
+      onFocus={warm}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          open()
+        }
+      }}
+    />
   )
 }

@@ -29,6 +29,10 @@ type Search = {
   status?: BrowseStatus
   sort?: BrowseSort
 }
+/** A param as text; an absent or empty one is `undefined` (a bare `0` is still text). */
+const text = (v: unknown): string | undefined =>
+  v == null || v === '' ? undefined : String(v)
+
 export const Route = createFileRoute('/twisters/')({
   head: () =>
     seo({
@@ -38,10 +42,10 @@ export const Route = createFileRoute('/twisters/')({
       path: '/twisters',
     }),
   validateSearch: (s: Record<string, unknown>): Search => ({
-    difficulty: s.difficulty ? String(s.difficulty) : undefined,
-    category: s.category ? String(s.category) : undefined,
-    origin: s.origin ? String(s.origin) : undefined,
-    q: s.q ? String(s.q) : undefined,
+    difficulty: text(s.difficulty),
+    category: text(s.category),
+    origin: text(s.origin),
+    q: text(s.q),
     status: parseStatus(s.status),
     sort: parseSort(s.sort),
   }),

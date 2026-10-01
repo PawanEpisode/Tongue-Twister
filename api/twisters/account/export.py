@@ -5,6 +5,12 @@ twice. Leak-proofing is by construction: every section is an explicit whitelist 
 path)`` pairs and nothing is serialised from a model wholesale, so a field added to a model tomorrow
 (a hash, a storage path, an internal flag) stays out until someone deliberately lists it here. Every
 query starts from the caller's own rows. No media bytes are included, only metadata.
+
+Size: Vercel Functions cap a response body at 4.5 MB, so the document is held to `EXPORT_MAX_BYTES`
+(default 4 MB) as well as to `EXPORT_MAX_ATTEMPTS`. Attempts (with their per-word verdicts) are by far
+the largest section, so they are written last and take whatever the byte budget has left, newest first;
+`truncated` (also last, once it is known) says whether any were left out. Everything else is small and
+bounded by the account's own rows.
 """
 
 from __future__ import annotations
@@ -60,6 +66,7 @@ PROFILE: Spec = _same(
     "last_activity_date",
     "streak_freezes",
     "timezone",
+    "timezone_confirmed",
     "night_owl",
     "age_band",
     "hide_from_boards",
@@ -232,6 +239,23 @@ def _one(queryset: QuerySet, spec: Spec) -> dict | None:
     return next(_rows(queryset[:1], spec), None)
 
 
+class Budget:
+    """Bytes of the export written so far, against `EXPORT_MAX_BYTES`."""
+
+    TAIL = 64  # room kept for `]`, `,"truncated":false` and the closing brace
+
+    def __init__(self, limit: int):
+        self.limit = limit
+        self.used = 0
+        self.cut = False  # set when a row did not fit
+
+    def spend(self, text: str) -> None:
+        self.used += len(text.encode("utf-8"))
+
+    def fits(self, text: str) -> bool:
+        return self.used + len(text.encode("utf-8")) + self.TAIL <= self.limit
+
+
 def _attempts(profile: Profile) -> Iterator[dict]:
     """Newest first, capped at ``EXPORT_MAX_ATTEMPTS``; each carries its per-word verdicts."""
     mine = Attempt.objects.filter(profile=profile)
@@ -252,10 +276,15 @@ def _was_truncated(profile: Profile) -> bool:
     return Attempt.objects.filter(profile=profile).count() > settings.EXPORT_MAX_ATTEMPTS
 
 
-def _array(rows: Iterable[dict]) -> Iterator[str]:
+def _array(rows: Iterable[dict], budget: Budget | None = None) -> Iterator[str]:
+    """A JSON array; with a ``budget`` it ends early (and marks the budget cut) once a row would not fit."""
     yield "["
     for index, row in enumerate(rows):
-        yield ("," if index else "") + _dump(row)
+        fragment = ("," if index else "") + _dump(row)
+        if budget is not None and not budget.fits(fragment):
+            budget.cut = True
+            break
+        yield fragment
     yield "]"
 
 
@@ -263,19 +292,19 @@ def _dump(value) -> str:
     return json.dumps(value, cls=DjangoJSONEncoder, ensure_ascii=False, separators=(",", ":"))
 
 
-def _sections(profile: Profile, now: dt.datetime) -> Iterator[tuple[str, Iterable[str]]]:
+def _sections(
+    profile: Profile, now: dt.datetime, budget: Budget
+) -> Iterator[tuple[str, Iterable[str]]]:
     """(key, JSON fragments) in export order. Each fragment generator runs only when consumed."""
     own = {"profile": profile}
     me = Profile.objects.filter(pk=profile.pk)
     yield "schema_version", [_dump(SCHEMA_VERSION)]
     yield "generated_at", [_dump(now)]
-    yield "truncated", [_dump(_was_truncated(profile))]
     yield "profile", [_dump(_one(me, PROFILE))]
     yield "preferences", [_dump(_one(UserPreference.objects.filter(**own), PREFERENCES))]
     yield "reminders", [_dump(_one(ReminderPreference.objects.filter(**own), REMINDERS))]
     favourites = profile.favorites.order_by("created_at").values_list("twister__slug", flat=True)
     yield "favorites", [_dump(list(favourites))]
-    yield "attempts", _array(_attempts(profile))
     sessions = PracticeSession.objects.filter(**own).order_by("-started_at")
     yield "sessions", _array(_rows(sessions, SESSION))
     daily = DailyActivity.objects.filter(**own).order_by("local_date")
@@ -295,6 +324,19 @@ def _sections(profile: Profile, now: dt.datetime) -> Iterator[tuple[str, Iterabl
         "consents",
         _array(_rows(UserConsent.objects.filter(**own).order_by("granted_at"), CONSENT)),
     )
+    # Last, so they take what the byte budget has left; `truncated` follows because it is known only now.
+    yield "attempts", _array(_attempts(profile), budget)
+    yield "truncated", _Lazy(lambda: _dump(_was_truncated(profile) or budget.cut))
+
+
+class _Lazy:
+    """A fragment list evaluated when consumed (after the sections before it were written)."""
+
+    def __init__(self, make):
+        self.make = make
+
+    def __iter__(self):
+        yield self.make()
 
 
 def _stats(profile: Profile) -> Iterator[str]:
@@ -317,8 +359,15 @@ def _stats(profile: Profile) -> Iterator[str]:
 
 def stream(profile: Profile, now: dt.datetime) -> Iterator[str]:
     """The whole export as JSON text fragments, one top-level object."""
+    budget = Budget(settings.EXPORT_MAX_BYTES)
+    for fragment in _fragments(profile, now, budget):
+        budget.spend(fragment)
+        yield fragment
+
+
+def _fragments(profile: Profile, now: dt.datetime, budget: Budget) -> Iterator[str]:
     yield "{"
-    for index, (key, fragments) in enumerate(_sections(profile, now)):
+    for index, (key, fragments) in enumerate(_sections(profile, now, budget)):
         yield ("," if index else "") + _dump(key) + ":"
         yield from fragments
     yield "}"

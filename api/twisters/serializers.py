@@ -86,6 +86,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "current_streak",
             "best_streak",
             "timezone",
+            "timezone_confirmed",
             "age_band",
             "hide_from_boards",
             "streak_freezes",
@@ -100,7 +101,14 @@ class ProfileSerializer(serializers.ModelSerializer):
             "best_streak",
             "streak_freezes",
             "deletion_scheduled_for",
+            "timezone_confirmed",
         ]
+
+    def update(self, instance, validated_data):
+        """Saying a timezone, even `UTC`, confirms it (reminders and hour badges trust it from then on)."""
+        if "timezone" in validated_data:
+            validated_data["timezone_confirmed"] = True
+        return super().update(instance, validated_data)
 
     def validate_public_name(self, value: str) -> str:
         """Canonicalise before the model's `validate_public_name` runs (single spaces, NFC)."""

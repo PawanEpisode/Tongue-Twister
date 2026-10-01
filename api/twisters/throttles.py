@@ -86,7 +86,14 @@ class ShareReportThrottle(IpRateThrottle):
     scope = "share_report"
 
 
+class CspReportThrottle(IpRateThrottle):
+    """Browser CSP violation reports: a flood guard only, a page can fire a burst of them at once."""
+
+    scope = "csp_report"
+
+
 __all__ = [
+    "CspReportThrottle",
     "ExportThrottle",
     "GenerateThrottle",
     "AttemptSyncThrottle",

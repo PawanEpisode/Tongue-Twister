@@ -9,6 +9,7 @@ import { track } from '#/lib/observability/analytics'
 /**
  * "Share score card" on a result screen. The link is created on the first tap and reused for that
  * attempt, so tapping again (or after a cancelled share sheet) never mints a second public link.
+ * `score_card_shared` fires when the share sheet completes or the copy succeeds, not when the link is made.
  * Guests are told how to get it; unsaved results (offline, local-only) offer nothing.
  */
 export default function ScoreCardShare({
@@ -41,7 +42,6 @@ export default function ScoreCardShare({
     if (created.current?.attemptId === attemptId) return created.current.url
     const link = await api.createScoreCard(attemptId)
     created.current = { attemptId, url: link.url }
-    track('score_card_shared')
     return link.url
   }
   return (
@@ -51,6 +51,7 @@ export default function ScoreCardShare({
         label="Share score card"
         ariaLabel="Share your score card"
         resolve={resolve}
+        onShared={() => track('score_card_shared')}
       />
     </div>
   )

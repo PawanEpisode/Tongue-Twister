@@ -10,6 +10,7 @@ import { AuthProvider } from '#/lib/auth'
 import AttemptSync from '#/components/AttemptSync'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
+import MotionProvider from '#/components/MotionProvider'
 import ObservabilityInit from '#/components/ObservabilityInit'
 import { AchievementToaster } from '#/components/progress/AchievementToaster'
 import TimezoneSync from '#/components/progress/TimezoneSync'
@@ -20,6 +21,8 @@ import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
   head: () => {
+    // No canonical here: every page sets its own through `seo()` (the home page included), and an
+    // inherited home canonical would tell search engines that every other page is a copy of `/`.
     const base = seo()
     return {
       meta: [
@@ -61,7 +64,6 @@ export const Route = createRootRoute({
           sizes: '180x180',
         },
         { rel: 'manifest', href: '/manifest.webmanifest' },
-        ...base.links,
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         {
           rel: 'preconnect',
@@ -111,10 +113,12 @@ function RootLayout() {
           <TimezoneSync />
           <ObservabilityInit />
           <Header />
-          <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
-            <Outlet />
-          </main>
-          <AchievementToaster />
+          <MotionProvider>
+            <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
+              <Outlet />
+            </main>
+            <AchievementToaster />
+          </MotionProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

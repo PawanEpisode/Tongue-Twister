@@ -9,7 +9,7 @@ import {
   unsubscribe,
 } from './api'
 
-vi.mock('#/lib/supabase', () => ({ supabase: null }))
+vi.mock('#/lib/supabase', () => ({ getAccessToken: async () => null }))
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status })
 afterEach(() => vi.unstubAllGlobals())

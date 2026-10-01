@@ -1,5 +1,5 @@
 import { ApiError } from '#/lib/api'
-import { supabase } from '#/lib/supabase'
+import { getAccessToken } from '#/lib/supabase'
 
 /**
  * The only file that knows the wire shape of the reminders API (spec 16 section 2, D27). If api-rem's
@@ -19,11 +19,8 @@ async function call(
   const headers = new Headers(init.headers)
   if (init.body) headers.set('Content-Type', 'application/json')
   if (auth) {
-    const { data } = (await supabase?.auth.getSession()) ?? {
-      data: { session: null },
-    }
-    if (data.session)
-      headers.set('Authorization', `Bearer ${data.session.access_token}`)
+    const token = await getAccessToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
   }
   const res = await fetch(`${BASE}/api/v1${path}`, { ...init, headers })
   if (!res.ok) {

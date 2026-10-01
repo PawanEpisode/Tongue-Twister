@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import views
+from . import csp_report, views
 from .account import views as account
 from .generate import views as generate
 from .media import views as media
@@ -58,6 +58,7 @@ urlpatterns = [
     path("internal/media/<uuid:asset_id>/processed/", media.media_processed),
     path("engine/manifest/", speak.engine_manifest),
     path("internal/scoring-jobs/<uuid:job_id>/result/", speak.scoring_job_result),
+    path("csp-report/", csp_report.csp_report, name="csp-report"),
     path("flags/", practice.feature_flags),
     path("sync/guest/", practice.sync_guest),
     path("", include(router.urls)),

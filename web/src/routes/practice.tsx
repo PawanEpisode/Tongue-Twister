@@ -31,7 +31,7 @@ export const Route = createFileRoute('/practice')({
     }),
   // /practice?drill=1 starts a drill of the weakest words straight away (linked from the results screen).
   validateSearch: (raw: Record<string, unknown>): { drill?: 1 } =>
-    Number(raw.drill) === 1 || raw.drill === true ? { drill: 1 } : {},
+    Number(raw.drill) === 1 || raw.drill === 'true' ? { drill: 1 } : {},
   component: PracticePage,
 })
 

@@ -3,7 +3,7 @@ import { BarChart3, Flame, Star, Tornado, UserRound } from 'lucide-react'
 import PendingDeletionBanner from '#/components/account/PendingDeletionBanner'
 import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
-import { supabase } from '#/lib/supabase'
+import { signOut } from '#/lib/supabase'
 import ThemeMenu from '#/components/ThemeMenu'
 import { useFlag } from '#/lib/flags'
 import { useSummary } from '#/lib/progress/useSummary'
@@ -140,7 +140,7 @@ export default function Header() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => supabase?.auth.signOut()}
+                onClick={() => void signOut()}
               >
                 Sign out
               </Button>

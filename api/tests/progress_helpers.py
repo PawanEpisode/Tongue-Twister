@@ -24,6 +24,9 @@ def at(year=2026, month=9, day=1, hour=12, minute=0) -> dt.datetime:
 
 def new_profile(**over) -> Profile:
     over.setdefault("id", uuid.uuid4())
+    over.setdefault(
+        "timezone_confirmed", over.get("timezone", "UTC") != "UTC"
+    )  # as a browser would
     return Profile.objects.create(**over)
 
 

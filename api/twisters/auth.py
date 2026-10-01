@@ -65,8 +65,14 @@ class SupabaseJWTAuthentication(BaseAuthentication):
                 )[:40],
             },
         )
-        pending.guard(request, profile)
+        if not self.accept(request, profile):
+            return None
         return profile, claims
+
+    def accept(self, request, profile: Profile) -> bool:
+        """Whether this profile may act on this request; raises when a pending account is blocked."""
+        pending.guard(request, profile)
+        return True
 
     def authenticate_header(self, request):
         return "Bearer"

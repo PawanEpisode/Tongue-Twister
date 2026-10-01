@@ -4,7 +4,7 @@ Selection, per run (hourly at :07):
 
 * the flag ``reminders`` is on for that person, the preference is ``enabled``, the account is not pending
   deletion (``active_profile_q``) and has an e-mail address, and the profile's timezone has been
-  confirmed (``localtime.timezone_confirmed``: a profile still on the ``UTC`` placeholder would be mailed
+  confirmed (``Profile.timezone_confirmed``, set by ``PATCH /me/``: a profile that never reported its zone would be mailed
   at the wrong hour);
 * the profile's **wall-clock** hour (``localtime.local_hour``) equals ``hour_local``. The hour check is
   deliberately the real clock, not the night-owl streak day: "send at 21:00" means 21:00. Night owl only

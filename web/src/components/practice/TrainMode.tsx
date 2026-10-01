@@ -1,5 +1,5 @@
 import { Check, PartyPopper, Turtle, Volume2 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Button } from '#/components/ui/button'
 import type { Preferences, Twister } from '#/lib/api'
@@ -156,7 +156,7 @@ export default function TrainMode({
         aria-label="Training progress"
         className="mx-auto mt-2 h-1.5 max-w-md overflow-hidden rounded-full bg-card"
       >
-        <motion.div
+        <m.div
           className="h-full bg-gradient-to-r from-primary to-pink"
           animate={{ width: `${(index / plan.length) * 100}%` }}
         />

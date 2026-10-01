@@ -1,6 +1,6 @@
 """Generate a private twister for one person (D24-D26). Views validate and shape; everything else is here.
 
-Order, so the cheap and the safe checks come first: topic check, quota slot, generator, output
+Order, so the cheap and the safe checks come first: topic check, stored-twister cap, quota slot, generator, output
 validation, then one insert. Nothing is stored for a rejected result, and a provider failure hands the
 quota slot back.
 """
@@ -11,6 +11,7 @@ import datetime as dt
 import logging
 import secrets
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -58,12 +59,14 @@ def generate(
     now: dt.datetime | None = None,
 ) -> Twister:
     """The new private twister, or an `ApiProblem`: 403 minor_not_allowed, 422 generation_rejected,
-    429 generation_limit, 503 generator_unavailable."""
+    409 stored_limit, 429 generation_limit, 503 generator_unavailable."""
     now = now or timezone.now()
     if profile.age_band == AgeBand.UNDER13:  # no child's text goes to a third-party model
         raise errors.minor_not_allowed("Twister generation is for people aged 13 or older.")
     if not topic.is_allowed(topic_text):
         raise errors.generation_rejected("topic_not_allowed")
+    if not quota.has_room(profile):  # before a slot is taken: a refusal must cost nothing
+        raise errors.stored_limit(settings.GENERATE_MAX_STORED, quota.stored_count(profile))
     if not quota.reserve(profile, now):
         current = quota.status(profile, now)
         raise errors.generation_limit(current.limit, current.used, current.resets_at)

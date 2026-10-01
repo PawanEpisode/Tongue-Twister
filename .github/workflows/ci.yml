@@ -22,6 +22,48 @@ jobs:
       - run: npm run lint
       - run: npm run check
       - run: npm test
+      - run: npm run test:scripts
+      - run: npm run build
+      - run: npm run size
+
+  # Playwright functional + CSP + axe specs against the mock API (docs/runbooks/web-ci.md).
+  # It builds its own .output, so it does not reuse the web job's build.
+  web-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+      # Cache hit: browsers are present but system libraries are not, so install deps only.
+      - run: npm run e2e:install
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+      - run: npm run test:e2e
+      - run: npm run test:a11y
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+            web/e2e/.results
+          retention-days: 7
+          if-no-files-found: ignore
 
   api:
     runs-on: ubuntu-latest

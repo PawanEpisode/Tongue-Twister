@@ -108,6 +108,17 @@ def generation_limit(limit: int, used: int, resets_at) -> ApiProblem:
     )
 
 
+def stored_limit(limit: int, stored: int) -> ApiProblem:
+    """409: the person already keeps `GENERATE_MAX_STORED` private twisters; deleting one frees a place.
+    Nothing is spent: no quota slot is taken and the model is not called."""
+    return ApiProblem(
+        status.HTTP_409_CONFLICT,
+        "stored_limit",
+        "You have reached the limit of saved twisters. Delete one to make a new one.",
+        {"limit": limit, "stored": stored},
+    )
+
+
 def generation_rejected(reason: str) -> ApiProblem:
     """422: the request or the generated text did not pass the safety checks (D26). `details.reason` is a
     stable machine code; the message never echoes the user's text or the model's output."""

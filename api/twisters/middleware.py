@@ -2,6 +2,7 @@ import re
 import uuid
 
 from django.conf import settings
+from django.urls import reverse
 
 from . import observability
 
@@ -23,6 +24,23 @@ class RequestIdMiddleware:
         return response
 
 
+REPORT_GROUP = "csp-endpoint"
+
+
+def report_path() -> str:
+    return reverse("csp-report")
+
+
+def with_reporting(policy: str) -> str:
+    """`policy` plus the report directives, unless the configured policy already names its own."""
+    extra = [
+        f"{name} {value}"
+        for name, value in (("report-uri", report_path()), ("report-to", REPORT_GROUP))
+        if name not in policy
+    ]
+    return "; ".join([policy.rstrip("; "), *extra])
+
+
 class ApiResponseHeadersMiddleware:
     """Default response headers for the JSON API (spec 15 §2.3).
 
@@ -30,7 +48,9 @@ class ApiResponseHeadersMiddleware:
       unless the view already chose a Cache-Control (the explicit public caches stay untouched).
     * `Content-Security-Policy-Report-Only` (`API_CSP_REPORT_ONLY`, blank disables) on JSON responses
       only, so the admin and other HTML are not affected. A JSON API needs no script, frame or
-      subresource, so `default-src 'none'` is accurate; report-only because nothing consumes it yet.
+      subresource, so `default-src 'none'` is accurate; report-only until the reports (collected by
+      `POST /csp-report/`, see `twisters.csp_report`) show nothing unexpected. `report-uri` and
+      `report-to` (with its `Reporting-Endpoints` header) are appended to the configured policy.
     """
 
     def __init__(self, get_response):
@@ -48,5 +68,6 @@ class ApiResponseHeadersMiddleware:
             and response.get("Content-Type", "").startswith("application/json")
             and not response.has_header("Content-Security-Policy-Report-Only")
         ):
-            response["Content-Security-Policy-Report-Only"] = policy
+            response["Content-Security-Policy-Report-Only"] = with_reporting(policy)
+            response["Reporting-Endpoints"] = f'{REPORT_GROUP}="{report_path()}"'
         return response

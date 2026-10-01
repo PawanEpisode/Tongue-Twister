@@ -7,14 +7,7 @@ import {
   normaliseList,
 } from './api'
 
-vi.mock('#/lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: () =>
-        Promise.resolve({ data: { session: { access_token: 'tok' } } }),
-    },
-  },
-}))
+vi.mock('#/lib/supabase', () => ({ getAccessToken: async () => 'tok' }))
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))

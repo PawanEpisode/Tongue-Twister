@@ -2,6 +2,7 @@
 
 import datetime as dt
 import hashlib
+import uuid
 
 import pytest
 from django.utils import timezone
@@ -10,6 +11,7 @@ from twisters.media import moderation
 from twisters.models import (
     FeatureFlag,
     ModerationReport,
+    Profile,
     Recording,
     ReportStatus,
     ShareLink,
@@ -363,3 +365,21 @@ def test_score_card_gone_when_the_attempt_is_deleted(cloud_user, anon):
     token = token_of(client.post(f"{API}/attempts/{attempt}/score-card/"))
     client.delete(f"{API}/attempts/{attempt}/")
     assert public(anon, token, kind="s").status_code == 410
+
+
+def test_a_pending_deletion_account_reporting_is_anonymous_not_403(shared, anon, auth_client):
+    """Round 4: the pending-account write block must not reach public endpoints."""
+    token = token_of(shared[3])
+    sub = str(uuid.uuid4())
+    client = auth_client(sub)
+    client.get(f"{API}/me/")
+    Profile.objects.filter(pk=sub).update(
+        deletion_requested_at=dt.datetime(2026, 9, 1, tzinfo=dt.UTC),
+        deletion_scheduled_for=dt.datetime(2026, 10, 1, tzinfo=dt.UTC),
+    )
+    blocked = client.put(f"{API}/me/reminders/", {"enabled": False, "hour_local": 9}, format="json")
+    assert blocked.status_code == 403  # the authenticated API stays blocked
+    r = client.post(f"{API}/public/r/{token}/report/", {"reason": "spam"}, format="json")
+    assert r.status_code == 201
+    assert ModerationReport.objects.get().reporter is None
+    assert public(client, token).status_code == 200

@@ -1,6 +1,6 @@
 import { ApiError } from '#/lib/api'
 import type { Twister } from '#/lib/api'
-import { supabase } from '#/lib/supabase'
+import { getAccessToken } from '#/lib/supabase'
 
 /**
  * The only file that knows the wire shape of the Generate Twister API (spec 16 section 2).
@@ -22,11 +22,8 @@ export type GeneratedTwister = Twister & { id: number }
 async function call(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers)
   if (init.body) headers.set('Content-Type', 'application/json')
-  const { data } = (await supabase?.auth.getSession()) ?? {
-    data: { session: null },
-  }
-  if (data.session)
-    headers.set('Authorization', `Bearer ${data.session.access_token}`)
+  const token = await getAccessToken()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
   const res = await fetch(`${BASE}/api/v1${path}`, { ...init, headers })
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {

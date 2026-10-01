@@ -124,6 +124,9 @@ The user's topic is data: control and invisible characters are stripped, it is c
 ## D31 - One generated vector file pins both runtimes
 `api/tests/fixtures/engine_vectors.json` is written by `python -m tests.engine_vector_gen` and a Python test fails when it is stale. TypeScript must match every verdict, status, span and score exactly and floats within 2e-3. Changing an algorithm means regenerating the file in the same change and passing both suites.
 
+## D32 - Reminders are email only; web-push and NotificationChannel are dropped
+The 06d plan listed `NotificationChannel`, `PUT /me/notifications/` and web-push. They are dropped: D27's `ReminderPreference` plus a one-click unsubscribe covers the need with one channel, no service worker, no push subscriptions to store or expire, and no extra consent surface. Revisit only if e-mail open rates show reminders are not landing and users ask for push.
+
 ---
 
 ## Still genuinely open (need real data, not more docs)

@@ -26,16 +26,16 @@ Machines where `playwright install` cannot download a browser: set `E2E_CHROMIUM
 - `modes`: Read along, Speak, Record, back, asserting zero live media tracks after each switch (streams from `getUserMedia`, `getDisplayMedia`, `canvas.captureStream` and the audio graph are tracked by `e2e/support/media.ts`).
 - `record`: fake camera, camera_text layout, a 2 second take, review screen, Download enabled, camera released.
 - `offline`: offline during Speak; the take is scored locally and written to the guest queue (`twister.guest.v1`). Signed-in offline queueing (`twister.attempts.v1`) needs a session and is covered by the Vitest suite (`attemptQueue.test.ts`), not here.
-- `a11y`: axe on home, browse, twister (read / speak / record), stats, favorites, login, in light and dark. Fails on `serious` and `critical` only. Animations are reduced (`reducedMotion: 'reduce'`) so mid-animation colours are not measured.
+- `a11y`: axe on home, browse, twister (read / speak / record), stats, favorites, login, shared score card, in light and dark. Fails on `serious` and `critical` only. Animations are reduced (`reducedMotion: 'reduce'`) so mid-animation colours are not measured.
 - `csp`: see below.
 
 ### Known accessibility findings
 
-`e2e/known-a11y.json` lists pre-existing findings that need a design decision. Each entry excludes one rule on one selector and carries a reason; never disable a rule wholesale. Fix the issue, then delete the entry.
+`e2e/known-a11y.json` lists pre-existing findings that need a design decision. Each entry excludes one rule on one selector and carries a reason; never disable a rule wholesale. Fix the issue, then delete the entry. The list is empty as of Round 4.
 
 ## Adding the commands to CI
 
-`.github/workflows/ci.yml` belongs to the api-ops agent in Round 1. The web side is these commands; wire them like this.
+**Wired in Round 4** in `.github/workflows/ci.yml` (the YAML below is what is there; the e2e job also caches `~/.cache/ms-playwright` keyed on `web/package-lock.json` and uploads `web/test-results` as well). Keep this section and the workflow in step.
 
 In the existing `web` job, after `npm test`:
 
@@ -98,7 +98,7 @@ The `csp` spec loads the built app with the production policy added to every doc
 1. Open the site in Chrome, DevTools → Console, filter "Content Security Policy" (report-only messages say "[Report Only]"). Or `Issues` tab → "Content security policy".
 2. Walk the main flows signed in: sign in with email and with Google, Practice (all four modes), Record with cloud save, `/recordings`, a public `/r/<token>` page.
 3. Every message names the blocked URL and the directive. A third-party host you want: add it to that directive. Something you do not recognise: find where it comes from before allowing it.
-4. There is no reporting endpoint yet. If you want one later, add `report-uri` / `report-to` and a collector; not needed for a solo operator.
+4. Round 4 adds a CSP report endpoint on the API (see the api-fix notes in `docs/features/12-implementation-status.md`); wiring `report-uri` in `vercel.json` to it is the remaining step.
 
 ### Flipping to enforcing
 
@@ -111,10 +111,15 @@ The `csp` spec loads the built app with the production policy added to every doc
 
 `scripts/check-bundle-size.mjs` reads the Nitro build (`.output`): the TanStack Start manifest lists the chunks each route preloads; the script adds everything those chunks statically import, gzips each (level 9) and sums. Dynamic imports (the Record-mode chunk, Lottie, confetti, tus) are not first load. Budgets live in `bundle-budget.json`: `maxGzipKB` per route is the enforced ratchet, `targetGzipKB` is the product target (doc 00 §6.3: 180 KB for the Practice Hub).
 
-State on 2026-10-01: Practice Hub 313.0 KB, Home 278.1 KB, both **above the 180 KB target**; the ratchet is current + 5 %. When a change makes a route smaller, lower its `maxGzipKB`. Never raise it to make a build pass.
+State on 2026-10-01 after Round 4: Home 193.1 KB, Practice Hub 230.1 KB (before: 282.1 and 318.9), both still **above the 180 KB target**; the ratchet is current + 5 % (203 and 242). When a change makes a route smaller, lower its `maxGzipKB`. Never raise it to make a build pass.
 
-Top contributors to first load (gzip): app entry chunk 139 KB (`react-dom` ~202 KB raw, TanStack Router core ~51 KB, seroval ~24 KB, radix menu/floating-ui), `@supabase/supabase-js` 53 KB (auth-js, realtime, storage, postgrest), `motion` 39 KB, route chunk 25 KB, preferences 11 KB.
-Cheap wins, not done in Round 1: load Supabase lazily or use only `@supabase/auth-js` (the app uses auth only; realtime, storage and postgrest are dead weight, roughly 25-30 KB gz); switch to `LazyMotion` with `domAnimation` and the `m` component (roughly 15-20 KB gz); lazy-load the dropdown menu (radix menu + floating-ui, roughly 10 KB gz). These three would still leave the Practice Hub near 240 KB; reaching 180 KB needs a decision on the router/SSR payload too.
+What Round 4 changed, and the rules that keep it small:
+
+- `@supabase/supabase-js` (~53 KB gz) is a dynamic import in `src/lib/supabase.ts`. Guests never load it: `AuthProvider` and `getAccessToken()` only load it when `mayHaveSession()` finds a stored session (`sb-*-auth-token*` in localStorage, which includes a PKCE verifier mid sign-in) or a sign-in redirect in the URL, and the login page and Sign out load it on use. Never `import { createClient }` or a runtime value from `@supabase/supabase-js` anywhere else (`import type` is fine).
+- Animations use `m` from `motion/react` inside `LazyMotion` + `domAnimation` (`components/MotionProvider.tsx`, `strict`). Do not import `motion` for components; drag and layout animation would need `domMax`.
+- The Radix dropdown (~27 KB gz) is behind `ThemeMenu` (a plain button until pressed, then the real menu from `ThemeMenuImpl`). Other dropdowns live in route chunks; keep `ui/dropdown-menu` out of anything the header or root imports.
+
+Remaining first-load: the app entry chunk (~135 KB gz: `react-dom`, TanStack Router core, seroval, query), then small shared chunks. Reaching 180 KB needs a decision on the router/SSR payload.
 
 ## Observability (Round 2, D28)
 
