@@ -29,6 +29,14 @@ describe('achievement icons', () => {
     expect(ACHIEVEMENT_ICON_NAMES).toContain('lock')
   })
 
+  it('maps the night owl and early bird icons', () => {
+    expect(ACHIEVEMENT_ICON_NAMES).toEqual(
+      expect.arrayContaining(['moon', 'sunrise']),
+    )
+    expect(achievementIcon('moon')).not.toBe(achievementIcon('medal'))
+    expect(achievementIcon('sunrise')).not.toBe(achievementIcon('medal'))
+  })
+
   it('falls back to a real icon for an unknown name', () => {
     expect(achievementIcon('definitely-not-an-icon')).toBe(
       achievementIcon('medal'),

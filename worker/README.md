@@ -18,7 +18,7 @@ run one Linux container and reach the API over HTTPS will do.
 
 ## API contract it relies on (build spec A2.2)
 
-All calls are `POST` with a JSON body and `X-Worker-Signature: sha256=<hex HMAC-SHA256(secret, raw_body)>`,
+All calls are `POST` with a JSON body, `X-Worker-Timestamp: <unix seconds>` and `X-Worker-Signature: sha256=<hex HMAC-SHA256(secret, "<timestamp>." + raw_body)>` (signed afresh on every retry; the API rejects clock skew over 300 s),
 relative to `API_BASE_URL` (which **includes** `/api/v1`).
 
 | Call | Body | Notes |
@@ -75,10 +75,9 @@ The worker listens on no port; it only makes outbound HTTPS calls. Set `API_BASE
   Dockerfile path `./Dockerfile`. Start with the Starter plan (0.5 CPU / 512 MB) and set
   `FFMPEG_THREADS=1`; move to 1-2 vCPU for 1080p. Render sends SIGTERM and waits 30 s, so keep
   `SHUTDOWN_GRACE_S` below that.
-- **Fly.io**: `fly launch --no-deploy` in `worker/`, then in `fly.toml` remove the `[http_service]`
-  section, add `[processes] worker = "python -m twister_worker"` and
-  `[[vm]] size = "shared-cpu-2x" memory = "1gb"`, set `kill_timeout = 30`, then `fly secrets set ...`
-  and `fly deploy`. Fly's default SIGTERM wait is short; raise `kill_timeout` as above.
+- **Fly.io**: follow `docs/runbooks/worker-deploy-fly.md` (app create, secrets, `fly deploy --ha=false`, smoke test
+  `scripts/smoke.sh`, rollback). `fly.toml` already has no `[http_service]`, `kill_signal`/`kill_timeout` for graceful
+  stops, and 1 shared vCPU / 1 GB. Fly ignores the Dockerfile `HEALTHCHECK`.
 - **Cloud Run**: use a *worker pool* (or a service with `--no-cpu-throttling`, `--min-instances=1`
   and an unused port; a plain request-driven service will be throttled between requests and is a
   poor fit). Use 2 vCPU / 2 GiB, `--max-instances` to cap cost, and a task/pool timeout above

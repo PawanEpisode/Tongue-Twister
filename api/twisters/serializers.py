@@ -46,6 +46,7 @@ class TwisterSerializer(serializers.ModelSerializer):
             "tip",
             "focus_sounds",
             "word_count",
+            "visibility",
             "is_favorite",
             "best_score",
             "mastery",
@@ -88,6 +89,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             "age_band",
             "hide_from_boards",
             "streak_freezes",
+            "night_owl",
+            "deletion_scheduled_for",
         ]
         read_only_fields = [
             "id",
@@ -96,6 +99,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "current_streak",
             "best_streak",
             "streak_freezes",
+            "deletion_scheduled_for",
         ]
 
     def validate_public_name(self, value: str) -> str:

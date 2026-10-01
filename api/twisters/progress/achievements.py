@@ -20,6 +20,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from ..localtime import local_hour, timezone_confirmed
 from ..models import (
     SCORE_VERSION_CURRENT,
     Achievement,
@@ -32,6 +33,7 @@ from ..models import (
     RecordingStatus,
     Twister,
     UserAchievement,
+    public_twister_q,
 )
 from ..practice import flags
 from ..speak import trust
@@ -133,11 +135,11 @@ class Facts:
     def category_coverage(self) -> tuple[int, int]:
         """(categories tried, categories that have a published twister)."""
         wanted = set(
-            Category.objects.filter(twisters__is_published=True).values_list("pk", flat=True)
+            Category.objects.filter(public_twister_q("twisters__")).values_list("pk", flat=True)
         )
         tried = set(
             self._attempts()
-            .filter(twister__is_published=True, twister__category__isnull=False)
+            .filter(public_twister_q("twister__"), twister__category__isnull=False)
             .values_list("twister__category_id", flat=True)
             .distinct()
         )
@@ -291,6 +293,23 @@ def _score_gain(facts: Facts, criteria: dict, *, verified: bool) -> Outcome:
         and previous is not None
         and attempt.score - previous >= criteria["min"]
     )
+
+
+def _hour_in_window(hour: int, start: int, end: int) -> bool:
+    """``start <= hour < end`` on a 24-hour clock; a window with ``start > end`` wraps midnight."""
+    return start <= hour < end if start <= end else hour >= start or hour < end
+
+
+@rule("attempt_local_hour", events={ATTEMPT})
+def _attempt_local_hour(facts: Facts, criteria: dict, *, verified: bool) -> Outcome:
+    """The attempt was made inside a window of the user's *own* clock. A profile whose timezone is
+    still the unconfirmed default would be judged on UTC, which would hand out Night Owl and Early
+    Bird to the wrong people, so those profiles never qualify until a real zone is stored."""
+    attempt = _scoring_attempt(facts, criteria, verified)
+    if attempt is None or not timezone_confirmed(facts.profile):
+        return Outcome(met=False)
+    hour = local_hour(facts.profile, attempt.created_at)
+    return Outcome(met=_hour_in_window(hour, criteria["from"], criteria["to"]))
 
 
 # --- evaluation ------------------------------------------------------------------------------------

@@ -88,6 +88,45 @@ def feature_disabled(message: str = "This feature is not available right now.") 
     return ApiProblem(status.HTTP_403_FORBIDDEN, "feature_disabled", message)
 
 
+def account_pending_deletion(scheduled_for) -> ApiProblem:
+    """403: the account is in its deletion grace period (D21), so only reads, export and cancel work."""
+    return ApiProblem(
+        status.HTTP_403_FORBIDDEN,
+        "account_pending_deletion",
+        "This account is scheduled for deletion. Cancel the deletion to keep using it.",
+        {"scheduled_for": scheduled_for.isoformat() if scheduled_for else None},
+    )
+
+
+def generation_limit(limit: int, used: int, resets_at) -> ApiProblem:
+    """429: today's generation quota is spent (D26). `details` says when it comes back."""
+    return ApiProblem(
+        status.HTTP_429_TOO_MANY_REQUESTS,
+        "generation_limit",
+        "You have used today's twister generations. Try again tomorrow.",
+        {"limit": limit, "used": used, "resets_at": resets_at.isoformat()},
+    )
+
+
+def generation_rejected(reason: str) -> ApiProblem:
+    """422: the request or the generated text did not pass the safety checks (D26). `details.reason` is a
+    stable machine code; the message never echoes the user's text or the model's output."""
+    return ApiProblem(
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "generation_rejected",
+        "We could not make a suitable twister from that. Try a different topic.",
+        {"reason": reason},
+    )
+
+
+def generator_unavailable() -> ApiProblem:
+    return ApiProblem(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "generator_unavailable",
+        "The twister generator is not available right now. Try again in a moment.",
+    )
+
+
 def dependency_unavailable(message: str = "A required service is not available.") -> ApiProblem:
     return ApiProblem(status.HTTP_503_SERVICE_UNAVAILABLE, "dependency_unavailable", message)
 

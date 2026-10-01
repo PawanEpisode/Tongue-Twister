@@ -17,7 +17,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from ..models import Profile, Recording, RecordingStatus
+from ..models import Profile, Recording, RecordingStatus, active_profile_q
 
 log = logging.getLogger(__name__)
 
@@ -56,6 +56,7 @@ def remind_expiring(now: dt.datetime | None = None) -> int:
             reminder_sent_at__isnull=True,
             profile__email__gt="",
         )
+        .filter(active_profile_q("profile__"))
         .select_related("profile", "twister")
         .order_by("expires_at")
     )

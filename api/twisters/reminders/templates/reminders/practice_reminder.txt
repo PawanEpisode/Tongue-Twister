@@ -1,0 +1,13 @@
+{% autoescape off %}Hi{% if name %} {{ name }}{% endif %},
+
+{% if streak %}Your {{ streak }}-day streak is waiting for today's practice.{% else %}A few minutes of tongue twisters is all it takes to get today going.{% endif %} One scored attempt is enough.
+
+Practise now:
+{{ practice_url }}
+
+You asked for a daily reminder at this time. Change the hour or turn it off in your account settings:
+{{ settings_url }}
+
+Unsubscribe with one click:
+{{ unsubscribe_url }}
+{% endautoescape %}

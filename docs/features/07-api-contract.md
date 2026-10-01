@@ -287,3 +287,111 @@ Spec: `14-06d-build-spec.md`. Decisions: D16–D19 in `11`. Shapes below are wha
 - `LeaderboardEntry` has an extra `built_at` column. Hourly rebuild: `build_leaderboard` (cron `37 * * * *` in `manage-command.yml`).
 - Seed flags: `achievements` on, `weekly_boards` off.
 - Achievements are evaluated in-request inside a savepoint; errors are logged and swallowed (D19). Unlocks are never auto-revoked.
+
+## 16. As built (round 1) — score cards, account deletion and export, night owl
+
+Decisions D20-D23 (`11`); build spec `15`. All paths are under `/api/v1`.
+
+### New endpoints
+
+| Endpoint | Auth | Behaviour |
+|---|---|---|
+| `GET /public/s/{token}/image.png?size=og\|square` | no | The score-card picture (PNG). `og` = 1200x630 (default), `square` = 1080x1080; any other `size` is `400 validation_error`. Resolved by the same function as `GET /public/s/{token}/`, so `404` (unknown token or a recording token), `410` (expired, revoked, held, attempt deleted) and `403 feature_disabled` (`score_cards` off) match it exactly. `200` carries `Content-Type: image/png`, `Cache-Control: public, max-age=3600` (`SCORE_CARD_IMAGE_MAX_AGE_S`), a strong `ETag` (hash of the picture's inputs plus a render version), `X-Robots-Tag: noindex, nofollow`; `If-None-Match` (`*`, a list, weak forms) gets `304` without rendering. Errors are `no-store`. `Accept` is ignored (an `<img>` or a crawler never gets a 406). Does not count as a view. Throttled by `share_resolve` (60/min/IP). |
+| `GET /me/export/` | yes | `200 application/json` download `twister-export-YYYYMMDD.json`, `Cache-Control: private, no-store`, throttle `export` 3/hour/user (`429 rate_limited`). Body `{schema_version:1, generated_at, truncated, profile, preferences\|null, favorites:[slug], attempts:[{id,twister,kind,transcript,accuracy,speed_score,fluency_score,completeness,duration_ms,long_pause_ms,wpm,score,score_version,xp_awarded,is_personal_best,breakdown,created_at,words:[{target_index,spoken_index,target_word,spoken_word,status,reason,credit,start_ms,end_ms}]}], sessions, daily_activity, stats:{twisters,words,phonemes}, achievements:[{code,unlocked_at}], recordings:[metadata only], consents:[{type,version,granted_at,revoked_at}]}`. Streamed in chunks (`EXPORT_CHUNK_SIZE`); at most `EXPORT_MAX_ATTEMPTS` attempts, newest first. Never contains other users' data, token hashes, `ip_hash`, storage buckets/paths, signed URLs, nonces, audio hashes or worker/scoring internals (explicit whitelists in `account/export.py`). |
+| `DELETE /me/` | yes | Body `{"confirm":"DELETE"}` (anything else `400`). `202 {deletion_requested_at, deletion_scheduled_for}`; asking again while pending returns the same dates. |
+| `DELETE /me/deletion/` | yes | Cancel. `200 {deletion_requested_at:null, deletion_scheduled_for:null}`; idempotent; allowed until the purge runs, even after the scheduled date. (Chosen over `POST /me/deletion/cancel/`.) |
+
+### Changed existing contracts
+
+- `GET /public/s/{token}/` gains `owner: {"display_name": <public_name or null>}` (never the account name or e-mail) and `images: {"og","square"}` (absolute URLs from `API_PUBLIC_URL`; the key is omitted while that is unset).
+- Score-card endpoints (`POST /attempts/{id}/score-card/`, both public ones) check flag `score_cards`; `share_links` is for recordings only.
+- `GET/PATCH /me/`: `night_owl` (writable), `deletion_scheduled_for` (read-only, `null` unless pending). `GET /me/summary/` carries `night_owl` and `deletion_scheduled_for`; `today` is the night-owl-shifted streak day.
+- **Pending accounts**: in the authentication step, a profile with `deletion_requested_at` may use safe methods, `DELETE /me/`, `DELETE /me/deletion/` and `GET /me/export/`; every other write (including `PATCH /me/`) is `403 account_pending_deletion` with `error.details.scheduled_for`.
+- Boards (weekly and per twister) and expiry reminders exclude pending profiles through `Profile.objects.active()` / `models.active_profile_q(prefix)`.
+- Catalogue is 27: `night_owl` "Night Owl" and `early_bird` "Early Bird" (bronze, skill, icons `moon`/`sunrise`, 20 XP, rule `attempt_local_hour` with `from`/`to` hours, `to` exclusive, wraps midnight). Both need `timezone != "UTC"`.
+
+### Jobs, settings, migrations
+
+- `manage.py purge_deleted_accounts` (workflow allow-list, cron `53 * * * *`): per due profile, in one transaction, media objects first (`recordings.purge_all_media`, the same passes as `expire_recordings`), then the Profile (cascade), then `AuthAdmin.delete_user` (`DELETE {SUPABASE_URL}/auth/v1/admin/users/{id}`, a 404 counts as success; with no `SUPABASE_SERVICE_ROLE_KEY` it logs a warning and skips). Any failure rolls that account back to pending; the next run retries. Output `purged=N, deferred=N, skipped=N`.
+- New settings: `API_PUBLIC_URL`, `SCORE_CARD_IMAGE_MAX_AGE_S`, `ACCOUNT_DELETION_GRACE_DAYS` (30), `EXPORT_MAX_ATTEMPTS` (20000), `EXPORT_CHUNK_SIZE` (500), `NIGHT_OWL_CUTOFF_HOUR` (3); throttle rate `export` = `3/h`. New dependency: `pillow`.
+- Migrations: `0014_account_night_owl_schema` (`Profile.night_owl`, `deletion_requested_at`, `deletion_scheduled_for`, CHECK `profile_deletion_window`: both null, or both set with scheduled >= requested) and `0015_round1_seeds` (flag `score_cards` on; the two badges). Schema and seeds are separate (same reason as 0007/0008, 0012/0013); both reverse cleanly with data present (tests in `tests/test_round1_migrations.py`). Deploy order: migrate, then API, then set `API_PUBLIC_URL`; add the `purge_deleted_accounts` cron (already in `manage-command.yml`).
+
+### Deviations and notes
+
+- Score-card fonts (DejaVu Sans, Sans Bold, Bitstream Vera licence, redistribution allowed) are bundled in `twisters/assets/fonts/` with `LICENSE.txt`.
+- Night owl SQL bucketing (stats charts) shifts by a fixed duration, so on the two DST-change nights a chart can put an attempt next to the boundary on the neighbouring day; streaks use exact wall-clock arithmetic and are unaffected.
+- Links revoked by a deletion request stay revoked after a cancel.
+- Export is streamed; serverless hosts that buffer responses are limited by their response size cap (Vercel: 4.5 MB). Lower `EXPORT_MAX_ATTEMPTS` or move the endpoint if an export can exceed it.
+
+## 17. As built (round 2) — Generate Twister
+
+Decisions D24-D26 (`11`); build spec `16`. All paths are under `/api/v1`. Reminders are §18.
+
+### Endpoints
+
+| Endpoint | Auth | Behaviour |
+|---|---|---|
+| `POST /generate/` | yes | Body `{topic, difficulty?, language?}`: `topic` string, 2-120 characters after cleaning (control, format and invisible characters removed, whitespace collapsed; a raw value over 120 or containing NUL is `400`), `difficulty` 1-4 (default 2; the catalogue has four levels), `language` `"en"` (default). `201` with the new twister (shape below) plus `quota`. Gates in order: throttle (`429 rate_limited`, 3/min/user) → flag `generate_twister` (`403 feature_disabled`) → body (`400 validation_error`) → age (`403 minor_not_allowed` for `under13`) → topic blocklist (`422 generation_rejected`, `details.reason = topic_not_allowed`, costs nothing) → daily quota (`429 generation_limit`) → provider (`503 generator_unavailable`, quota handed back) → output checks (`422 generation_rejected`). |
+| `GET /me/twisters/` | yes | The caller's generated twisters, newest first, paginated like every list (`{count,next,previous,results}`) with one extra key `quota`. Works while the flag is off. |
+| `DELETE /me/twisters/{id}/` | yes | `204`. Removes the twister with the caller's attempts, stats and favourites of it. Someone else's id, a public twister's id or an unknown id is `404`. `409 conflict` while a recording of it still exists (delete the recording first; deleting would orphan stored media). Works while the flag is off. The daily quota is **not** refunded. |
+
+**Generated twister** (`201` body and every `results[]` row of `GET /me/twisters/`): the catalogue shape `{slug,text,category,difficulty,difficulty_label,origin,tip,focus_sounds,word_count,visibility,is_favorite,best_score,mastery}` plus `id`, `topic`, `created_at`. `category` is `null`, `origin` is `modern`, `visibility` is `private`, `slug` is `my-` + 12 hex characters. `POST` adds `quota`.
+
+**`quota`**: `{limit, used, remaining, resets_at}`; `limit` is `GENERATE_DAILY_LIMIT` (5), the day is the **UTC** day, `resets_at` is the next UTC midnight (ISO 8601). A slot is taken when the provider is asked, so a rejected result still costs one; a provider outage (`503`) does not. `429 generation_limit` carries `error.details = {limit, used, resets_at}`.
+
+**`422 generation_rejected`**: `error.details.reason` is one of `topic_not_allowed`, `provider_blocked`, `empty_output`, `malformed_output`, `too_short`, `too_long`, `too_few_words`, `too_many_words`, `unsupported_characters`, `blocked_content`, `unknown_words`. The message is generic; neither the topic nor the model's output is ever echoed.
+
+### Changed existing contracts
+
+- `Twister` objects (every endpoint that returns one) gain `visibility: "public" | "private"`.
+- `GET /twisters/{slug}/` and `GET /twisters/{slug}/history/` also serve the caller's **own** private twisters (`Cache-Control: private, no-store` on a private one). Anyone else, signed in or not, gets the same `404 not_found` as for a slug that does not exist.
+- Every other twister path is the public catalogue only: `GET /twisters/` (and `search`, `q`, `sort`, filters), `/twisters/facets/`, `/twisters/random/`, `/twisters/daily/`, `/daily/`, `/categories/` counts, `/me/summary/` `total` and `mastered`, `/twisters/{slug}/leaderboard/`, `/leaderboard/weekly/`, favourites (`PUT /me/favorites/{slug}/` on a private slug is `404`), guest sync, weak-word drill fallbacks (a drill may only point at a private twister of the caller's own history), the engine manifest's lexicon version.
+- `POST /attempts/`, `POST /attempts/sync/`, `POST /sessions/` and `POST /recordings/` accept a private `twister` slug only from its owner; for anyone else it is `400 validation_error` ("does not exist").
+- `GET /me/export/` gains `generated_twisters: [{slug,text,topic,tip,focus_sounds,difficulty,created_at}]` (after `daily_activity`; `schema_version` stays 1, the change is additive).
+- Public recording and score-card pages still show the twister text of what the owner chose to share, whatever its visibility.
+
+### Settings, flag, migration
+
+- Settings: `GEMINI_API_KEY` (secret), `GEMINI_MODEL` (`gemini-2.5-flash`), `GEMINI_TIMEOUT_S` (10), `GENERATOR_BACKEND` (`gemini` | `fake`; blank = `gemini` with a key, `fake` without), `GENERATE_DAILY_LIMIT` (5); throttle rate `generate` = `3/min`.
+- Flag `generate_twister` (seeded **off**, no new migration) gates `POST /generate/` only. To enable: set `GEMINI_API_KEY`, redeploy, then follow `15-rollout-and-flags.md` (allow-list first). Without a key the backend is `fake` and returns canned twisters; do not enable the flag for real users in that state.
+- Migration `0016_round2_generate_schema`: `Twister.visibility` (default `public`), `Twister.owner` (nullable, cascade), `Twister.topic`, CHECK `twister_visibility_owner` (public and unowned, **or** private and owned and not `is_published`), and table `GenerationUsage(profile, day, count)` unique per profile and day. Existing rows become public and unowned. It reverses cleanly; after a reverse a private twister is just an unpublished row.
+- A private twister is stored with `is_published = false`, so any older query that filters on `is_published` hides it by default. `Twister.objects.public()` / `.visible_to(profile)` (and `public_twister_q` / `visible_twister_q` for joins) are the only ways to read twisters; `tests/test_twister_privacy.py` fails if a module bypasses them.
+
+## 18. As built (round 2) — practice reminders
+
+Decision D27 (`11`); build spec `16`. All paths are under `/api/v1`.
+
+### Endpoints
+
+| Endpoint | Auth | Behaviour |
+|---|---|---|
+| `GET /me/reminders/` | yes | `200 {"enabled": false, "hour_local": 18, "timezone": "Asia/Kolkata", "timezone_confirmed": true}`. A profile with no row reads as `enabled: false`, `hour_local: 18`. `timezone` is the profile's IANA zone (set through `PATCH /me/`); `timezone_confirmed` is `false` while it is still the `UTC` placeholder (no mail is sent in that state, so the UI should ask for the zone first). Works while the flag is off. |
+| `PUT /me/reminders/` | yes | Body `{enabled: bool, hour_local: 0-23}`, **both required** (a full replace). `200` with the same shape as `GET`. Anything else is `400 validation_error`. A profile pending deletion gets `403 account_pending_deletion` like every write. Works while the flag is off (the flag only gates *sending*). |
+| `GET /public/unsubscribe/{token}/` and `POST /public/unsubscribe/{token}/` | none | One-click unsubscribe (RFC 8058). `200 {"unsubscribed": true}`; switches `enabled` off and keeps the hour. Idempotent, so a second call and a call for an account that has since been purged answer the same `200`. A malformed or tampered token is `404 not_found`. The `POST` body (`List-Unsubscribe=One-Click`) is ignored. `Cache-Control: no-store`, `X-Robots-Tag: noindex`; throttled per IP (`unsubscribe`, 600/min, because mail providers post from shared addresses). It works for an account pending deletion. |
+
+### The e-mail
+
+- Sent by `manage.py send_reminders` (hourly at `:07`, in the `manage-command.yml` allow-list and cron). Subject `Time for your Twister practice`, or `Keep your Twister streak going` when the person has a live streak. Text and HTML parts; the display name is HTML-escaped.
+- Headers: `List-Unsubscribe: <{API_PUBLIC_URL}/api/v1/public/unsubscribe/{token}/>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The body also links to the web page `{WEB_BASE_URL}/unsubscribe/{token}` (web route `/unsubscribe/$token`, which calls the `POST` above), to `{WEB_BASE_URL}/account` and to `{WEB_BASE_URL}/`.
+- `token` is the profile id signed with `SECRET_KEY` under the salt `twister.reminders.unsubscribe` (`django.core.signing`, `.` before the signature, URL-safe). It does not expire, carries nothing else and cannot be forged. Rotating `SECRET_KEY` invalidates tokens already mailed.
+
+### Who is mailed, and when
+
+All of: flag `reminders` on for that person (allow-list / rollout apply), `enabled`, not pending deletion, a non-blank e-mail, a confirmed timezone, the profile's **wall-clock** hour equal to `hour_local`, nothing practised on their streak day (`last_activity_date` or any `DailyActivity` row with an attempt), and `last_sent_on` not yet that streak day. Hour check: `localtime.local_hour` (real clock, so night owl mode does not move it); day: `localtime.local_date` (night-owl aware). DST: compared in the profile's own zone; if the chosen hour does not exist that day (spring gap) the next hour stands in; in the autumn overlap the hour happens twice but `last_sent_on` keeps it to one mail. The day is claimed with a conditional `UPDATE` before sending and released if delivery fails, so the next hourly run retries. Maximum one mail per person per day. The command refuses to run (`CommandError`) when `API_PUBLIC_URL` or `WEB_BASE_URL` is blank, and does nothing while the flag is off.
+
+### Changed existing contracts
+
+- `GET /me/export/` gains `reminders: {enabled, hour_local, last_sent_on, updated_at} | null` (after `preferences`; `schema_version` stays 1). The row is deleted with the account (FK cascade).
+
+### Settings, flag, migration
+
+- No new settings. Uses `EMAIL_*`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL`, `API_PUBLIC_URL` (now also required by the `send_reminders` job: add the `API_PUBLIC_URL` secret to the GitHub `production` environment) and `SECRET_KEY`. Throttle rate `unsubscribe` = `600/min`.
+- Flag `reminders` (seeded **off** in `0003`, no new data migration) gates sending only.
+- Migration `0017_round2_reminders_schema`: table `ReminderPreference(profile 1-1 pk, enabled default false, hour_local default 18 with CHECK 0-23, last_sent_on date null, updated_at)`. Touches no existing rows; reverses by dropping the table.
+
+### Deviations and notes
+
+- "Verified e-mail" is "non-blank `Profile.email`" (taken from the Supabase token; Supabase confirms addresses on sign-up). The API stores no separate verified flag.
+- Profiles whose timezone is still the `UTC` placeholder are not mailed (a wrong hour is worse than none). A person who really lives on UTC will not get reminders until a zone other than the literal `UTC` is stored; accepted for now.
+- Expiry reminders from `expire_recordings` are unrelated, transactional and not affected by this preference or flag.
+

@@ -89,7 +89,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         return qs.select_for_update(of=("self",)) if self.action == "partial_update" else qs
 
     def create(self, request, *args, **kwargs):
-        ser = SessionCreateSerializer(data=request.data)
+        ser = SessionCreateSerializer(data=request.data, context={"profile": request.user})
         ser.is_valid(raise_exception=True)
         data = dict(ser.validated_data)
         client_id = data.pop("client_session_id")

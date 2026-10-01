@@ -10,20 +10,30 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as GenerateRouteImport } from './routes/generate'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MyTwistersRouteImport } from './routes/my-twisters'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as TwistersIndexRouteImport } from './routes/twisters.index'
 import { Route as TwistersSlugRouteImport } from './routes/twisters.$slug'
+import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritesRoute = FavoritesRouteImport.update({
@@ -31,9 +41,19 @@ const FavoritesRoute = FavoritesRouteImport.update({
   path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GenerateRoute = GenerateRouteImport.update({
+  id: '/generate',
+  path: '/generate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyTwistersRoute = MyTwistersRouteImport.update({
+  id: '/my-twisters',
+  path: '/my-twisters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PracticeRoute = PracticeRouteImport.update({
@@ -66,6 +86,11 @@ const RTokenRoute = RTokenRouteImport.update({
   path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const STokenRoute = STokenRouteImport.update({
+  id: '/s/$token',
+  path: '/s/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TwistersIndexRoute = TwistersIndexRouteImport.update({
   id: '/twisters/',
   path: '/twisters/',
@@ -76,100 +101,140 @@ const TwistersSlugRoute = TwistersSlugRouteImport.update({
   path: '/twisters/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
+  id: '/unsubscribe/$token',
+  path: '/unsubscribe/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
+  '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
+  '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/r/$token': typeof RTokenRoute
+  '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/twisters/': typeof TwistersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
+  '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
+  '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/r/$token': typeof RTokenRoute
+  '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/twisters': typeof TwistersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
+  '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
+  '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/r/$token': typeof RTokenRoute
+  '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/twisters/': typeof TwistersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/favorites'
+    | '/generate'
     | '/login'
+    | '/my-twisters'
     | '/practice'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
     | '/r/$token'
+    | '/s/$token'
     | '/twisters/$slug'
+    | '/unsubscribe/$token'
     | '/twisters/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/favorites'
+    | '/generate'
     | '/login'
+    | '/my-twisters'
     | '/practice'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
     | '/r/$token'
+    | '/s/$token'
     | '/twisters/$slug'
+    | '/unsubscribe/$token'
     | '/twisters'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/favorites'
+    | '/generate'
     | '/login'
+    | '/my-twisters'
     | '/practice'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
     | '/r/$token'
+    | '/s/$token'
     | '/twisters/$slug'
+    | '/unsubscribe/$token'
     | '/twisters/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   FavoritesRoute: typeof FavoritesRoute
+  GenerateRoute: typeof GenerateRoute
   LoginRoute: typeof LoginRoute
+  MyTwistersRoute: typeof MyTwistersRoute
   PracticeRoute: typeof PracticeRoute
   RecordingsRoute: typeof RecordingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   RTokenRoute: typeof RTokenRoute
+  STokenRoute: typeof STokenRoute
   TwistersSlugRoute: typeof TwistersSlugRoute
+  UnsubscribeTokenRoute: typeof UnsubscribeTokenRoute
   TwistersIndexRoute: typeof TwistersIndexRoute
 }
 
@@ -182,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/favorites': {
       id: '/favorites'
       path: '/favorites'
@@ -189,11 +261,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/generate': {
+      id: '/generate'
+      path: '/generate'
+      fullPath: '/generate'
+      preLoaderRoute: typeof GenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-twisters': {
+      id: '/my-twisters'
+      path: '/my-twisters'
+      fullPath: '/my-twisters'
+      preLoaderRoute: typeof MyTwistersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/practice': {
@@ -238,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/s/$token': {
+      id: '/s/$token'
+      path: '/s/$token'
+      fullPath: '/s/$token'
+      preLoaderRoute: typeof STokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/twisters/': {
       id: '/twisters/'
       path: '/twisters'
@@ -252,20 +345,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TwistersSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/unsubscribe/$token': {
+      id: '/unsubscribe/$token'
+      path: '/unsubscribe/$token'
+      fullPath: '/unsubscribe/$token'
+      preLoaderRoute: typeof UnsubscribeTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   FavoritesRoute: FavoritesRoute,
+  GenerateRoute: GenerateRoute,
   LoginRoute: LoginRoute,
+  MyTwistersRoute: MyTwistersRoute,
   PracticeRoute: PracticeRoute,
   RecordingsRoute: RecordingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   RTokenRoute: RTokenRoute,
+  STokenRoute: STokenRoute,
   TwistersSlugRoute: TwistersSlugRoute,
+  UnsubscribeTokenRoute: UnsubscribeTokenRoute,
   TwistersIndexRoute: TwistersIndexRoute,
 }
 export const routeTree = rootRouteImport

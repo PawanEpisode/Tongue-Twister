@@ -7,7 +7,7 @@ from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from ..models import Favorite, Profile, Twister
+from ..models import Favorite, Profile, Twister, public_twister_q
 from ..serializers import TwisterSerializer, twister_context
 from . import achievements, boards, daily, insights, summary
 from .serializers import (
@@ -85,7 +85,7 @@ class FavoriteList(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            Favorite.objects.filter(profile=self.request.user, twister__is_published=True)
+            Favorite.objects.filter(public_twister_q("twister__"), profile=self.request.user)
             .select_related("twister__category")
             .order_by("-created_at", "-id")
         )
@@ -102,7 +102,7 @@ class FavoriteList(generics.ListAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def me_favorite(request, slug):
     """Set the favourite state explicitly, so a retry or a double click can never flip it back."""
-    twister = get_object_or_404(Twister, slug=slug, is_published=True)
+    twister = get_object_or_404(Twister.objects.public(), slug=slug)
     if request.method == "PUT":
         Favorite.objects.get_or_create(profile=request.user, twister=twister)
     else:

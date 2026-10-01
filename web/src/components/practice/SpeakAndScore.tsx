@@ -1,3 +1,5 @@
+import { track } from '#/lib/observability/analytics'
+import { scoreBand } from '#/lib/observability/events'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Lightbulb } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
@@ -103,6 +105,10 @@ export default function SpeakAndScore({
       setUnclear(unclearReason)
       return false
     }
+    track('attempt_completed', {
+      kind: 'test',
+      score_band: scoreBand(local.score),
+    })
     setResult({
       score: local.score,
       accuracy: local.accuracy,
@@ -126,6 +132,10 @@ export default function SpeakAndScore({
         setUnclear(r.reason)
         return
       }
+      track('attempt_completed', {
+        kind: 'test',
+        score_band: scoreBand(r.score),
+      })
       const rows = r.words && rowsFromApi(r.words)
       setResult({
         score: r.score,
@@ -258,6 +268,7 @@ export default function SpeakAndScore({
               levelUp={result.levelUp}
               unlocked={result.unlocked}
               notice={result.notice}
+              attemptId={result.attemptId}
               onRetry={retry}
               onNext={() => void twisterNav.next()}
             >

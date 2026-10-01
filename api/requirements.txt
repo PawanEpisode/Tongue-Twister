@@ -9,3 +9,5 @@ python-dotenv>=1.0
 pyjwt[crypto]>=2.9
 whitenoise>=6.7
 gunicorn>=23.0
+pillow>=10.4
+sentry-sdk[django]>=2.0

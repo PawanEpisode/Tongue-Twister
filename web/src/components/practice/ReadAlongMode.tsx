@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DisplayStyle, Preferences, Twister } from '#/lib/api'
+import { track } from '#/lib/observability/analytics'
 import { PREFERENCE_RANGES } from '#/lib/preferences'
 import {
   buildTimeline,
@@ -227,7 +228,10 @@ export default function ReadAlongMode({
 
   // One practice session per real run (not for listening).
   useEffect(() => {
-    if (running && !listening) session.begin()
+    if (running && !listening) {
+      session.begin()
+      track('practice_started', { mode: 'read_along' })
+    }
   }, [running, listening, session])
   useEffect(() => {
     if (status !== 'running' || listening) return

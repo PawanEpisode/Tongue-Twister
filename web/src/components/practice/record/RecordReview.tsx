@@ -175,6 +175,7 @@ export default function RecordReview(p: ReviewProps) {
           wpm={analysis.wpm}
           xp={p.xp}
           unlocked={p.unlocked}
+          attemptId={take.attemptId}
           onRetry={p.onReRecord}
           onNext={p.onNext}
         >

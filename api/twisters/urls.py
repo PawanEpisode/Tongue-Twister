@@ -2,9 +2,12 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from .account import views as account
+from .generate import views as generate
 from .media import views as media
 from .practice import views as practice
 from .progress import views as progress
+from .reminders import views as reminders
 from .speak import views as speak
 
 router = DefaultRouter()
@@ -16,7 +19,12 @@ router.register("recordings", media.RecordingViewSet, basename="recording")
 router.register("shares", media.ShareViewSet, basename="share")
 
 urlpatterns = [
-    path("me/", views.me),
+    path("me/", views.me, name="me"),
+    path("me/deletion/", account.cancel_account_deletion, name="me-deletion"),
+    path("me/export/", account.export_data),
+    path("me/twisters/", generate.MyTwisterList.as_view()),
+    path("me/twisters/<int:twister_id>/", generate.delete_my_twister),
+    path("generate/", generate.generate),
     path("me/summary/", progress.me_summary),
     path("me/achievements/", progress.me_achievements),
     path("me/achievements/seen/", progress.me_achievements_seen),
@@ -26,6 +34,8 @@ urlpatterns = [
     path("me/favorites/<slug:slug>/", progress.me_favorite),
     path("daily/", progress.daily_view),
     path("leaderboard/weekly/", progress.weekly_board),
+    path("me/reminders/", reminders.me_reminders),
+    path("public/unsubscribe/<str:token>/", reminders.UnsubscribeView.as_view()),
     path("me/preferences/", practice.preferences),
     path("me/entitlements/", practice.entitlements),
     path("me/words/weak/", speak.weak_words),
@@ -38,6 +48,11 @@ urlpatterns = [
     path("public/r/<slug:token>/", media.PublicRecordingView.as_view()),
     path("public/r/<slug:token>/report/", media.PublicReportView.as_view()),
     path("public/s/<slug:token>/", media.PublicScoreCardView.as_view()),
+    path(
+        "public/s/<slug:token>/image.png",
+        media.PublicScoreCardImageView.as_view(),
+        name="public-score-card-image",
+    ),
     path("internal/media/claim/", media.media_claim),
     path("internal/media/jobs/<uuid:job_id>/heartbeat/", media.media_heartbeat),
     path("internal/media/<uuid:asset_id>/processed/", media.media_processed),

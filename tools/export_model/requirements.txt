@@ -1,0 +1,11 @@
+# Pinned for Python 3.11 or 3.12 on macOS (Apple Silicon or Intel). Heavy; only needed for a real export.
+# `--dry-run`, `--backend fake`, `--verify` and the unit tests need none of these (standard library only).
+# Versions are the last known-compatible set as of this repo's cut-off; if pip cannot resolve one on your
+# machine, bump the whole group together.
+torch==2.4.1
+transformers==4.44.2
+onnx==1.16.2
+onnxruntime==1.19.2
+numpy==1.26.4
+huggingface_hub==0.24.7
+safetensors==0.4.5

@@ -1,0 +1,60 @@
+/**
+ * The one analytics allow-list (spec 16 D28). Every event the app may send is declared here with the exact
+ * properties it may carry; `sanitise` drops everything else, so a stray field (a transcript, an email, a
+ * twister's text) can never leave the browser even if a call site is wrong. Properties are closed enums or
+ * small numbers only: never free text, ids, or anything that identifies a person.
+ */
+type Rule = readonly string[] | 'int1to5'
+
+export const EVENT_RULES = {
+  practice_started: { mode: ['read_along', 'speak_score', 'record'] },
+  attempt_completed: {
+    kind: ['test', 'train', 'drill', 'record'],
+    score_band: ['0-49', '50-79', '80-100'],
+  },
+  score_card_shared: {},
+  twister_generated: { difficulty: 'int1to5' },
+} as const satisfies Record<string, Record<string, Rule>>
+
+export type EventProps = {
+  practice_started: { mode: 'read_along' | 'speak_score' | 'record' }
+  attempt_completed: {
+    kind: 'test' | 'train' | 'drill' | 'record'
+    score_band?: '0-49' | '50-79' | '80-100'
+  }
+  score_card_shared: Record<never, never>
+  twister_generated: { difficulty?: number }
+}
+export type EventName = keyof EventProps
+
+/** The band a 0-100 score falls in; coarse on purpose. */
+export const scoreBand = (score: number): '0-49' | '50-79' | '80-100' =>
+  score >= 80 ? '80-100' : score >= 50 ? '50-79' : '0-49'
+
+export const isEventName = (name: string): name is EventName =>
+  Object.hasOwn(EVENT_RULES, name)
+
+/** Keeps only the declared properties with allowed values; returns null for an undeclared event. */
+export function sanitise(
+  name: string,
+  props: Record<string, unknown> = {},
+): Record<string, string | number> | null {
+  if (!isEventName(name)) return null
+  const rules = EVENT_RULES[name] as Record<string, Rule>
+  const out: Record<string, string | number> = {}
+  for (const [key, rule] of Object.entries(rules)) {
+    const value = props[key]
+    if (rule === 'int1to5') {
+      if (
+        typeof value === 'number' &&
+        Number.isInteger(value) &&
+        value >= 1 &&
+        value <= 5
+      )
+        out[key] = value
+    } else if (typeof value === 'string' && rule.includes(value)) {
+      out[key] = value
+    }
+  }
+  return out
+}

@@ -4,6 +4,8 @@ import { api } from './api'
 import type { AttemptResult, AttemptKind, Segment } from './api'
 import { useAuth } from './auth'
 import { attemptQueue, isTransient } from './attemptQueue'
+import { track } from './observability/analytics'
+import { scoreBand } from './observability/events'
 import { invalidateProgress } from './progress/invalidate'
 import { announceAchievements } from './progress/useAchievementToasts'
 
@@ -50,6 +52,10 @@ export function usePracticeSubmit() {
       try {
         const r = await api.submitAttempt(body)
         if (r.low_confidence) return null
+        track('attempt_completed', {
+          kind: take.kind,
+          score_band: scoreBand(r.score),
+        })
         announceAchievements(r.achievements_unlocked)
         void invalidateProgress(qc)
         void qc.invalidateQueries({ queryKey: ['weak-words'] })

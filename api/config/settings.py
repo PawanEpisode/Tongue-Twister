@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "twisters.middleware.RequestIdMiddleware",
+    "twisters.middleware.ApiResponseHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -72,7 +73,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "twisters" / "media" / "templates"],
+        "DIRS": [
+            BASE_DIR / "twisters" / "media" / "templates",
+            BASE_DIR / "twisters" / "reminders" / "templates",
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -141,6 +145,9 @@ REST_FRAMEWORK = {
         "share_resolve": "60/min",
         "share_create": "30/h",
         "share_report": "10/h",
+        "export": "3/h",  # GET /me/export/ per user (round 1, spec 15)
+        "unsubscribe": "600/min",  # GET|POST /public/unsubscribe/{token}/ per IP (round 2, D27)
+        "generate": "3/min",  # POST /generate/ per user (round 2, spec 16 D26)
     },
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -226,6 +233,20 @@ LEADERBOARD_TOP_N = int(env("LEADERBOARD_TOP_N", "10"))
 RANDOM_WEIGHTS = {"new": 60, "practising": 30, "mastered": 10}
 RANDOM_EXCLUDE_MAX = 20  # slugs a client may ask Random to skip
 STATS_MAX_POINTS = int(env("STATS_MAX_POINTS", "400"))  # longer ranges are bucketed by ISO week
+
+# --- Round 1 (spec 15, api-core): score cards, account deletion/export, night owl -------------------
+# Absolute origin of this API; score-card image URLs in `GET /public/s/{token}/` are built from it. In
+# production it is only needed once score cards are used: when unset the `images` block is omitted.
+API_PUBLIC_URL = env("API_PUBLIC_URL", "" if not DEBUG else "http://localhost:8000").rstrip("/")
+# Account deletion (D21): a pending account can still cancel for this long, then it is purged.
+ACCOUNT_DELETION_GRACE_DAYS = int(env("ACCOUNT_DELETION_GRACE_DAYS", "30"))
+# Hard cap on attempts in `GET /me/export/` (newest first); `truncated: true` when it bites.
+EXPORT_MAX_ATTEMPTS = int(env("EXPORT_MAX_ATTEMPTS", "20000"))
+EXPORT_CHUNK_SIZE = 500  # rows per database round trip while streaming an export section
+# Public score-card images are cacheable by browsers and crawlers for this long (the ETag covers the rest).
+SCORE_CARD_IMAGE_MAX_AGE_S = int(env("SCORE_CARD_IMAGE_MAX_AGE_S", "3600"))
+# Night owl mode (D23): for opted-in profiles the streak day starts at this local hour.
+NIGHT_OWL_CUTOFF_HOUR = int(env("NIGHT_OWL_CUTOFF_HOUR", "3"))
 DAILY_LOOKBACK_DAYS = 60  # how far back GET /daily/?day= may look
 ACHIEVEMENT_SEEN_MAX_CODES = 100  # codes one "mark seen" request may name
 
@@ -311,8 +332,60 @@ SUPABASE_URL = env("SUPABASE_URL", "").rstrip("/")
 SUPABASE_JWT_SECRET = env("SUPABASE_JWT_SECRET", "")
 SUPABASE_JWT_AUDIENCE = env("SUPABASE_JWT_AUDIENCE", "authenticated")
 
+# --- Security headers & cookies (spec 15 §2.3; round 1, api-ops) -----------------------------------------
+# Production-safe defaults; every value has an env override. The API is bearer-token JSON, so the cookie
+# flags only matter for the Django admin.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", "no-referrer")
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# Header sent on JSON responses by ApiResponseHeadersMiddleware; report-only. Blank disables it. Read with
+# os.getenv, not env(): env() strips quote characters, which would eat the closing ' of 'none'.
+API_CSP_REPORT_ONLY = os.getenv(
+    "API_CSP_REPORT_ONLY", "default-src 'none'; frame-ancestors 'none'"
+).strip()
+
 if not DEBUG:
+    # Vercel terminates TLS and sets X-Forwarded-Proto. Not set in dev, where the header is spoofable.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = env("DJANGO_SSL_REDIRECT", "0") == "1"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # HSTS is only emitted on HTTPS responses. 1 year, subdomains on, preload off (preloading is a
+    # one-way door: opt in with SECURE_HSTS_PRELOAD=1 only after reading the hstspreload.org rules).
+    SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env("SECURE_HSTS_INCLUDE_SUBDOMAINS", "1") == "1"
+    SECURE_HSTS_PRELOAD = env("SECURE_HSTS_PRELOAD", "0") == "1"
+
+# --- Signed worker callbacks (spec 15 §2.1) ---------------------------------------------------------------
+WORKER_SIGNATURE_MAX_SKEW_S = int(env("WORKER_SIGNATURE_MAX_SKEW_S", "300"))
+# Accept the old body-only signature (no X-Worker-Timestamp). On by default so API and worker can be
+# deployed in either order; set to 0 once the worker sends timestamps (docs/runbooks/deploy-and-rollback.md).
+WORKER_ALLOW_LEGACY_SIGNATURE = env("WORKER_ALLOW_LEGACY_SIGNATURE", "1") == "1"
+
+# --- Sentry (spec 15 §2.2): starts only when SENTRY_DSN is set -------------------------------------------
+SENTRY_DSN = env("SENTRY_DSN", "")
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "development" if DEBUG else "production")
+SENTRY_RELEASE = env("SENTRY_RELEASE") or env("VERCEL_GIT_COMMIT_SHA")
+SENTRY_TRACES_SAMPLE_RATE = float(env("SENTRY_TRACES_SAMPLE_RATE", "0.0"))
+if SENTRY_DSN:
+    from twisters.observability import init_sentry
+
+    init_sentry(
+        SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        release=SENTRY_RELEASE,
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+    )
+
+# --- Round 2 (spec 16): Generate Twister ------------------------------------------------------------------
+# Google Gemini over REST (D24). The key is a secret: server only, never logged or returned.
+GEMINI_API_KEY = env("GEMINI_API_KEY", "")
+GEMINI_MODEL = env("GEMINI_MODEL") or "gemini-2.5-flash"
+GEMINI_TIMEOUT_S = float(env("GEMINI_TIMEOUT_S", "10"))
+# `gemini` | `fake`. Blank = `gemini` when GEMINI_API_KEY is set, otherwise `fake` (canned twisters, no network).
+GENERATOR_BACKEND = env("GENERATOR_BACKEND", "").lower()
+# Generations per person per UTC day (D26); a rejected result still counts, a provider outage does not.
+GENERATE_DAILY_LIMIT = int(env("GENERATE_DAILY_LIMIT", "5"))

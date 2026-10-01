@@ -17,6 +17,12 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   // Progress (06d): achievements ship on; the weekly board waits for enough players.
   achievements: true,
   weekly_boards: false,
+  // Score cards (D20) store no media, so they ship on; the server flag is the kill switch.
+  score_cards: true,
+  // Generate Twister (spec 16): off until the server flag is on.
+  generate_twister: false,
+  // Email reminders (spec 16, D27): off until the server flag is on.
+  reminders: false,
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

@@ -1,7 +1,6 @@
 """Shared builders for the media (06c) API tests."""
 
 import hashlib
-import hmac
 import json
 import uuid
 
@@ -10,6 +9,7 @@ from django.db.models import Sum
 from twisters.models import StorageLedger
 
 from .speak_helpers import SLUG
+from .worker_signing_helpers import signed_headers
 
 API = "/api/v1"
 WEBM = b"\x1a\x45\xdf\xa3" + bytes(60)
@@ -75,10 +75,9 @@ def error_code(response) -> str:
 
 
 def signed_post(client, path: str, body=None, *, secret: str = WORKER_SECRET, sign=True, raw=None):
-    """POST to an `/internal/` worker endpoint the way the worker does (HMAC of the raw body)."""
+    """POST to an `/internal/` worker endpoint the way the worker does (timestamped HMAC of the raw body)."""
     payload = raw if raw is not None else json.dumps({} if body is None else body).encode()
     headers = {}
     if sign:
-        digest = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
-        headers["HTTP_X_WORKER_SIGNATURE"] = f"sha256={digest}"
+        headers.update(signed_headers(secret, payload))
     return client.post(f"{API}{path}", payload, content_type="application/json", **headers)

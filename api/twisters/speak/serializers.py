@@ -7,6 +7,7 @@ import re
 from rest_framework import serializers
 
 from ..errors import model_unsupported
+from ..fields import VisibleTwisterField
 from ..media import uploads
 from ..models import (
     AccentLang,
@@ -21,7 +22,6 @@ from ..models import (
     PracticeSession,
     Profile,
     ScoringProfile,
-    Twister,
     UserPreference,
     WordReason,
 )
@@ -120,9 +120,7 @@ class SegmentSerializer(serializers.Serializer):
 
 class AttemptSubmitSerializer(serializers.Serializer):
     client_attempt_id = serializers.UUIDField(required=False, allow_null=True)
-    twister = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
-    )
+    twister = VisibleTwisterField()
     session_id = serializers.UUIDField(required=False, allow_null=True)
     kind = serializers.ChoiceField(
         choices=[AttemptKind.TEST, AttemptKind.TRAIN, AttemptKind.DRILL, AttemptKind.RECORD],

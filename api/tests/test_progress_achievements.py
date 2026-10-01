@@ -42,10 +42,10 @@ def attempt_event(profile: Profile, tw: Twister | None = None, *, previous_best=
 
 def test_catalogue_is_consistent_and_fully_implemented():
     codes = [d.code for d in CATALOGUE]
-    assert len(codes) == len(set(codes)) == 25
+    assert len(codes) == len(set(codes)) == 27
     assert {d.tier for d in CATALOGUE} <= {"bronze", "silver", "gold"}
     assert {d.criteria["type"] for d in CATALOGUE} <= set(achievements.RULES)
-    assert len({d.sort_order for d in CATALOGUE}) == 25
+    assert len({d.sort_order for d in CATALOGUE}) == 27
     assert all(d.xp_reward > 0 and d.icon and d.description for d in CATALOGUE)
 
 
@@ -591,7 +591,7 @@ def test_list_shape_order_and_progress(user):
     client, _ = user
     submit(client)
     body = client.get(f"{API}/me/achievements/").data
-    assert body["total"] == 25 and body["unlocked"] >= 2
+    assert body["total"] == 27 and body["unlocked"] >= 2
     results = body["results"]
     assert [r["code"] for r in results][:3] == ["first_word", "first_test", "streak_3"]
     assert set(results[0]) == {
@@ -666,10 +666,10 @@ def test_sync_is_idempotent_and_restores_edits(seeded, capsys):
     before = Achievement.objects.count()
     call_command("sync_achievements")
     call_command("sync_achievements")
-    assert Achievement.objects.count() == before == 25
+    assert Achievement.objects.count() == before == 27
     row = Achievement.objects.get(code="streak_7")
     assert (row.name, row.xp_reward, row.active) == ("On Fire", 30, True)
-    assert "created=0, updated=25, deactivated=0" in capsys.readouterr().out
+    assert "created=0, updated=27, deactivated=0" in capsys.readouterr().out
 
 
 def test_sync_deactivates_removed_codes_without_touching_user_rows(seeded):

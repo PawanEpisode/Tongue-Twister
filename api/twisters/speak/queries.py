@@ -17,6 +17,7 @@ from ..models import (
     TwisterPronunciation,
     UserWordStat,
     Verification,
+    visible_twister_q,
 )
 from .normalise import tokenise
 
@@ -52,17 +53,17 @@ MAX_HISTORY_ROWS = 2000
 
 
 def drill_targets(profile: Profile, words: list[str]) -> dict[str, dict]:
-    """Where to drill each word: a published twister that contains it and the word's position.
+    """Where to drill each word: a twister that contains it and the word's position.
 
-    Prefers the twister the user most recently said it in; falls back to any published twister with
-    that word (by easiest first). Words that cannot be placed are left out. Positions are checked
+    Prefers the twister the user most recently said it in (their own private ones included); falls back
+    to any *public* twister with that word (by easiest first), never someone else's private one (D25). Words that cannot be placed are left out. Positions are checked
     against the twister's current text, so an edited twister never yields a wrong index.
     """
     placed: dict[str, tuple[int, int]] = {}
     history = (
         AttemptWord.objects.filter(
+            visible_twister_q(profile, "attempt__twister__"),
             attempt__profile=profile,
-            attempt__twister__is_published=True,
             target_word__in=words,
             target_index__isnull=False,
         )
@@ -73,9 +74,11 @@ def drill_targets(profile: Profile, words: list[str]) -> dict[str, dict]:
         placed.setdefault(word, (twister_id, index))
     missing = [word for word in words if word not in placed]
     if missing:  # one query for all of them: easiest published twister that contains each word
-        fallbacks = Twister.objects.filter(
-            reduce(or_, (Q(phonemes__has_key=word) for word in missing)), is_published=True
-        ).order_by("difficulty", "id")
+        fallbacks = (
+            Twister.objects.public()
+            .filter(reduce(or_, (Q(phonemes__has_key=word) for word in missing)))
+            .order_by("difficulty", "id")
+        )
         remaining = set(missing)
         for twister in fallbacks.iterator(chunk_size=20):
             for word in remaining & twister.phonemes.keys():

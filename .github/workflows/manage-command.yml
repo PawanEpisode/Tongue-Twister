@@ -22,6 +22,8 @@ on:
     - cron: "23 * * * *" # hourly at :23 — expire_recordings (retention, hard delete, consent revocations)
     - cron: "41 4 * * *" # daily 04:41 UTC — orphan_sweeper (abandoned uploads)
     - cron: "37 * * * *" # hourly at :37 — build_leaderboard (weekly boards; harmless while `weekly_boards` is off)
+    - cron: "7 * * * *" # hourly at :07 — send_reminders (practice reminder e-mails; does nothing while the `reminders` flag is off)
+    - cron: "53 * * * *" # hourly at :53 — purge_deleted_accounts (accounts whose 30-day deletion grace period is over)
     # - cron: "*/10 * * * *" # enable with the scoring worker — sweep_pending_attempts
 
 # Two runs of the same command must never overlap (they would fight over the same rows).
@@ -52,13 +54,15 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       # Required by settings in production (opaque storage folders); must equal the API's value.
       MEDIA_PATH_SECRET: ${{ secrets.MEDIA_PATH_SECRET }}
-      # expire_recordings e-mails the T-3 day reminders.
+      # expire_recordings and send_reminders send e-mail.
       EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
       EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
       EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
       DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
       WEB_BASE_URL: ${{ secrets.WEB_BASE_URL }}
+      # send_reminders builds the one-click unsubscribe URL (List-Unsubscribe) from the API origin.
+      API_PUBLIC_URL: ${{ secrets.API_PUBLIC_URL }}
       # Untrusted text goes through env vars, never straight into the shell script.
       INPUT_COMMAND: ${{ github.event.inputs.command }}
       INPUT_ARGS: ${{ github.event.inputs.args }}
@@ -69,7 +73,7 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper sync_achievements build_leaderboard"
+          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper sync_achievements build_leaderboard purge_deleted_accounts send_reminders"
 
           if [ -n "${SCHEDULE:-}" ]; then
             case "$SCHEDULE" in
@@ -77,6 +81,8 @@ jobs:
               "23 * * * *")   command=expire_recordings ;;
               "41 4 * * *")   command=orphan_sweeper ;;
               "37 * * * *")   command=build_leaderboard ;;
+              "53 * * * *")   command=purge_deleted_accounts ;;
+              "7 * * * *")    command=send_reminders ;;
               "*/10 * * * *") command=sweep_pending_attempts ;;
               *) echo "No command mapped to schedule '$SCHEDULE'" >&2; exit 1 ;;
             esac

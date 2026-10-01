@@ -1,4 +1,6 @@
 import threading
+import time
+import types
 
 import httpx
 import pytest
@@ -8,7 +10,7 @@ from twister_worker import transfer
 from twister_worker.api_client import ApiClient, ApiError
 from twister_worker.errors import Cancelled, JobFailed
 from twister_worker.models import Job, OutputTarget
-from twister_worker.signing import SIGNATURE_HEADER, sign
+from twister_worker.signing import SIGNATURE_HEADER, TIMESTAMP_HEADER, sign
 
 NOCANCEL = threading.Event()
 KW = dict(timeout_s=5, attempts=3, cancel=NOCANCEL)
@@ -144,12 +146,14 @@ def test_claim_signs_body_and_parses_job(settings):
         seen["url"] = str(request.url)
         seen["body"] = request.content
         seen["sig"] = request.headers[SIGNATURE_HEADER]
+        seen["ts"] = request.headers[TIMESTAMP_HEADER]
         return httpx.Response(200, json={"job": job_payload()})
 
     job = api(settings, handler).claim()
     assert isinstance(job, Job) and job.id == "job-1"
     assert seen["url"] == "https://api.test/api/v1/internal/media/claim/"
-    assert seen["sig"] == "sha256=" + sign("s3cret", seen["body"])
+    assert abs(int(seen["ts"]) - time.time()) < 5
+    assert seen["sig"] == "sha256=" + sign("s3cret", seen["ts"], seen["body"])
     assert seen["body"] == b"{}"
 
 
@@ -185,10 +189,29 @@ def test_report_posts_signed_payload_to_asset_url(settings):
 
     def handler(request):
         seen.update(
-            url=request.url.path, body=request.content, sig=request.headers[SIGNATURE_HEADER]
+            url=request.url.path,
+            body=request.content,
+            sig=request.headers[SIGNATURE_HEADER],
+            ts=request.headers[TIMESTAMP_HEADER],
         )
         return httpx.Response(200, json={})
 
     api(settings, handler).report("asset-1", {"status": "ready", "job_id": "job-1"})
     assert seen["url"] == "/api/v1/internal/media/asset-1/processed/"
-    assert seen["sig"] == "sha256=" + sign("s3cret", seen["body"])
+    assert seen["sig"] == "sha256=" + sign("s3cret", seen["ts"], seen["body"])
+
+
+def test_each_retry_is_signed_with_a_fresh_timestamp(settings, monkeypatch):
+    monkeypatch.setattr("twister_worker.retry.time.sleep", lambda _: None)
+    clock = iter([1_700_000_000.0, 1_700_000_100.0])
+    monkeypatch.setattr(
+        "twister_worker.signing.time", types.SimpleNamespace(time=lambda: next(clock))
+    )
+    stamps, codes = [], [500, 200]
+
+    def handler(request):
+        stamps.append(request.headers[TIMESTAMP_HEADER])
+        return httpx.Response(codes.pop(0), json={"job": None})
+
+    assert api(settings, handler).claim() is None
+    assert stamps == ["1700000000", "1700000100"]

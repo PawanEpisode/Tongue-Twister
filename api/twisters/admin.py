@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.utils import timezone
 
+from .account import deletion
 from .media import moderation, shares
 from .models import (
     Achievement,
@@ -41,9 +42,10 @@ from .models import (
 
 @admin.register(Twister)
 class TwisterAdmin(admin.ModelAdmin):
-    list_display = ["text", "difficulty", "origin", "category", "is_published"]
-    list_filter = ["difficulty", "origin", "category", "is_published"]
+    list_display = ["text", "difficulty", "origin", "category", "is_published", "visibility"]
+    list_filter = ["difficulty", "origin", "category", "is_published", "visibility"]
     search_fields = ["text"]
+    raw_id_fields = ["owner"]
     prepopulated_fields = {"slug": ("text",)}
 
 
@@ -257,7 +259,6 @@ class ModerationReportAdmin(admin.ModelAdmin):
 admin.site.register(
     [
         Category,
-        Profile,
         Favorite,
         Plan,
         UserPreference,
@@ -273,6 +274,33 @@ admin.site.register(
         ScoringProfile,
     ]
 )
+
+
+class DeletionStateFilter(admin.SimpleListFilter):
+    title = "deletion"
+    parameter_name = "deletion"
+
+    def lookups(self, request, model_admin):
+        return [("pending", "Pending deletion")]
+
+    def queryset(self, request, queryset):
+        return queryset.pending_deletion() if self.value() == "pending" else queryset
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ["id", "email", "display_name", "plan", "night_owl", "deletion_scheduled_for"]
+    list_filter = ["plan", "night_owl", DeletionStateFilter]
+    search_fields = ["email", "display_name", "id"]
+    readonly_fields = ["deletion_requested_at", "deletion_scheduled_for"]
+    actions = ["cancel_deletion"]
+
+    @admin.action(description="Cancel pending deletion (support request)")
+    def cancel_deletion(self, request, queryset):
+        pending = list(queryset.pending_deletion())
+        for profile in pending:
+            deletion.cancel_deletion(profile)
+        self.message_user(request, f"Cancelled {len(pending)} deletions.", messages.SUCCESS)
 
 
 @admin.register(Achievement)

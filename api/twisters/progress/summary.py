@@ -16,7 +16,7 @@ def build(profile: Profile, now: dt.datetime) -> dict:
     xp_in_level, xp_for_next_level = level_progress(profile.xp)
     return {
         "mastered": mastery.mastered_count(profile),
-        "total": Twister.objects.filter(is_published=True).count(),
+        "total": Twister.objects.public().count(),
         "current_streak": streak,
         "best_streak": profile.best_streak,
         "streak_at_risk": streaks.is_at_risk(profile, now),
@@ -29,6 +29,8 @@ def build(profile: Profile, now: dt.datetime) -> dict:
         "xp_in_level": xp_in_level,
         "xp_for_next_level": xp_for_next_level,
         "timezone": profile.timezone,
+        "night_owl": profile.night_owl,
+        "deletion_scheduled_for": profile.deletion_scheduled_for,
         "today": today.isoformat(),
         "unseen_achievements": UnseenAchievementSerializer(
             achievements.unseen(profile), many=True

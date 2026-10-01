@@ -11,10 +11,12 @@ import re
 from typing import Any
 
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import serializers
 
 from .. import errors
+from ..fields import VisibleTwisterField
 from ..models import (
     Attempt,
     AttemptWord,
@@ -34,7 +36,7 @@ from ..models import (
     Visibility,
 )
 from ..practice.serializers import _bounded_json
-from . import analysis, consent, quota, shares
+from . import analysis, consent, quota, scorecard, shares
 from .storage import StorageError, get_storage
 
 log = logging.getLogger(__name__)
@@ -86,9 +88,7 @@ def own_attempt(
 
 class RecordingCreateSerializer(serializers.Serializer):
     client_recording_id = serializers.UUIDField()
-    twister = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
-    )
+    twister = VisibleTwisterField()
     session_id = serializers.UUIDField(required=False, allow_null=True)
     attempt = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     title = serializers.CharField(max_length=80, required=False, allow_blank=True)
@@ -458,19 +458,43 @@ def public_recording_body(resolved: shares.Resolved) -> dict:
     return body
 
 
-def public_score_card_body(resolved: shares.Resolved) -> dict:
-    """Score, per-word verdicts and the twister text. No media and no owner information."""
+def score_card_image_urls(token: str) -> dict[str, str] | None:
+    """Absolute image URLs for a link, or None while `API_PUBLIC_URL` is unset (nothing to build on)."""
+    if not settings.API_PUBLIC_URL:
+        return None
+    path = reverse("public-score-card-image", kwargs={"token": token})
+    return {size: f"{settings.API_PUBLIC_URL}{path}?size={size}" for size in scorecard.SIZES}
+
+
+def score_card_payload(resolved: shares.Resolved) -> scorecard.ScoreCardPayload:
+    """The only inputs the image is ever drawn from: what a stranger may see, nothing else."""
+    attempt = resolved.attempt
+    return scorecard.ScoreCardPayload(
+        score=attempt.score,
+        accuracy=attempt.accuracy,
+        wpm=attempt.wpm,
+        twister_text=attempt.twister.text,
+        owner_name=owner_name(attempt.profile),
+    )
+
+
+def public_score_card_body(resolved: shares.Resolved, token: str) -> dict:
+    """Score, per-word verdicts, the twister text and the opt-in public name. No media, no e-mail."""
     attempt = resolved.attempt
     words = attempt.words.filter(target_index__isnull=False).order_by("target_index")
-    return {
+    body = {
         "score": attempt.score,
         "accuracy": attempt.accuracy,
         "wpm": attempt.wpm,
         "kind": attempt.kind,
         "twister": {"slug": attempt.twister.slug, "text": attempt.twister.text},
         "words": [{"target": w.target_word, "status": w.status} for w in words],
+        "owner": {"display_name": owner_name(attempt.profile)},
         "created_at": attempt.created_at,
     }
+    if images := score_card_image_urls(token):
+        body["images"] = images
+    return body
 
 
 class ModerationReportSerializer(serializers.ModelSerializer):

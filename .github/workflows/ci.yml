@@ -37,6 +37,11 @@ jobs:
       - run: uv pip install -r requirements-dev.txt
       - run: uv run ruff check
       - run: uv run ruff format --check
+      # Fails when a model change has no migration (spec 15 §5).
+      # Test settings: in-memory sqlite and dev semantics, so no secrets and no database are needed.
+      - run: uv run python manage.py makemigrations --check --dry-run
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings_test
       - run: uv run python -m pytest
 
   # The same suite on real Postgres: migrations (including the 0005 backfill), constraints, partial

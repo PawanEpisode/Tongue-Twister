@@ -4,3 +4,7 @@ tests
 .ruff_cache
 __pycache__
 *.md
+tests
+scripts
+fly.toml
+Dockerfile

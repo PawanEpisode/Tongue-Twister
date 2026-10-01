@@ -12,7 +12,7 @@ import { cn } from '#/lib/utils'
  * The mistakes view: the twister with every word marked, then what we heard for the ones to fix.
  * Colour is never the only cue — each status also has a glyph and a screen-reader label.
  */
-const LOOK: Record<
+export const WORD_LOOK: Record<
   Exclude<WordStatus, 'extra'>,
   { Icon: LucideIcon; label: string; className: string }
 > = {
@@ -65,7 +65,7 @@ export default function WordBreakdown({
       <p className="text-center font-display text-lg font-semibold leading-relaxed">
         {display.map((w, i) => {
           const s = statuses[i]
-          const look = s && s !== 'extra' ? LOOK[s] : null
+          const look = s && s !== 'extra' ? WORD_LOOK[s] : null
           return (
             <span key={i} className={cn('mr-2 inline-block', look?.className)}>
               {look && (
@@ -126,7 +126,7 @@ function ProblemItem({
   target: string
   onFeedback?: FeedbackHandler
 }) {
-  const look = LOOK[row.status as Exclude<WordStatus, 'extra'>]
+  const look = WORD_LOOK[row.status as Exclude<WordStatus, 'extra'>]
   return (
     <li className="rounded-xl bg-background/60 px-3 py-2">
       <span>

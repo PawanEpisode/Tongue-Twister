@@ -2,25 +2,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
 
-from twisters.models import Twister, TwisterPronunciation
-from twisters.speak import lexicon
-from twisters.speak.normalise import tokenise
-
-VARIANT_SEPARATOR = " | "
-
-
-def _override_index(twister: Twister) -> dict[str, list[str]]:
-    """word -> variants from overrides (this twister's rows beat global ones; accent-specific rows are
-    for the scorer, not for the shared lexicon)."""
-    rows = TwisterPronunciation.objects.filter(
-        Q(twister=twister) | Q(twister__isnull=True), accent=""
-    ).exclude(arpabet="")
-    index: dict[str, list[str]] = {}
-    for row in sorted(
-        rows, key=lambda r: r.twister_id is not None
-    ):  # global first, twister overrides
-        index[row.word] = [v.strip() for v in row.arpabet.split(VARIANT_SEPARATOR) if v.strip()]
-    return index
+from twisters.models import Twister, TwisterVisibility
+from twisters.speak import pronunciations
 
 
 class Command(BaseCommand):
@@ -37,17 +20,19 @@ class Command(BaseCommand):
         missing: dict[str, list[str]] = {}
         changed = 0
         with transaction.atomic():
-            for twister in Twister.objects.filter(is_published=True):
-                overrides = _override_index(twister)
-                phonemes: dict[str, list[str]] = {}
-                for word in dict.fromkeys(tokenise(twister.text)):
-                    variants = overrides.get(word) or [
-                        lexicon.format_variant(v) for v in lexicon.lookup(word)
-                    ]
-                    if variants:
-                        phonemes[word] = variants
-                    else:
-                        missing.setdefault(twister.slug, []).append(word)
+            # Private twisters (D25) are unpublished but need their pronunciations kept current too.
+            for twister in Twister.objects.filter(
+                Q(is_published=True) | Q(visibility=TwisterVisibility.PRIVATE)
+            ):
+                phonemes, unknown = pronunciations.resolve(
+                    twister.text, pronunciations.override_index(twister.pk)
+                )
+                if unknown and twister.is_published:
+                    missing[twister.slug] = unknown
+                elif (
+                    unknown
+                ):  # a private twister (D25) is user content: never fails the catalogue check
+                    continue
                 if not check and phonemes != twister.phonemes:
                     twister.phonemes = phonemes
                     twister.phoneme_version += 1

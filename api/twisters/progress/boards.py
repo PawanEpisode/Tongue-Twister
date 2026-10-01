@@ -20,6 +20,7 @@ from ..models import (
     LeaderboardEntry,
     Profile,
     Twister,
+    active_profile_q,
 )
 from ..practice import flags
 from ..speak.queries import leaderboard_attempts
@@ -63,7 +64,9 @@ def _week_bounds(start: dt.date) -> tuple[dt.datetime, dt.datetime]:
 
 def _public(rows):
     """Attempts or board entries of people who appear on boards at all (both have a `profile`)."""
-    return rows.filter(profile__hide_from_boards=False).exclude(profile__age_band=AgeBand.UNDER13)
+    return rows.filter(active_profile_q("profile__"), profile__hide_from_boards=False).exclude(
+        profile__age_band=AgeBand.UNDER13
+    )
 
 
 def eligible_attempts(start: dt.date):
@@ -120,7 +123,7 @@ def featured_twisters(start: dt.date, today: dt.date) -> list[Twister]:
         daily.find_or_create(start + dt.timedelta(days=i)) for i in range((last - start).days + 1)
     ]
     ids = {row.twister_id for row in rows if row is not None}
-    return list(Twister.objects.filter(pk__in=ids).order_by("id"))
+    return list(Twister.objects.public().filter(pk__in=ids).order_by("id"))
 
 
 def rebuild_recent(now: dt.datetime) -> dict[str, int]:
@@ -148,7 +151,7 @@ def resolve_twister(slug: str | None, today: dt.date) -> Twister:
     if slug is None:
         return daily.daily_twister(today).twister
     try:
-        return Twister.objects.get(slug=slug, is_published=True)
+        return Twister.objects.public().get(slug=slug)
     except Twister.DoesNotExist:
         raise NotFound("No such twister.") from None
 

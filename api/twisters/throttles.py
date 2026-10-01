@@ -49,6 +49,18 @@ class ShareCreateThrottle(WindowedRateMixin, UserRateThrottle):
     scope = "share_create"
 
 
+class ExportThrottle(WindowedRateMixin, UserRateThrottle):
+    """3 data exports per hour per user: each one streams the whole account."""
+
+    scope = "export"
+
+
+class GenerateThrottle(WindowedRateMixin, UserRateThrottle):
+    """3 generation requests per minute per user (D26): each one is a paid model call."""
+
+    scope = "generate"
+
+
 class IpRateThrottle(WindowedRateMixin, SimpleRateThrottle):
     """Per client IP, for unauthenticated endpoints. Uses `client_ip` (proxy aware), not REMOTE_ADDR,
     because on Vercel every request would otherwise share the platform's address."""
@@ -63,11 +75,20 @@ class ShareResolveThrottle(IpRateThrottle):
     scope = "share_resolve"
 
 
+class UnsubscribeThrottle(IpRateThrottle):
+    """Reminder one-click unsubscribe. Tokens are signed, so guessing is pointless and this is only a
+    flood guard; it is generous because mail providers POST from a few shared addresses."""
+
+    scope = "unsubscribe"
+
+
 class ShareReportThrottle(IpRateThrottle):
     scope = "share_report"
 
 
 __all__ = [
+    "ExportThrottle",
+    "GenerateThrottle",
     "AttemptSyncThrottle",
     "AttemptThrottle",
     "RecordingCreateThrottle",
@@ -75,6 +96,7 @@ __all__ = [
     "ShareCreateThrottle",
     "ShareReportThrottle",
     "ShareResolveThrottle",
+    "UnsubscribeThrottle",
     "VoiceUploadThrottle",
     "WordFeedbackThrottle",
 ]

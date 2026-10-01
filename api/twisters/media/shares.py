@@ -115,6 +115,13 @@ def revoke_for_target(target_type: str, target_id) -> int:
     ).update(revoked_at=timezone.now())
 
 
+def revoke_for_creator(profile) -> int:
+    """Revoke every link the profile ever minted (recordings and score cards alike)."""
+    return ShareLink.objects.filter(created_by=profile, revoked_at__isnull=True).update(
+        revoked_at=timezone.now()
+    )
+
+
 def hold_for_target(target_type: str, target_id) -> int:
     """Moderation hold on every link to a target (staff action)."""
     return ShareLink.objects.filter(

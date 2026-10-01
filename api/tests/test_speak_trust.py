@@ -1,7 +1,5 @@
 """Device engine results, trust levels, spot-checks and the worker callback."""
 
-import hashlib
-import hmac
 import json
 import uuid
 
@@ -22,6 +20,7 @@ from twisters.models import (
 )
 
 from .speak_helpers import SLUG, submit
+from .worker_signing_helpers import signed_headers
 
 SECRET = "worker-secret"
 
@@ -241,9 +240,7 @@ def post_result(client, job, body, secret=SECRET, sign=True):
     raw = json.dumps(body).encode()
     headers = {}
     if sign:
-        headers["HTTP_X_WORKER_SIGNATURE"] = (
-            "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
-        )
+        headers.update(signed_headers(secret, raw))
     return client.post(
         f"/api/v1/internal/scoring-jobs/{job.pk}/result/",
         raw,

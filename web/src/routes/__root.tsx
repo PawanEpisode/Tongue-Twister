@@ -10,6 +10,7 @@ import { AuthProvider } from '#/lib/auth'
 import AttemptSync from '#/components/AttemptSync'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
+import ObservabilityInit from '#/components/ObservabilityInit'
 import { AchievementToaster } from '#/components/progress/AchievementToaster'
 import TimezoneSync from '#/components/progress/TimezoneSync'
 import UploadSync from '#/components/UploadSync'
@@ -108,6 +109,7 @@ function RootLayout() {
           <AttemptSync />
           <UploadSync />
           <TimezoneSync />
+          <ObservabilityInit />
           <Header />
           <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
             <Outlet />

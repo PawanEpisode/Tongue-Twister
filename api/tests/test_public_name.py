@@ -88,7 +88,7 @@ def test_public_recording_shows_only_the_public_name(cloud_user, storage, anon):
     assert public(anon, token_of(link)).data["owner"] == {"display_name": None}
 
 
-def test_score_cards_name_nobody(cloud_user, anon):
+def test_score_cards_show_only_the_opt_in_public_name(cloud_user, anon):
     from .speak_helpers import submit
 
     client, profile = cloud_user
@@ -96,7 +96,8 @@ def test_score_cards_name_nobody(cloud_user, anon):
     attempt = submit(client).data
     r = client.post(f"{API}/attempts/{attempt['id']}/score-card/")
     body = public(anon, r.data["url"].rsplit("/", 1)[1], kind="s").data
-    assert "owner" not in body and "Sam" not in str(body)
+    assert body["owner"] == {"display_name": "Sam"}
+    assert profile.email not in str(body)
 
 
 def test_the_public_name_needs_a_signed_in_user(anon, db):

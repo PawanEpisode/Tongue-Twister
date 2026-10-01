@@ -40,8 +40,8 @@ class Command(BaseCommand):
         msg = f"Seeded {len(cats)} categories, {len(slugs)} twisters, {overrides} pronunciation overrides"
         if prune:
             n = (
-                Twister.objects.exclude(slug__in=slugs)
-                .filter(is_published=True)
+                Twister.objects.public()  # never touches anyone's private twisters
+                .exclude(slug__in=slugs)
                 .update(is_published=False)
             )
             msg += f"; unpublished {n} not in seed file"

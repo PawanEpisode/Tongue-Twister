@@ -31,7 +31,6 @@ from ..models import (
     Profile,
     Recording,
     RecordingStatus,
-    ShareLink,
     ShareTarget,
     UserConsent,
 )
@@ -297,8 +296,9 @@ def _derived_assets(recording: Recording) -> list[MediaAsset]:
     ]
 
 
-def hard_delete_due(now: dt.datetime | None = None) -> int:
-    """Purge recordings soft-deleted longer than the restore window: objects, ledger, then tombstone."""
+def hard_delete_due(now: dt.datetime | None = None, *, profile: Profile | None = None) -> int:
+    """Purge recordings soft-deleted longer than the restore window: objects, ledger, then tombstone.
+    ``profile`` limits the pass to one owner (account purge); the hourly job passes nothing."""
     now = now or timezone.now()
     cutoff = now - dt.timedelta(hours=settings.RESTORE_WINDOW_HOURS)
     due = (
@@ -308,6 +308,8 @@ def hard_delete_due(now: dt.datetime | None = None) -> int:
             "profile", "video_asset", "thumbnail_asset", "captions_asset", "audio_asset"
         )
     )
+    if profile is not None:
+        due = due.filter(profile=profile)
     count = 0
     for recording in due.iterator():
         expired = recording.expires_at is not None and recording.expires_at <= recording.deleted_at
@@ -322,8 +324,8 @@ def hard_delete_due(now: dt.datetime | None = None) -> int:
     return count
 
 
-def purge_expired_assets(now: dt.datetime | None = None) -> int:
-    """Delete stand-alone assets (voice clips) whose `expires_at` has passed."""
+def purge_expired_assets(now: dt.datetime | None = None, *, profile: Profile | None = None) -> int:
+    """Delete stand-alone assets (voice clips) whose `expires_at` has passed (one owner's, if given)."""
     now = now or timezone.now()
     due = (
         MediaAsset.objects.filter(
@@ -332,6 +334,8 @@ def purge_expired_assets(now: dt.datetime | None = None) -> int:
         .exclude(status=MediaStatus.DELETED)
         .select_related("profile")
     )
+    if profile is not None:
+        due = due.filter(profile=profile)
     return sum(1 for asset in due.iterator() if uploads.purge_asset(asset, LedgerReason.EXPIRE))
 
 
@@ -420,6 +424,19 @@ def purge_profile_media(profile: Profile) -> None:
         MediaAsset.objects.filter(profile=profile, kind=MediaKind.AUDIO).exclude(
             status=MediaStatus.DELETED
         ).update(expires_at=now)
-        for recording_id in Recording.objects.filter(profile=profile).values_list("pk", flat=True):
-            shares.revoke_for_target(ShareTarget.RECORDING, recording_id)
-        ShareLink.objects.filter(created_by=profile, revoked_at__isnull=True).update(revoked_at=now)
+        shares.revoke_for_creator(profile)
+
+
+def purge_all_media(profile: Profile) -> bool:
+    """Account purge (D21): remove every stored object of ``profile`` right now, inline.
+
+    Runs the same passes the hourly job runs (`purge_profile_media` queues, `hard_delete_due` and
+    `purge_expired_assets` execute) scoped to one owner, then sweeps any asset those passes cannot
+    reach (an abandoned upload, a clip with no recording). Returns True only when no object is left;
+    False means storage refused something and the caller must keep the account and retry later.
+    """
+    purge_profile_media(profile)
+    hard_delete_due(profile=profile)
+    purge_expired_assets(profile=profile)
+    leftovers = MediaAsset.objects.filter(profile=profile).exclude(status=MediaStatus.DELETED)
+    return all([uploads.purge_asset(asset, LedgerReason.DELETE) for asset in leftovers])

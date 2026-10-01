@@ -6,6 +6,7 @@ from jwt import PyJWKClient
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework.exceptions import AuthenticationFailed
 
+from .account import pending
 from .models import Profile
 
 _jwks_client: PyJWKClient | None = None
@@ -64,6 +65,7 @@ class SupabaseJWTAuthentication(BaseAuthentication):
                 )[:40],
             },
         )
+        pending.guard(request, profile)
         return profile, claims
 
     def authenticate_header(self, request):

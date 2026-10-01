@@ -1,26 +1,46 @@
 {
-  "description": "HMAC-SHA256 (hex) of the raw request body keyed with the shared secret. Sent as `X-Worker-Signature: sha256=<hex>`; the API also accepts bare hex. Shared by worker/ and api/ tests.",
+  "description": "Shared by worker/ and api/ tests. Current scheme: `X-Worker-Timestamp: <unix s>` and `X-Worker-Signature: sha256=<hex HMAC-SHA256(secret, f\"{timestamp}.\" + raw body)>`. `legacy` pins the pre-timestamp scheme (HMAC over the body alone) that the API accepts only while WORKER_ALLOW_LEGACY_SIGNATURE=1.",
   "header": "X-Worker-Signature",
+  "timestamp_header": "X-Worker-Timestamp",
   "secret": "test-shared-secret",
+  "timestamp": "1700000000",
   "payload": {
     "worker_id": "worker-1",
     "note": "héllo"
   },
   "body": "{\"note\":\"h\\u00e9llo\",\"worker_id\":\"worker-1\"}",
-  "signature": "368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb",
+  "signature": "c51fd614bed9fb408ce70382aa0d60b6a10af67f73f545023f2e2fd340fef22f",
+  "header_value": "sha256=c51fd614bed9fb408ce70382aa0d60b6a10af67f73f545023f2e2fd340fef22f",
   "cases": [
     {
       "name": "empty_body",
       "body": "",
-      "signature": "7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214",
-      "header_value": "sha256=7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214"
+      "signature": "011dd5a4973b636842c6cd6ff890e66f128940a5afb8388fc71525d2e3231e40",
+      "header_value": "sha256=011dd5a4973b636842c6cd6ff890e66f128940a5afb8388fc71525d2e3231e40"
     },
     {
       "name": "unicode_json",
       "body": "{\"a\":\"é\"}",
-      "signature": "4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c",
-      "header_value": "sha256=4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c"
+      "signature": "af039b50e8c942e5c6a3088f1ed58145b16437d646350fa30ad0a4bab2921fad",
+      "header_value": "sha256=af039b50e8c942e5c6a3088f1ed58145b16437d646350fa30ad0a4bab2921fad"
     }
   ],
-  "header_value": "sha256=368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb"
+  "legacy": {
+    "signature": "368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb",
+    "header_value": "sha256=368ca41191c2b63a9ead463b50529dbb3f523043302a3d85a59d22316ba4badb",
+    "cases": [
+      {
+        "name": "empty_body",
+        "body": "",
+        "signature": "7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214",
+        "header_value": "sha256=7fd103df8278380842bca9b99d4f4f0e310ac819c447ed8e8cd9cd5761d94214"
+      },
+      {
+        "name": "unicode_json",
+        "body": "{\"a\":\"é\"}",
+        "signature": "4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c",
+        "header_value": "sha256=4e53a7fb051be02859d8c5e20d5b3d0c2b18f3fe2a11b62cc4849e6d7dc0626c"
+      }
+    ]
+  }
 }

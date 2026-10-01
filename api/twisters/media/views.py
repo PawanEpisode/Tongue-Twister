@@ -13,7 +13,9 @@ import uuid
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.http import HttpResponse, HttpResponseNotModified
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import mixins, permissions, serializers, status, viewsets
 from rest_framework.decorators import (
@@ -24,6 +26,7 @@ from rest_framework.decorators import (
     throttle_classes,
 )
 from rest_framework.exceptions import AuthenticationFailed, NotFound, ValidationError
+from rest_framework.negotiation import BaseContentNegotiation
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -51,7 +54,18 @@ from ..throttles import (
     ShareResolveThrottle,
     VoiceUploadThrottle,
 )
-from . import analysis, consent, jobs, moderation, processing, quota, recordings, shares, uploads
+from . import (
+    analysis,
+    consent,
+    jobs,
+    moderation,
+    processing,
+    quota,
+    recordings,
+    scorecard,
+    shares,
+    uploads,
+)
 from .serializers import (
     CompleteSerializer,
     ConsentGrantSerializer,
@@ -69,9 +83,11 @@ from .serializers import (
     public_score_card_body,
     recording_payload,
     recording_urls,
+    score_card_payload,
 )
 
 SHARE_FLAG = "share_links"
+SCORE_CARD_FLAG = "score_cards"  # score cards store no media, so they have their own switch (D20)
 REPLAY = {"Idempotent-Replay": "true"}
 UUID_PATTERN = r"[0-9a-fA-F-]{36}"
 _QUOTA_SCHEMA = inline_serializer(
@@ -112,6 +128,12 @@ def _require_sharing(profile: Profile | None = None) -> None:
     on = flags.enabled(SHARE_FLAG, profile) if profile else flags.switched_on(SHARE_FLAG)
     if not on:
         raise errors.feature_disabled("Sharing is not available right now.")
+
+
+def _require_score_cards(profile: Profile | None = None) -> None:
+    on = flags.enabled(SCORE_CARD_FLAG, profile) if profile else flags.switched_on(SCORE_CARD_FLAG)
+    if not on:
+        raise errors.feature_disabled("Score cards are not available right now.")
 
 
 # --- consent & storage --------------------------------------------------------------------------
@@ -369,7 +391,7 @@ class RecordingViewSet(
 
 def create_score_card_link(request: Request, attempt: Attempt) -> Response:
     """`POST /attempts/{id}/score-card/`: a public, media-free link to one attempt's result."""
-    _require_sharing(request.user)
+    _require_score_cards(request.user)
     link, token = shares.create_for_score_card(request.user, attempt)
     return Response(
         {
@@ -471,11 +493,15 @@ class PublicView(APIView):
 
     authentication_classes: list = []
     permission_classes = [permissions.AllowAny]
+    success_cache_control = "no-store"  # what an answer that is not an error may be cached as
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super().finalize_response(request, response, *args, **kwargs)
         response["X-Robots-Tag"] = "noindex, nofollow"
-        response["Cache-Control"] = "no-store"
+        # Errors (404/410/403/429) are never cached, whatever a success may be.
+        response["Cache-Control"] = (
+            self.success_cache_control if response.status_code < 400 else "no-store"
+        )
         return response
 
 
@@ -497,8 +523,53 @@ class PublicScoreCardView(PublicView):
         responses=inline_serializer("PublicScoreCard", {"score": serializers.IntegerField()})
     )
     def get(self, request, token: str):
-        _require_sharing()
-        return Response(public_score_card_body(shares.resolve(token, ShareTarget.SCORE_CARD)))
+        _require_score_cards()
+        resolved = shares.resolve(token, ShareTarget.SCORE_CARD)
+        return Response(public_score_card_body(resolved, token))
+
+
+class IgnoreAcceptNegotiation(BaseContentNegotiation):
+    """An image URL is fetched by `<img>` tags and link-preview crawlers with whatever `Accept` they
+    like; none of that should turn a picture into a 406. Errors keep the JSON envelope."""
+
+    def select_parser(self, request, parsers):
+        return parsers[0]
+
+    def select_renderer(self, request, renderers, format_suffix=None):
+        return renderers[0], renderers[0].media_type
+
+
+class PublicScoreCardImageView(PublicView):
+    """`GET /public/s/{token}/image.png?size=og|square`: the shareable picture. The link is resolved
+    by the same function as the JSON endpoint, so 404/410/403 behave identically."""
+
+    throttle_classes = [ShareResolveThrottle]
+    content_negotiation_class = IgnoreAcceptNegotiation
+    success_cache_control = f"public, max-age={settings.SCORE_CARD_IMAGE_MAX_AGE_S}"
+
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 304: None})
+    def get(self, request, token: str, *args, **kwargs):
+        _require_score_cards()
+        size = request.query_params.get("size", scorecard.DEFAULT_SIZE)
+        if size not in scorecard.SIZES:
+            raise ValidationError({"size": f"Use one of: {', '.join(scorecard.SIZES)}."})
+        payload = score_card_payload(
+            shares.resolve(token, ShareTarget.SCORE_CARD, count_view=False)
+        )
+        etag = scorecard.etag_for(payload, size)
+        if _etag_matches(request.headers.get("If-None-Match", ""), etag):
+            return HttpResponseNotModified(headers={"ETag": etag})
+        return HttpResponse(
+            scorecard.render(payload, size), content_type="image/png", headers={"ETag": etag}
+        )
+
+
+def _etag_matches(header: str, etag: str) -> bool:
+    """`If-None-Match` per RFC 9110: `*`, or any listed validator (weak comparison, since proxies weaken)."""
+    return any(
+        candidate in ("*", etag)
+        for candidate in (c.strip().removeprefix("W/") for c in header.split(","))
+    )
 
 
 class PublicReportView(PublicView):

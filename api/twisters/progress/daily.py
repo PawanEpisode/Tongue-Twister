@@ -39,9 +39,7 @@ def parse_day(raw: str, today: dt.date) -> dt.date:
 def auto_pick(day: dt.date) -> int | None:
     """Stable rotation through the published twisters. The rule predates `DailyTwister`, so today's pick
     does not change when this ships."""
-    ids = list(
-        Twister.objects.filter(is_published=True).order_by("id").values_list("id", flat=True)
-    )
+    ids = list(Twister.objects.public().order_by("id").values_list("id", flat=True))
     return ids[day.toordinal() % len(ids)] if ids else None
 
 

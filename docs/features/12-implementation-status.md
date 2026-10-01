@@ -142,7 +142,7 @@ Spec: `14-06d-build-spec.md`. Migrations `0012` (schema) and `0013` (seeds: 25 a
 | Tests | API 504 → 815 pass (+ 2 skipped, sqlite); web 321 → 492 pass; ruff, prettier, eslint and `tsc` clean; `vite build` succeeds |
 | G8 score-card **images** and the `/s/:token` landing page (the API for `POST /attempts/{id}/score-card/` and `GET /public/s/{token}/` exists from 06c) | ⬜ next round |
 | G9 Generate Twister (`TwisterGeneration`, `POST /twisters/generate/`, safety pipeline, quotas, kill switch) | ⬜ next round |
-| G10 reminders (`NotificationChannel`, `PUT /me/notifications/`, one-tap unsubscribe, web-push) | ⬜ next round |
+| G10 reminders (e-mail only; `ReminderPreference`, `GET/PUT /me/reminders/`, `send_reminders`, RFC 8058 one-click unsubscribe; no `NotificationChannel`, no web-push) | ✅ API (round 2, D27, spec 07 §18); flag `reminders` off; real SMTP and a Gmail one-click check unverified here |
 | Night owl mode + `night_owl` / `early_bird` achievements, CSV export, `GET /me/export/`, `DELETE /me/` (D14) | ⬜ |
 
 ### 06d deviations / notes
@@ -180,7 +180,7 @@ Spec: `14-06d-build-spec.md`. Migrations `0012` (schema) and `0013` (seeds: 25 a
 - Web tests run in CI (`npm test`); the shared vectors are read straight from `api/tests/fixtures`, so both suites must be changed together.
 
 ### Running management commands (`.github/workflows/manage-command.yml`)
-Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`, `sync_achievements`, `build_leaderboard`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) `orphan_sweeper` daily at 04:41 and `build_leaderboard` hourly at :37 (harmless while the `weekly_boards` flag is off). Run `sync_achievements` after editing `progress/catalogue.py`. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.
+Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`, `sync_achievements`, `build_leaderboard`, `purge_deleted_accounts`, `send_reminders`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) `orphan_sweeper` daily at 04:41 and `build_leaderboard` hourly at :37 (harmless while the `weekly_boards` flag is off) and `send_reminders` hourly at :07 (does nothing while the `reminders` flag is off; needs `API_PUBLIC_URL` and `WEB_BASE_URL` too). Run `sync_achievements` after editing `progress/catalogue.py`. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.
 
 ### 06c A2 deviations / operations notes
 - `expiry_reminded_at` was **renamed** (not added alongside) to `reminder_sent_at`; the claim-then-send pattern means a failed delivery releases the flag and the next hourly run retries.
@@ -200,7 +200,7 @@ Actions → **Management command** → *Run workflow*: pick a command from the a
 4. Night owl mode (+ two achievements), CSV export, `GET /me/export/` (JSON export) and `DELETE /me/` (D14; `purge_profile_media` exists as a service only).
 
 **Speech engine (doc 10, E3-3 … E3-6, flag `accurate_mode` off)**
-5. Model export/quantise (your machine), on-device engine in a Web Worker (ONNX Runtime Web) with "Accurate mode" UI, `/dev/calibrate` gold-set page and threshold tuning, scoring-worker container with queue, spot-check flow and the `verified` level.
+5. (E3-2 model-free engine logic is done: `twisters/speak/engine` + `web/src/lib/speak/engine`, spec `17` A6, D29-D31, not wired.) Model export/quantise (your machine), on-device engine in a Web Worker (ONNX Runtime Web) with "Accurate mode" UI, `/dev/calibrate` gold-set page and threshold tuning, scoring-worker container with queue, spot-check flow and the `verified` level.
 6. Once the worker ships: set `LEADERBOARD_REQUIRE_VERIFIED=1`, turn `MASTERY_ALLOW_PROVISIONAL` off, enable the `*/10` `sweep_pending_attempts` cron, then turn the `weekly_boards` flag on.
 7. The scoring step that turns the analysis audio into an `Attempt(kind=record)` (06c leftover).
 
@@ -215,3 +215,9 @@ Actions → **Management command** → *Run workflow*: pick a command from the a
 
 **Open questions that need data, not docs (doc 11)**
 13. Whether the phoneme model meets accuracy on en-IN speakers; its size after int8 export; whether a paid Pro plan is worth building (after 60 days of cloud-recording cap-hit data).
+
+## Rounds 1–3 (2026-10-01)
+
+Built: score-card images + `/s/:token`; account deletion (30-day grace) + JSON export; night owl mode (catalogue 27); worker HMAC timestamps, security headers, CSP report-only, Sentry scaffold, bundle ratchet, Playwright + axe, runbooks (spec 15); Generate Twister via Gemini with private twisters, email reminders with one-click unsubscribe, Sentry/PostHog (opt-in by env keys) (spec 16); speech-engine groundwork E3-2a/2b with Python/TS parity vectors (not wired), model-export tool `tools/export_model/`, Fly worker deploy runbook (spec 17).
+Tests: API 1387, web 691, worker 107, export tool 28.
+Open items: real Gemini call unverified; Postgres/Supabase/SMTP/Fly unverified; first-load JS above the 180 KB target (Home ~282 KB, Hub ~319 KB; ratchet-enforced); login-page contrast 4.46:1 in `known-a11y.json`; speech engine thresholds are placeholders until calibration (E3-5).

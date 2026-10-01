@@ -308,7 +308,7 @@ def engine_manifest(request):
         ScoringProfile.objects.filter(active=True, model_version=model).first() if model else None
     )
     lexicon = (
-        Twister.objects.filter(is_published=True)
+        Twister.objects.public()
         .order_by("-phoneme_version")
         .values_list("phoneme_version", flat=True)
         .first()

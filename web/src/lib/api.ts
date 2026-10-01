@@ -47,7 +47,22 @@ export type Profile = {
   /** Opt out of public leaderboards (D18). */
   hide_from_boards?: boolean
   streak_freezes?: number
+  /** Streak days end at 03:00 local instead of midnight (D23). */
+  night_owl?: boolean
+  /** Set while the account waits out its grace period before purge (D21); null/absent otherwise. */
+  deletion_scheduled_for?: string | null
 }
+/** The writable part of `PATCH /me/` that the settings page touches. */
+export type ProfilePatch = Partial<
+  Pick<Profile, 'timezone' | 'hide_from_boards' | 'night_owl' | 'public_name'>
+>
+/** `DELETE /me/` → 202: when the request was made and when the purge becomes due. */
+export type DeletionRequest = {
+  deletion_requested_at: string
+  deletion_scheduled_for: string
+}
+/** The account export: the file plus the raw `Content-Disposition` header, which names it. */
+export type DataExport = { blob: Blob; contentDisposition: string | null }
 export type WordStatus = 'correct' | 'near' | 'wrong' | 'missed' | 'extra'
 export type WordReason = '' | 'homophone' | 'focus_swap'
 export type AttemptKind = 'test' | 'train' | 'drill' | 'record'
@@ -512,6 +527,21 @@ export type PublicRecording = {
   playback: Playback
   owner: { display_name?: string | null }
 }
+/** `GET /public/s/{token}/`: one attempt's result. No media; the owner is only the opt-in public name. */
+export type ScoreCardPublic = {
+  score: number
+  accuracy: number
+  wpm: number
+  kind: AttemptKind
+  twister: { slug: string; text: string }
+  words: { target: string; status: WordStatus }[]
+  created_at: string
+  /** Absolute URLs of the rendered card; omitted when the API has no public URL configured. */
+  images?: { og: string; square: string }
+  owner?: { display_name?: string | null }
+}
+/** `POST /attempts/{id}/score-card/` → 201. */
+export type ScoreCardLink = { id: number; url: string; expires_at: string }
 export type ReportReason =
   'abuse' | 'sexual' | 'minor' | 'privacy' | 'spam' | 'other'
 export type PlanInfo = {
@@ -537,9 +567,14 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** An authenticated call to the API; anything but 2xx becomes an `ApiError`. */
+async function authedFetch(
+  path: string,
+  init: RequestInit = {},
+  json = true,
+): Promise<Response> {
   const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
+  if (json) headers.set('Content-Type', 'application/json')
   const { data } = (await supabase?.auth.getSession()) ?? {
     data: { session: null },
   }
@@ -556,8 +591,22 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       body?.error?.request_id,
     )
   }
+  return res
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await authedFetch(path, init)
   if (res.status === 204) return undefined as T // DELETE endpoints answer 204 with no body
   return res.json() as Promise<T>
+}
+
+/** A file download: the body as a Blob plus the name the server suggested. */
+async function download(path: string): Promise<DataExport> {
+  const res = await authedFetch(path, {}, false)
+  return {
+    blob: await res.blob(),
+    contentDisposition: res.headers.get('Content-Disposition'),
+  }
 }
 
 /** Query string from the defined, non-empty values. */
@@ -566,6 +615,10 @@ function query(params: Record<string, string | undefined>): string {
     Object.entries(params).filter(([, v]) => v) as [string, string][],
   ).toString()
 }
+
+/** One PATCH for every profile setting; callers pass only what changed. */
+const updateProfile = (patch: ProfilePatch) =>
+  request<Profile>('/me/', { method: 'PATCH', body: JSON.stringify(patch) })
 
 export const api = {
   categories: () => request<Category[]>('/categories/'),
@@ -649,21 +702,20 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ age_band }),
     }),
-  setTimezone: (timezone: string) =>
-    request<Profile>('/me/', {
-      method: 'PATCH',
-      body: JSON.stringify({ timezone }),
-    }),
+  updateProfile,
+  setTimezone: (timezone: string) => updateProfile({ timezone }),
   setHideFromBoards: (hide_from_boards: boolean) =>
-    request<Profile>('/me/', {
-      method: 'PATCH',
-      body: JSON.stringify({ hide_from_boards }),
+    updateProfile({ hide_from_boards }),
+  setNightOwl: (night_owl: boolean) => updateProfile({ night_owl }),
+  setPublicName: (public_name: string) => updateProfile({ public_name }),
+  /** Starts the grace period (D21). Idempotent while pending: the same dates come back. */
+  requestDeletion: () =>
+    request<DeletionRequest>('/me/', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: 'DELETE' }),
     }),
-  setPublicName: (public_name: string) =>
-    request<Profile>('/me/', {
-      method: 'PATCH',
-      body: JSON.stringify({ public_name }),
-    }),
+  cancelDeletion: () => request<void>('/me/deletion/', { method: 'DELETE' }),
+  exportData: () => download('/me/export/'),
   entitlements: () => request<{ plan: PlanInfo }>('/me/entitlements/'),
   consents: () =>
     request<{ results: ConsentRecord[] }>('/me/consents/').then(
@@ -724,6 +776,12 @@ export const api = {
     ).then((r) => (Array.isArray(r) ? r : r.results)),
   revokeShare: (id: string) =>
     request<void>(`/shares/${id}/`, { method: 'DELETE' }),
+  createScoreCard: (attemptId: number) =>
+    request<ScoreCardLink>(`/attempts/${attemptId}/score-card/`, {
+      method: 'POST',
+    }),
+  publicScoreCard: (token: string) =>
+    request<ScoreCardPublic>(`/public/s/${encodeURIComponent(token)}/`),
   publicRecording: (token: string) =>
     request<PublicRecording>(`/public/r/${encodeURIComponent(token)}/`),
   reportRecording: (

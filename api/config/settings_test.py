@@ -25,3 +25,5 @@ DATABASES = {
 
 # Tests must never reach a real bucket, whatever the environment says.
 MEDIA_STORAGE_BACKEND = "memory"
+# ...nor the Supabase Auth admin API (account purge): without a key the adapter only logs.
+SUPABASE_SERVICE_ROLE_KEY = ""

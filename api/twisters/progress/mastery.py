@@ -4,7 +4,7 @@
 from django.conf import settings
 from django.db.models import Count
 
-from ..models import Profile, UserTwisterStats
+from ..models import Profile, UserTwisterStats, public_twister_q
 
 NEW = "new"
 PRACTISING = "practising"
@@ -68,7 +68,7 @@ def mastery_states_for(profile: Profile) -> dict[int, str]:
 
 def _mastered(profile: Profile):
     return UserTwisterStats.objects.filter(
-        profile=profile, mastered_at__isnull=False, twister__is_published=True
+        public_twister_q("twister__"), profile=profile, mastered_at__isnull=False
     )
 
 

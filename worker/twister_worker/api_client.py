@@ -59,10 +59,11 @@ class ApiClient:
         cancel: threading.Event | None = None,
         attempts: int | None = None,
     ) -> dict[str, Any]:
-        body, headers = signed_request(self._settings.shared_secret, payload)
         url = self._settings.api_base_url + path
 
         def once() -> dict[str, Any]:
+            # Signed per attempt: the timestamp must be fresh when a retry fires after a back-off.
+            body, headers = signed_request(self._settings.shared_secret, payload)
             response = self._http.post(
                 url, content=body, headers=headers, timeout=self._settings.http_timeout_s
             )

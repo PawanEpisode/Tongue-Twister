@@ -326,10 +326,21 @@ def test_score_card_lifecycle(cloud_user, anon, settings):
     assert r.status_code == 201 and r.data["url"].startswith(f"{settings.SHARE_BASE_URL}/s/")
     res = public(anon, token_of(r), kind="s")
     assert res.status_code == 200
-    assert set(res.data) == {"score", "accuracy", "wpm", "kind", "twister", "words", "created_at"}
+    assert set(res.data) == {
+        "score",
+        "accuracy",
+        "wpm",
+        "kind",
+        "twister",
+        "words",
+        "owner",
+        "images",
+        "created_at",
+    }
     assert res.data["score"] == attempt["score"]
     assert {"target": "sells", "status": "wrong"} in res.data["words"] or res.data["words"]
-    assert profile.email not in str(res.data) and "owner" not in res.data
+    assert res.data["owner"] == {"display_name": None}
+    assert profile.email not in str(res.data)
     assert res.headers["X-Robots-Tag"] == "noindex, nofollow"
     assert ShareLink.objects.get().target_type == "score_card"
 
@@ -341,7 +352,7 @@ def test_score_card_rules(cloud_user, auth_client, anon):
     client, _ = cloud_user
     attempt = submit(client).data["id"]
     assert auth_client().post(f"{API}/attempts/{attempt}/score-card/").status_code == 404
-    FeatureFlag.objects.filter(code="share_links").update(enabled=False)
+    FeatureFlag.objects.filter(code="score_cards").update(enabled=False)
     r = client.post(f"{API}/attempts/{attempt}/score-card/")
     assert r.status_code == 403 and error_code(r) == "feature_disabled"
 

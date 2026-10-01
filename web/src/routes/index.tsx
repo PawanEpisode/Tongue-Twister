@@ -69,6 +69,7 @@ function Home() {
   const daily = useQuery({ queryKey: ['daily'], queryFn: api.daily })
   const cats = useQuery({ queryKey: ['categories'], queryFn: api.categories })
   const weeklyBoards = useFlag('weekly_boards')
+  const generate = useFlag('generate_twister')
   const summary = useSummary()
   const reduceMotion = useReducedMotion()
   return (
@@ -118,6 +119,11 @@ function Home() {
             <Button asChild variant="outline" size="lg">
               <Link to="/twisters">Browse all</Link>
             </Button>
+            {generate && (
+              <Button asChild variant="outline" size="lg">
+                <Link to="/generate">Make your own</Link>
+              </Button>
+            )}
           </div>
         </div>
         <motion.div

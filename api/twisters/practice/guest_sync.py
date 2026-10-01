@@ -19,9 +19,7 @@ MAX_BACKDATE = dt.timedelta(days=365)
 
 class AttemptImportSerializer(serializers.Serializer):
     client_attempt_id = serializers.UUIDField()
-    twister = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
-    )
+    twister = serializers.SlugRelatedField(slug_field="slug", queryset=Twister.objects.public())
     transcript = serializers.CharField(allow_blank=True, max_length=3000)
     duration_ms = serializers.IntegerField(min_value=300, max_value=300_000)
     created_at = serializers.DateTimeField(required=False)
@@ -51,7 +49,7 @@ def _import_preferences(profile: Profile, data: dict | None) -> None:
 
 
 def _import_favorites(profile: Profile, slugs: list[str]) -> int:
-    twisters = Twister.objects.filter(slug__in=set(slugs), is_published=True)
+    twisters = Twister.objects.public().filter(slug__in=set(slugs))
     existing = set(Favorite.objects.filter(profile=profile).values_list("twister_id", flat=True))
     new = [Favorite(profile=profile, twister=t) for t in twisters if t.id not in existing]
     Favorite.objects.bulk_create(new)

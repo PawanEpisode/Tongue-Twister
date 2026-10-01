@@ -32,6 +32,7 @@ BLOCKED_TERMS = (
 _LOOKALIKES = str.maketrans(
     {"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "$": "s", "@": "a", "!": "i"}
 )
+_WORDS = re.compile(r"[^\W_]+(?:['\u2019][^\W_]+)*")
 _CONTACT = re.compile(r"[@<>]|://|www\.|\.(com|net|org|io)\b", re.IGNORECASE)
 
 
@@ -40,6 +41,9 @@ def _fold(value: str) -> str:
     base = unicodedata.normalize("NFKD", value)
     base = "".join(c for c in base if not unicodedata.combining(c)).casefold()
     return re.sub(r"[\s._\-*]+", "", base.translate(_LOOKALIKES))
+
+
+_FOLDED_TERMS = tuple(_fold(term) for term in BLOCKED_TERMS)
 
 
 def validate_public_name(value: str) -> None:
@@ -53,8 +57,15 @@ def validate_public_name(value: str) -> None:
     if _CONTACT.search(value):
         raise ValidationError("Leave out emails, links and markup.", code="invalid")
     folded = _fold(value)
-    if any(_fold(term) in folded for term in BLOCKED_TERMS):
+    if any(term in folded for term in _FOLDED_TERMS):
         raise ValidationError("Please choose a different name.", code="blocked")
+
+
+def has_blocked_word(text: str) -> bool:
+    """True when any single *word* of free text contains a blocked term (same folding as names, so
+    `sh1t` matches). Words are checked one by one, never glued together: running prose through the
+    name check would flag harmless pairs such as "pass hit"."""
+    return any(term in _fold(word) for word in _WORDS.findall(text) for term in _FOLDED_TERMS)
 
 
 def clean_public_name(value: str) -> str:

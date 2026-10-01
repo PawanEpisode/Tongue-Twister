@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { BarChart3, Flame, Star, Tornado } from 'lucide-react'
+import { BarChart3, Flame, Star, Tornado, UserRound } from 'lucide-react'
+import PendingDeletionBanner from '#/components/account/PendingDeletionBanner'
 import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
 import { supabase } from '#/lib/supabase'
@@ -11,6 +12,7 @@ import { useMe } from '#/lib/useMe'
 export default function Header() {
   const { session, loading } = useAuth()
   const recordCloud = useFlag('record_cloud')
+  const generate = useFlag('generate_twister')
   const here = useRouterState({ select: (s) => s.location.href })
   const { data: me } = useMe()
   // The summary knows the *effective* streak (0 once lapsed); the profile's stored value can be stale.
@@ -65,6 +67,24 @@ export default function Header() {
                   Recordings
                 </Link>
               )}
+              {generate && (
+                <Link
+                  to="/generate"
+                  className="hover:text-foreground"
+                  activeProps={{ className: 'text-foreground' }}
+                >
+                  Make one
+                </Link>
+              )}
+              {generate && (
+                <Link
+                  to="/my-twisters"
+                  className="hover:text-foreground"
+                  activeProps={{ className: 'text-foreground' }}
+                >
+                  My twisters
+                </Link>
+              )}
               <Link
                 to="/stats"
                 className="inline-flex items-center gap-1 hover:text-foreground pointer-coarse:min-h-11 pointer-coarse:items-center"
@@ -80,6 +100,14 @@ export default function Header() {
               >
                 <Star className="size-4" aria-hidden />
                 Favourites
+              </Link>
+              <Link
+                to="/account"
+                className="inline-flex items-center gap-1 hover:text-foreground pointer-coarse:min-h-11 pointer-coarse:items-center"
+                activeProps={{ className: 'text-foreground' }}
+              >
+                <UserRound className="size-4" aria-hidden />
+                Account
               </Link>
               {me && (
                 <Link
@@ -126,6 +154,7 @@ export default function Header() {
           )}
         </nav>
       </div>
+      <PendingDeletionBanner />
     </header>
   )
 }

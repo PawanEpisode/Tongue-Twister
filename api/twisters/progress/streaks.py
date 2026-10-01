@@ -12,7 +12,7 @@ import datetime as dt
 
 from django.conf import settings
 
-from ..localtime import local_now
+from ..localtime import local_date, local_hour
 from ..models import DailyActivity, Profile
 
 ONE_DAY = dt.timedelta(days=1)
@@ -46,12 +46,11 @@ def practised_today(profile: Profile, today: dt.date) -> bool:
 
 def is_at_risk(profile: Profile, now: dt.datetime | None = None) -> bool:
     """A live streak, nothing qualifying yet today, and the local evening has begun."""
-    local = local_now(profile, now)
-    today = local.date()
+    today = local_date(profile, now)
     return (
         effective_streak(profile, today) > 0
         and not practised_today(profile, today)
-        and local.hour >= settings.STREAK_AT_RISK_HOUR
+        and local_hour(profile, now) >= settings.STREAK_AT_RISK_HOUR
     )
 
 

@@ -236,6 +236,28 @@ def _rows() -> list[dict]:
             xp_reward=30,
             criteria={"type": "categories_attempted"},
         ),
+        # Clock-based badges (D23): the hour window is on the *local* clock and `to` is exclusive, so
+        # 23:00-02:59 and 05:00-07:59. Both need a confirmed timezone (see `achievements`).
+        dict(
+            code="night_owl",
+            name="Night Owl",
+            description="Finish a scored attempt between 11 p.m. and 3 a.m.",
+            icon="moon",
+            tier=BRONZE,
+            category="skill",
+            xp_reward=20,
+            criteria={"type": "attempt_local_hour", "from": 23, "to": 3, "kinds": TEST_OR_RECORD},
+        ),
+        dict(
+            code="early_bird",
+            name="Early Bird",
+            description="Finish a scored attempt between 5 and 8 a.m.",
+            icon="sunrise",
+            tier=BRONZE,
+            category="skill",
+            xp_reward=20,
+            criteria={"type": "attempt_local_hour", "from": 5, "to": 8, "kinds": TEST_OR_RECORD},
+        ),
     ]
     return rows
 

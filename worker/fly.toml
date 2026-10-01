@@ -5,6 +5,9 @@
 
 app = 'worker-moonlit-waterfall-8666'
 primary_region = 'lhr'
+# Fly's default stop signal is SIGINT and the wait is short. The runner handles both, but be explicit:
+# SIGTERM, then 30 s before SIGKILL (SHUTDOWN_GRACE_S below must stay under it).
+kill_signal = 'SIGTERM'
 kill_timeout = 30
 
 [build]
@@ -13,6 +16,8 @@ kill_timeout = 30
   POLL_INTERVAL_S = "15"
   FFMPEG_THREADS = "1"
   LOG_LEVEL = "INFO"
+  SHUTDOWN_GRACE_S = "20"
+  # Secrets (never here): API_BASE_URL, WORKER_SHARED_SECRET -> `fly secrets set`, see docs/runbooks/worker-deploy-fly.md
 
 [[restart]]
   policy = "always"

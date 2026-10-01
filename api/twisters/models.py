@@ -39,6 +39,37 @@ class Category(models.Model):
         return self.name
 
 
+class TwisterVisibility(models.TextChoices):
+    """Who may see a twister (D25). `private` twisters are generated for, and only visible to, their owner."""
+
+    PUBLIC = "public", "Public"
+    PRIVATE = "private", "Private"
+
+
+def public_twister_q(prefix: str = "") -> Q:
+    """The one definition of 'in the public catalogue': published and public. Querysets reach it through
+    `Twister.objects.public()`, joins from other models through `prefix` (`"twister__"`)."""
+    return Q(**{f"{prefix}is_published": True, f"{prefix}visibility": TwisterVisibility.PUBLIC})
+
+
+def visible_twister_q(profile: "Profile | None", prefix: str = "") -> Q:
+    """Public twisters plus, for a signed-in caller, their own private ones (D25)."""
+    q = public_twister_q(prefix)
+    if profile is not None:
+        q |= Q(**{f"{prefix}visibility": TwisterVisibility.PRIVATE, f"{prefix}owner": profile})
+    return q
+
+
+class TwisterQuerySet(models.QuerySet):
+    def public(self):
+        """The catalogue everyone sees: lists, daily, random, facets, boards, drill fallbacks."""
+        return self.filter(public_twister_q())
+
+    def visible_to(self, profile: "Profile | None"):
+        """What one caller may open or practise: the catalogue plus their own private twisters."""
+        return self.filter(visible_twister_q(profile))
+
+
 class Twister(models.Model):
     slug = models.SlugField(unique=True, max_length=80)
     text = models.TextField()
@@ -64,10 +95,41 @@ class Twister(models.Model):
     )
     phoneme_version = models.PositiveSmallIntegerField(default=0, editable=False)
     is_published = models.BooleanField(default=True, db_index=True)
+    visibility = models.CharField(
+        max_length=7,
+        choices=TwisterVisibility.choices,
+        default=TwisterVisibility.PUBLIC,
+        db_index=True,
+        help_text="`private` = generated for one person (D25); never listed for anyone else",
+    )
+    owner = models.ForeignKey(
+        "Profile",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="generated_twisters",
+        help_text="Set exactly when the twister is private",
+    )
+    topic = models.CharField(
+        max_length=120, blank=True, help_text="What the owner asked for (generated twisters only)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = TwisterQuerySet.as_manager()
 
     class Meta:
         ordering = ["difficulty", "id"]
+        constraints = [
+            # A private twister is owned and never `published`, so every legacy `is_published` filter
+            # hides it by default; a public one has no owner. The database enforces both (D25).
+            models.CheckConstraint(
+                condition=(
+                    Q(visibility="public", owner__isnull=True)
+                    | Q(visibility="private", owner__isnull=False, is_published=False)
+                ),
+                name="twister_visibility_owner",
+            ),
+        ]
 
     def __str__(self):
         return self.text[:60]
@@ -104,6 +166,20 @@ class AgeBand(models.TextChoices):
     UNKNOWN = "unknown", "Unknown"
     UNDER13 = "under13", "Under 13"
     ADULT = "13plus", "13 or older"
+
+
+def active_profile_q(prefix: str = "") -> Q:
+    """Profiles that are not pending deletion (D21). The one definition of 'active': querysets reach it
+    through `Profile.objects.active()`, and joins from other models through `prefix` (`"profile__"`)."""
+    return Q(**{f"{prefix}deletion_requested_at__isnull": True})
+
+
+class ProfileQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(active_profile_q())
+
+    def pending_deletion(self):
+        return self.exclude(active_profile_q())
 
 
 class Profile(models.Model):
@@ -148,14 +224,35 @@ class Profile(models.Model):
     hide_from_boards = models.BooleanField(
         default=False, help_text="Opt out of every public leaderboard (D18)"
     )
+    night_owl = models.BooleanField(
+        default=False,
+        help_text="Streak day starts at NIGHT_OWL_CUTOFF_HOUR local time instead of midnight (D23)",
+    )
+    deletion_requested_at = models.DateTimeField(
+        null=True, blank=True, help_text="Account is pending deletion from this moment (D21)"
+    )
+    deletion_scheduled_for = models.DateTimeField(
+        null=True, blank=True, help_text="Purged by `purge_deleted_accounts` once this has passed"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ProfileQuerySet.as_manager()
 
     class Meta:
         constraints = [
             models.CheckConstraint(
                 condition=Q(streak_freezes__gte=0, streak_freezes__lte=settings.STREAK_FREEZE_MAX),
                 name="profile_streak_freezes_range",
-            )
+            ),
+            models.CheckConstraint(
+                condition=Q(deletion_requested_at__isnull=True, deletion_scheduled_for__isnull=True)
+                | Q(
+                    deletion_requested_at__isnull=False,
+                    deletion_scheduled_for__isnull=False,
+                    deletion_scheduled_for__gte=F("deletion_requested_at"),
+                ),
+                name="profile_deletion_window",
+            ),
         ]
 
     # DRF compatibility: behave like an authenticated user object.
@@ -168,6 +265,10 @@ class Profile(models.Model):
     @property
     def level(self) -> int:
         return level_for(self.xp)
+
+    @property
+    def pending_deletion(self) -> bool:
+        return self.deletion_requested_at is not None
 
 
 class AccentLang(models.TextChoices):
@@ -423,6 +524,35 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"prefs<{self.profile_id}>"
+
+
+class ReminderPreference(models.Model):
+    """Practice reminder by e-mail (D27). One optional row per profile; no row means "off".
+
+    `hour_local` is a wall-clock hour in the profile's own timezone. `last_sent_on` is the streak day
+    (`localtime.local_date`) of the last mail, which is what limits it to one per person per day.
+    """
+
+    profile = models.OneToOneField(
+        Profile, primary_key=True, on_delete=models.CASCADE, related_name="reminder_preference"
+    )
+    enabled = models.BooleanField(default=False)
+    hour_local = models.PositiveSmallIntegerField(
+        default=18, validators=[MinValueValidator(0), MaxValueValidator(23)]
+    )
+    last_sent_on = models.DateField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(hour_local__gte=0, hour_local__lte=23),
+                name="reminder_hour_local_range",
+            )
+        ]
+
+    def __str__(self):
+        return f"reminder<{self.profile_id}>"
 
 
 class Submode(models.TextChoices):
@@ -1566,3 +1696,20 @@ class LeaderboardEntry(models.Model):
 
     def __str__(self):
         return f"{self.week_start} {self.twister_id} #{self.rank}"
+
+
+class GenerationUsage(models.Model):
+    """Generations a person has used on one UTC day (D26): the quota ledger. Counted when the provider
+    is asked, so deleting a generated twister never hands the quota back."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="generation_usage")
+    day = models.DateField()
+    count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "day"], name="generation_usage_profile_day"),
+        ]
+
+    def __str__(self):
+        return f"{self.profile_id} {self.day}: {self.count}"

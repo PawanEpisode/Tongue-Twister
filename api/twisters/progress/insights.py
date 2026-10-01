@@ -1,6 +1,6 @@
 """Builds the `GET /me/stats/` and `GET /me/activity/` bodies (spec 14 S4.1).
 
-Days are the profile's *local* dates (`Attempt.created_at` converted with its timezone), so a 23:30
+Days are the profile's *local* streak days (`localtime`: its timezone, plus the night owl boundary), so a 23:30
 attempt and a 00:30 attempt across midnight land on different days whatever UTC says. Everything is
 aggregated in SQL per day; Python only merges days into series and never touches attempt rows.
 """
@@ -11,9 +11,8 @@ from dataclasses import dataclass
 
 from django.conf import settings
 from django.db.models import Avg, Count, Min, Sum
-from django.db.models.functions import TruncDate
 
-from ..localtime import day_bounds, local_date, tzinfo_for
+from ..localtime import day_bounds, day_expr, local_date
 from ..models import SCORE_VERSION_CURRENT, Attempt, AttemptKind, DailyActivity, Profile
 from ..speak import queries
 from . import mastery
@@ -76,7 +75,7 @@ def _first_active_day(profile: Profile, today: dt.date) -> dt.date:
     ]
     candidates = [d for d in (first_row,) if d]
     if first_attempt:
-        candidates.append(first_attempt.astimezone(tzinfo_for(profile)).date())
+        candidates.append(local_date(profile, first_attempt))
     return min(candidates, default=today)
 
 
@@ -102,7 +101,7 @@ def _attempts(profile: Profile, first: dt.date, last: dt.date, kinds: Iterable[s
 
 
 def _daily(profile: Profile, qs):
-    return qs.annotate(day=TruncDate("created_at", tzinfo=tzinfo_for(profile))).values("day")
+    return qs.annotate(day=day_expr(profile)).values("day")
 
 
 def _collect_days(

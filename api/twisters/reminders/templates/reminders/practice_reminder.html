@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #1a1a1a">
+    <p>Hi{% if name %} {{ name }}{% endif %},</p>
+    <p>
+      {% if streak %}Your {{ streak }}-day streak is waiting for today's practice.{% else %}A few minutes of tongue twisters is all it takes to get today going.{% endif %}
+      One scored attempt is enough.
+    </p>
+    <p><a href="{{ practice_url }}">Practise now</a></p>
+    <p style="color: #666; font-size: 13px">
+      You asked for a daily reminder at this time. You can
+      <a href="{{ settings_url }}">change the hour or turn it off in your account settings</a>, or
+      <a href="{{ unsubscribe_url }}">unsubscribe with one click</a>.
+    </p>
+  </body>
+</html>

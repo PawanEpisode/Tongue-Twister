@@ -21,6 +21,8 @@ COPY --chown=worker:worker --chmod=a+rX twister_worker ./twister_worker
 
 USER worker
 
+# Docker/Compose/Render honour this; Fly.io ignores Dockerfile HEALTHCHECK (it only runs http/tcp machine
+# checks and a worker listens on no port), so on Fly liveness = the restart policy + `fly logs`.
 # The runner touches this file on every loop tick and job heartbeat; the healthcheck reads its age.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD ["python", "-m", "twister_worker.health"]

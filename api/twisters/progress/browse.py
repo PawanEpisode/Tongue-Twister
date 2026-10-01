@@ -12,7 +12,16 @@ from django.db.models import Count, Exists, F, OuterRef, QuerySet, Subquery
 from rest_framework.exceptions import NotFound, ValidationError
 
 from ..filters import FACET_PARAMS, TwisterFilter, TwisterSearchFilter
-from ..models import Category, Difficulty, Favorite, Origin, Profile, Twister, UserTwisterStats
+from ..models import (
+    Category,
+    Difficulty,
+    Favorite,
+    Origin,
+    Profile,
+    Twister,
+    UserTwisterStats,
+    public_twister_q,
+)
 from . import mastery
 
 SIGN_IN_FOR_STATUS = "Sign in to filter by progress."
@@ -137,7 +146,7 @@ def facets(view, queryset: QuerySet[Twister]) -> dict:
     levels = _counts(narrowed(FACET_PARAMS["levels"]), "difficulty")
     by_category = _counts(narrowed(FACET_PARAMS["categories"]), "category__slug")
     origins = _counts(narrowed(FACET_PARAMS["origins"]), "origin")
-    category_slugs = Category.objects.filter(twisters__is_published=True).distinct()
+    category_slugs = Category.objects.filter(public_twister_q("twisters__")).distinct()
     return {
         "total": narrowed().count(),
         "levels": {str(level): levels.get(level, 0) for level in Difficulty.values},

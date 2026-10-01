@@ -2,7 +2,8 @@ import json
 
 from rest_framework import serializers
 
-from ..models import EndReason, Plan, PracticeSession, SessionStatus, Twister, UserPreference
+from ..fields import VisibleTwisterField
+from ..models import EndReason, Plan, PracticeSession, SessionStatus, UserPreference
 
 MAX_JSON_BYTES = 4096
 
@@ -36,9 +37,7 @@ class PreferenceSerializer(serializers.ModelSerializer):
 
 
 class SessionCreateSerializer(serializers.ModelSerializer):
-    twister = serializers.SlugRelatedField(
-        slug_field="slug", queryset=Twister.objects.filter(is_published=True)
-    )
+    twister = VisibleTwisterField()
 
     class Meta:
         model = PracticeSession

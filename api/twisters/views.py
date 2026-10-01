@@ -1,4 +1,4 @@
-from django.db.models import Count, Max, Q
+from django.db.models import Count, Max
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -6,19 +6,30 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
+from .account import views as account
 from .filters import TwisterFilter, TwisterSearchFilter
-from .models import Attempt, AttemptKind, Category, Favorite, Twister
+from .models import (
+    Attempt,
+    AttemptKind,
+    Category,
+    Favorite,
+    Profile,
+    Twister,
+    TwisterVisibility,
+    public_twister_q,
+)
 from .progress import boards, browse, daily
 from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer, twister_context
 from .speak.queries import best_scores
 from .speak.serializers import AttemptSerializer
 
+OWNER_ACTIONS = ("retrieve", "history")  # the actions that may address a private twister
 ANON_FACET_CACHE = "public, max-age=60, stale-while-revalidate=300"
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.annotate(
-        count=Count("twisters", filter=Q(twisters__is_published=True))
+        count=Count("twisters", filter=public_twister_q("twisters__"))
     ).filter(count__gt=0)
     serializer_class = CategorySerializer
     lookup_field = "slug"
@@ -26,7 +37,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Twister.objects.filter(is_published=True).select_related("category")
+    queryset = Twister.objects.public().select_related("category")
     serializer_class = TwisterSerializer
     lookup_field = "slug"
     filterset_class = TwisterFilter
@@ -34,8 +45,23 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["text", "tip"]
     ordering_fields = ["difficulty", "word_count", "created_at"]
 
+    def get_queryset(self):
+        """The public catalogue; opening or practising one twister also admits the caller's own private
+        ones (D25). Lists, facets, Random, Daily, boards and favourites never include a private twister."""
+        if self.action in OWNER_ACTIONS:
+            user = self.request.user
+            visible = Twister.objects.visible_to(user if isinstance(user, Profile) else None)
+            return visible.select_related("category")
+        return super().get_queryset()
+
     def get_serializer_context(self):
         return {**super().get_serializer_context(), **twister_context(self.request.user)}
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        if response.data["visibility"] == TwisterVisibility.PRIVATE:
+            response["Cache-Control"] = "private, no-store"
+        return response
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
@@ -94,9 +120,11 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(boards.twister_board(self.get_object()))
 
 
-@api_view(["GET", "PATCH"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([permissions.IsAuthenticated])
 def me(request):
+    if request.method == "DELETE":
+        return account.request_account_deletion(request)
     if request.method == "PATCH":
         ser = ProfileSerializer(request.user, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
