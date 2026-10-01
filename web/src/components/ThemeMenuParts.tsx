@@ -38,10 +38,7 @@ export function ThemeTrigger({
       aria-label={`Theme: ${THEME_LABELS[preference]}`}
       aria-haspopup="menu"
       aria-expanded={false}
-      className={cn(
-        'size-9 shrink-0 rounded-full p-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
-        className,
-      )}
+      className={cn('size-11 shrink-0 rounded-full p-0', className)}
       {...props}
     >
       <span

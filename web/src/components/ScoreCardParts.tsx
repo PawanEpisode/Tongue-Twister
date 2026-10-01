@@ -7,7 +7,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 /**
  * The score ring shared by the result screen (animated) and the public score card (static, so the
- * server-rendered page already shows the number). `children` overlay the ring, e.g. a Lottie burst.
+ * server-rendered page already shows the number). `children` overlay the ring.
  */
 export function ScoreRing({
   score,

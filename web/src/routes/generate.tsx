@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import GenerateForm from '#/components/generate/GenerateForm'
 import GenerateGate from '#/components/generate/GenerateGate'
+import { PageTitle } from '#/components/ui/page-title'
 import { seo } from '#/lib/seo'
 
 export const Route = createFileRoute('/generate')({
@@ -18,7 +19,7 @@ function GeneratePage() {
   return (
     <GenerateGate title="Make a twister">
       <div className="mx-auto max-w-2xl space-y-6">
-        <h1 className="font-display text-3xl font-bold">Make a twister</h1>
+        <PageTitle>Make a twister</PageTitle>
         <GenerateForm />
       </div>
     </GenerateGate>

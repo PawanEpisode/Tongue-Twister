@@ -48,6 +48,21 @@ afterEach(() => {
 })
 
 describe('GenerateForm', () => {
+  it('sends the chosen difficulty', async () => {
+    Element.prototype.scrollIntoView = () => undefined
+    fetchMock.mockReturnValue(reply(201, { slug: 's', text: 'Hard hats' }))
+    setup()
+    fireEvent.click(screen.getByRole('combobox', { name: /difficulty/i }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Hard' }))
+    submit()
+    expect(await screen.findByText('Hard hats')).toBeTruthy()
+    const init = fetchMock.mock.calls.at(-1)?.[1] as RequestInit
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      topic: 'otters',
+      difficulty: 3,
+    })
+  })
+
   it('validates an empty topic without calling the API', () => {
     setup()
     fireEvent.click(button())

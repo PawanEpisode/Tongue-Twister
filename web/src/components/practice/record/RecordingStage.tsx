@@ -11,7 +11,13 @@ import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import type { LostDevice } from '#/lib/record/useRecorder'
 import type { MachineState } from '#/lib/record/machine'
 import type { Session } from '#/lib/record/session'
@@ -262,49 +268,65 @@ export default function RecordingStage({
 
       <Dialog
         open={confirm === 'stop'}
-        onClose={() => setConfirm(null)}
-        title="Stop recording?"
-        description="We’ll finish this take and open the review."
+        onOpenChange={(next) => {
+          if (!next) setConfirm(null)
+        }}
       >
-        <div className="mt-5 flex justify-end gap-3">
-          <Button variant="outline" onClick={() => setConfirm(null)}>
-            Keep recording
-          </Button>
-          <Button
-            onClick={() => {
-              setConfirm(null)
-              onStop()
-            }}
-          >
-            Stop
-          </Button>
-        </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stop recording?</DialogTitle>
+            <DialogDescription>
+              We’ll finish this take and open the review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setConfirm(null)}>
+              Keep recording
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirm(null)
+                onStop()
+              }}
+            >
+              Stop
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
       <Dialog
         open={confirm === 'restart' || confirm === 'discard'}
-        onClose={() => setConfirm(null)}
-        title={
-          confirm === 'discard'
-            ? 'Discard this take?'
-            : 'Start this take again?'
-        }
-        description="What you’ve recorded so far will be deleted from this device."
+        onOpenChange={(next) => {
+          if (!next) setConfirm(null)
+        }}
       >
-        <div className="mt-5 flex justify-end gap-3">
-          <Button variant="outline" onClick={() => setConfirm(null)}>
-            Keep it
-          </Button>
-          <Button
-            onClick={() => {
-              const c = confirm
-              setConfirm(null)
-              if (c === 'discard') onDiscard()
-              else onRestart()
-            }}
-          >
-            {confirm === 'discard' ? 'Discard' : 'Restart'}
-          </Button>
-        </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirm === 'discard'
+                ? 'Discard this take?'
+                : 'Start this take again?'}
+            </DialogTitle>
+            <DialogDescription>
+              What you’ve recorded so far will be deleted from this device.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setConfirm(null)}>
+              Keep it
+            </Button>
+            <Button
+              onClick={() => {
+                const c = confirm
+                setConfirm(null)
+                if (c === 'discard') onDiscard()
+                else onRestart()
+              }}
+            >
+              {confirm === 'discard' ? 'Discard' : 'Restart'}
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   )

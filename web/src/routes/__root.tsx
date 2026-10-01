@@ -114,7 +114,7 @@ function RootLayout() {
           <ObservabilityInit />
           <Header />
           <MotionProvider>
-            <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
+            <main className="mx-auto max-w-6xl px-4 pt-6 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-8">
               <Outlet />
             </main>
             <AchievementToaster />

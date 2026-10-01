@@ -1,6 +1,7 @@
 import { Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils'
 
 type Target =
   /** A path on this site; shared as an absolute canonical link. */
@@ -16,13 +17,16 @@ export default function ShareButton({
   title,
   label = 'Share',
   ariaLabel = 'Share this twister',
+  icon = false,
   onShared,
   ...target
 }: {
   title: string
-  /** Visible text. */
+  /** Visible text. Ignored when `icon` is set. */
   label?: string
   ariaLabel?: string
+  /** Icon only, same circle as the other practice actions. */
+  icon?: boolean
   /** Called once the link has actually gone out: the share sheet completed, or the copy succeeded. */
   onShared?: () => void
 } & Target) {
@@ -60,18 +64,32 @@ export default function ShareButton({
     }
   }
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      onClick={() => void share()}
-      aria-label={ariaLabel}
-      className="gap-1.5"
-    >
-      <Share2 className="size-4" aria-hidden />
-      {label}
-      <span role="status" className="ml-1 text-lime">
-        {note}
-      </span>
-    </Button>
+    <span className={cn(icon && 'relative')}>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => void share()}
+        aria-label={ariaLabel}
+        className={cn(
+          icon ? 'size-11 rounded-full border border-border p-0' : 'gap-1.5',
+        )}
+      >
+        <Share2 className={icon ? 'size-5' : 'size-4'} aria-hidden />
+        {!icon && label}
+        {!icon && (
+          <span role="status" className="ml-1 text-lime">
+            {note}
+          </span>
+        )}
+      </Button>
+      {icon && note && (
+        <span
+          role="status"
+          className="absolute top-full left-1/2 z-10 -translate-x-1/2 pt-1 text-xs whitespace-nowrap text-lime"
+        >
+          {note}
+        </span>
+      )}
+    </span>
   )
 }

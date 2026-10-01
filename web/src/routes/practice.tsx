@@ -5,11 +5,13 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { PracticeSkeleton } from '#/components/feedback'
 import WordDrill from '#/components/practice/WordDrill'
 import type { DrillItem } from '#/components/practice/WordDrill'
 import { Button } from '#/components/ui/button'
+import { Checkbox } from '#/components/ui/checkbox'
+import { Label } from '#/components/ui/label'
 import { api } from '#/lib/api'
 import type { WeakWord } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
@@ -48,6 +50,7 @@ function PracticePage() {
   const [dueOnly, setDueOnly] = useState(false)
   const [items, setItems] = useState<DrillItem[] | null>(null)
   const autoStarted = useRef(false)
+  const dueId = useId()
 
   const words = useQuery({
     queryKey: ['weak-words', userId, dueOnly],
@@ -113,14 +116,19 @@ function PracticePage() {
           <h2 id="weak-words" className="text-xl font-bold">
             Words to work on
           </h2>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              id={dueId}
               checked={dueOnly}
-              onChange={(e) => setDueOnly(e.target.checked)}
+              onCheckedChange={(value) => setDueOnly(value === true)}
             />
-            Due for review only
-          </label>
+            <Label
+              htmlFor={dueId}
+              className="font-normal text-muted-foreground"
+            >
+              Due for review only
+            </Label>
+          </div>
         </div>
 
         {words.isPending ? (

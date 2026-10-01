@@ -1,5 +1,6 @@
 import { ErrorState, Skeleton } from '#/components/feedback'
 import { Card } from '#/components/ui/card'
+import { PageTitle } from '#/components/ui/page-title'
 import { useDeletionState } from '#/lib/account/useDeletion'
 import { useFlags } from '#/lib/flags'
 import { useMe } from '#/lib/useMe'
@@ -25,7 +26,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl text-left">
-      <h1 className="text-4xl font-extrabold">Account</h1>
+      <PageTitle>Account</PageTitle>
       {deletion.pending && (
         <p className="mt-2 text-sm text-muted-foreground">
           Settings are paused while your account is scheduled for deletion.
@@ -47,7 +48,7 @@ export default function AccountPage() {
               asChild
               variant="glass"
               className={cn(
-                'rounded-2xl p-6',
+                'rounded-2xl p-4 sm:p-6',
                 tone === 'danger' && 'border border-pink/40',
               )}
             >

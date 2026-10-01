@@ -1,15 +1,26 @@
 import { Camera, Mic, ShieldCheck } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import { cloneElement, useEffect, useId, useState } from 'react'
+import type { ReactElement } from 'react'
 import PermissionNotice from '../PermissionNotice'
 import { Button } from '#/components/ui/button'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer'
+import { Checkbox } from '#/components/ui/checkbox'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { SelectField } from '#/components/ui/select'
 import type { Twister } from '#/lib/api'
 import type { Capabilities } from '#/lib/record/capabilities'
 import { supportFor } from '#/lib/record/capabilities'
 import type { RecordError } from '#/lib/record/errors'
 import { usesPacing, usesSpeech } from '#/lib/record/highlight'
 import type { HighlightMode } from '#/lib/record/highlight'
-import { getLayout } from '#/lib/record/layouts'
+import { getLayout, LAYOUT_LIST } from '#/lib/record/layouts'
 import {
   estimateBytes,
   formatBytes,
@@ -40,21 +51,22 @@ function Field({
   hint,
 }: {
   label: string
-  children: ReactNode
+  children: ReactElement<{ id?: string }>
   hint?: string
 }) {
+  const id = useId()
   return (
-    <label className="block text-left text-sm">
-      <span className="mb-1 block font-semibold">{label}</span>
-      {children}
+    <div className="text-left text-sm">
+      <Label htmlFor={id} className="mb-1 block font-semibold">
+        {label}
+      </Label>
+      {cloneElement(children, { id })}
       {hint && (
         <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
       )}
-    </label>
+    </div>
   )
 }
-const selectClass =
-  'w-full rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none focus:border-primary'
 
 function Toggle({
   label,
@@ -67,17 +79,19 @@ function Toggle({
   onChange: (v: boolean) => void
   disabled?: boolean
 }) {
+  const id = useId()
   return (
-    <label className="flex items-center gap-2 text-left text-sm">
-      <input
-        type="checkbox"
+    <div className="flex items-center gap-2 text-left text-sm">
+      <Checkbox
+        id={id}
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="size-4 accent-[var(--primary)]"
+        onCheckedChange={(value) => onChange(value === true)}
       />
-      {label}
-    </label>
+      <Label htmlFor={id} className="font-normal">
+        {label}
+      </Label>
+    </div>
   )
 }
 
@@ -145,201 +159,257 @@ export default function RecordSetup({
     maxBytes,
   )
   const supported = supportFor(caps, layout.needs).ok
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  useEffect(() => {
+    if (supported) return
+    const next = LAYOUT_LIST.find((item) => supportFor(caps, item.needs).ok)
+    if (next) update({ layout: next.id })
+  }, [supported, caps, update])
   const camErr = openError?.camera ?? null
   const micErr = openError?.mic ?? null
   const needsCamera = layout.needs.camera
   const pacing = usesPacing(settings.highlight)
   const speech = usesSpeech(settings.highlight)
+  const summary = [
+    layout.label,
+    needsCamera && caps.platform !== 'desktop'
+      ? settings.facing === 'environment'
+        ? 'Back camera'
+        : 'Front camera'
+      : null,
+    needsCamera
+      ? settings.resolution === 'auto'
+        ? 'Auto 720p'
+        : settings.resolution
+      : null,
+    settings.countdownS === 0
+      ? 'No countdown'
+      : `${settings.countdownS}s countdown`,
+  ]
+    .filter((part) => part)
+    .join(' · ')
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 text-left">
-      <section aria-labelledby="rec-layout">
-        <h2 id="rec-layout" className="mb-3 font-display text-lg font-bold">
-          Layout
-        </h2>
-        <LayoutPicker
-          value={settings.layout}
-          onChange={(id) => update({ layout: id })}
-          caps={caps}
-        />
-        {layout.needs.screen && !layout.needs.region && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Pick a window or tab in your browser’s sharing box. Close private
-            tabs first, and you can crop after recording.
-          </p>
-        )}
-        {layout.needs.region && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Your browser will ask to share this tab. Only the practice box is
-            recorded.
-          </p>
-        )}
-      </section>
+    <div className="mx-auto max-w-2xl space-y-6 text-center">
+      <div className="glass rounded-2xl p-5 text-left">
+        <p className="text-xs font-medium text-muted-foreground">This take</p>
+        <p className="mt-1 text-base font-semibold text-foreground">
+          {summary}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4"
+          onClick={() => setSettingsOpen(true)}
+        >
+          Layout & settings
+        </Button>
+      </div>
+      <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DrawerContent className="overflow-hidden">
+          <DrawerHeader>
+            <DrawerTitle className="text-center font-display text-xl font-bold">
+              Layout & settings
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-4 pb-2 text-left">
+            <section aria-labelledby="rec-layout">
+              <h2
+                id="rec-layout"
+                className="mb-3 font-display text-lg font-bold"
+              >
+                Layout
+              </h2>
+              <LayoutPicker
+                value={settings.layout}
+                onChange={(id) => update({ layout: id })}
+                caps={caps}
+              />
+              {layout.needs.screen && !layout.needs.region && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Pick a window or tab in your browser’s sharing box. Close
+                  private tabs first, and you can crop after recording.
+                </p>
+              )}
+              {layout.needs.region && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Your browser will ask to share this tab. Only the practice box
+                  is recorded.
+                </p>
+              )}
+            </section>
 
-      <section
-        aria-labelledby="rec-devices"
-        className="grid gap-4 sm:grid-cols-2"
-      >
-        <h2 id="rec-devices" className="sr-only">
-          Devices
-        </h2>
-        {needsCamera && (
-          <Field label="Camera">
-            <select
-              className={selectClass}
-              value={settings.cameraId}
-              onChange={(e) => update({ cameraId: e.target.value })}
+            <section
+              aria-labelledby="rec-devices"
+              className="grid gap-4 sm:grid-cols-2"
             >
-              <option value="">Default camera</option>
-              {devices.cameras.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
-        <Field label="Microphone">
-          <select
-            className={selectClass}
-            value={settings.micId}
-            onChange={(e) => update({ micId: e.target.value })}
-          >
-            <option value="">Default microphone</option>
-            {devices.mics.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        {needsCamera && (
-          <Field label="Quality" hint="Auto is 720p at 30 fps.">
-            <select
-              className={selectClass}
-              value={settings.resolution}
-              onChange={(e) =>
-                update({ resolution: e.target.value as Resolution })
-              }
-            >
-              <option value="auto">Auto (720p)</option>
-              <option value="720p">720p</option>
-              <option value="1080p">1080p</option>
-            </select>
-          </Field>
-        )}
-        {caps.platform !== 'desktop' && needsCamera && (
-          <Field label="Camera facing">
-            <select
-              className={selectClass}
-              value={settings.facing}
-              onChange={(e) =>
-                update({ facing: e.target.value as 'user' | 'environment' })
-              }
-            >
-              <option value="user">Front</option>
-              <option value="environment">Back</option>
-            </select>
-          </Field>
-        )}
-      </section>
+              <h2 id="rec-devices" className="sr-only">
+                Devices
+              </h2>
+              {needsCamera && (
+                <SelectField
+                  label="Camera"
+                  value={settings.cameraId}
+                  onValueChange={(cameraId) => update({ cameraId })}
+                  options={[
+                    { value: '', label: 'Default camera' },
+                    ...devices.cameras.map((d) => ({
+                      value: d.id,
+                      label: d.label,
+                    })),
+                  ]}
+                />
+              )}
+              <SelectField
+                label="Microphone"
+                value={settings.micId}
+                onValueChange={(micId) => update({ micId })}
+                options={[
+                  { value: '', label: 'Default microphone' },
+                  ...devices.mics.map((d) => ({ value: d.id, label: d.label })),
+                ]}
+              />
+              {needsCamera && (
+                <SelectField
+                  label="Quality"
+                  hint="Auto is 720p at 30 fps."
+                  value={settings.resolution}
+                  onValueChange={(resolution) =>
+                    update({ resolution: resolution as Resolution })
+                  }
+                  options={[
+                    { value: 'auto', label: 'Auto (720p)' },
+                    { value: '720p', label: '720p' },
+                    { value: '1080p', label: '1080p' },
+                  ]}
+                />
+              )}
+              {caps.platform !== 'desktop' && needsCamera && (
+                <SelectField
+                  label="Camera facing"
+                  value={settings.facing}
+                  onValueChange={(facing) =>
+                    update({ facing: facing as 'user' | 'environment' })
+                  }
+                  options={[
+                    { value: 'user', label: 'Front' },
+                    { value: 'environment', label: 'Back' },
+                  ]}
+                />
+              )}
+            </section>
 
-      <section aria-labelledby="rec-text" className="grid gap-4 sm:grid-cols-2">
-        <h2 id="rec-text" className="sr-only">
-          Text and timing
-        </h2>
-        <Field label="Highlight the words">
-          <select
-            className={selectClass}
-            value={settings.highlight}
-            onChange={(e) =>
-              update({ highlight: e.target.value as HighlightMode })
-            }
-          >
-            <option value="pacing">Follow a pace (Read along)</option>
-            <option value="speech" disabled={!speechSupported}>
-              Follow my voice (Speak &amp; score)
-            </option>
-            <option value="both" disabled={!speechSupported}>
-              Pace guide and my voice
-            </option>
-          </select>
-          {!speechSupported && (
-            <span className="mt-1 block text-xs text-muted-foreground">
-              Voice following isn’t supported in this browser.
-            </span>
-          )}
-        </Field>
-        {pacing && (
-          <Field
-            label="Pace (words per minute)"
-            hint="Leave empty for automatic."
-          >
-            <input
-              type="number"
-              inputMode="numeric"
-              min={40}
-              max={300}
-              className={selectClass}
-              value={settings.wpm ?? ''}
-              placeholder="Auto"
-              onChange={(e) =>
-                update({
-                  wpm: e.target.value === '' ? null : Number(e.target.value),
-                })
-              }
-            />
-          </Field>
-        )}
-        <Field label="Countdown">
-          <select
-            className={selectClass}
-            value={settings.countdownS}
-            onChange={(e) =>
-              update({ countdownS: Number(e.target.value) as CountdownS })
-            }
-          >
-            <option value={0}>None</option>
-            <option value={3}>3 seconds</option>
-            <option value={5}>5 seconds</option>
-          </select>
-        </Field>
-        <div className="space-y-2 self-end">
-          <Toggle
-            label="Reduce echo"
-            checked={settings.echoCancellation}
-            onChange={(echoCancellation) => update({ echoCancellation })}
-          />
-          <Toggle
-            label="Reduce background noise"
-            checked={settings.noiseSuppression}
-            onChange={(noiseSuppression) => update({ noiseSuppression })}
-          />
-          {needsCamera && (
-            <Toggle
-              label="Mirror my preview"
-              checked={settings.mirrorPreview}
-              onChange={(mirrorPreview) => update({ mirrorPreview })}
-            />
-          )}
-          {needsCamera && (
-            <Toggle
-              label="Mirror the saved video too"
-              checked={settings.mirrorSaved}
-              onChange={(mirrorSaved) => update({ mirrorSaved })}
-            />
-          )}
-          {speech && (
-            <Toggle
-              label="Stop when I finish the twister"
-              checked={settings.autoStopOnFinish}
-              onChange={(autoStopOnFinish) => update({ autoStopOnFinish })}
-            />
-          )}
-        </div>
-      </section>
+            <section
+              aria-labelledby="rec-text"
+              className="grid gap-4 sm:grid-cols-2"
+            >
+              <h2 id="rec-text" className="sr-only">
+                Text and timing
+              </h2>
+              <SelectField
+                label="Highlight the words"
+                hint={
+                  speechSupported
+                    ? undefined
+                    : 'Voice following isn’t supported in this browser.'
+                }
+                value={settings.highlight}
+                onValueChange={(highlight) =>
+                  update({ highlight: highlight as HighlightMode })
+                }
+                options={[
+                  { value: 'pacing', label: 'Follow a pace (Read along)' },
+                  {
+                    value: 'speech',
+                    label: 'Follow my voice (Speak & score)',
+                    disabled: !speechSupported,
+                  },
+                  {
+                    value: 'both',
+                    label: 'Pace guide and my voice',
+                    disabled: !speechSupported,
+                  },
+                ]}
+              />
+              {pacing && (
+                <Field
+                  label="Pace (words per minute)"
+                  hint="Leave empty for automatic."
+                >
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={40}
+                    max={300}
+                    value={settings.wpm ?? ''}
+                    placeholder="Auto"
+                    onChange={(e) =>
+                      update({
+                        wpm:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </Field>
+              )}
+              <SelectField
+                label="Countdown"
+                value={String(settings.countdownS)}
+                onValueChange={(countdownS) =>
+                  update({ countdownS: Number(countdownS) as CountdownS })
+                }
+                options={[
+                  { value: '0', label: 'None' },
+                  { value: '3', label: '3 seconds' },
+                  { value: '5', label: '5 seconds' },
+                ]}
+              />
+              <div className="space-y-2 self-end">
+                <Toggle
+                  label="Reduce echo"
+                  checked={settings.echoCancellation}
+                  onChange={(echoCancellation) => update({ echoCancellation })}
+                />
+                <Toggle
+                  label="Reduce background noise"
+                  checked={settings.noiseSuppression}
+                  onChange={(noiseSuppression) => update({ noiseSuppression })}
+                />
+                {needsCamera && (
+                  <Toggle
+                    label="Mirror my preview"
+                    checked={settings.mirrorPreview}
+                    onChange={(mirrorPreview) => update({ mirrorPreview })}
+                  />
+                )}
+                {needsCamera && (
+                  <Toggle
+                    label="Mirror the saved video too"
+                    checked={settings.mirrorSaved}
+                    onChange={(mirrorSaved) => update({ mirrorSaved })}
+                  />
+                )}
+                {speech && (
+                  <Toggle
+                    label="Stop when I finish the twister"
+                    checked={settings.autoStopOnFinish}
+                    onChange={(autoStopOnFinish) =>
+                      update({ autoStopOnFinish })
+                    }
+                  />
+                )}
+              </div>
+            </section>
+          </div>
+          <DrawerFooter>
+            <Button type="button" onClick={() => setSettingsOpen(false)}>
+              Done
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
-      <p className="flex items-start gap-2 rounded-xl bg-card/60 p-3 text-sm text-muted-foreground">
+      <p className="flex items-start gap-2 rounded-xl bg-card/60 p-3 text-left text-sm text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
         Recordings stay on this device unless you save them to your account.
         They may capture people or screens around you.
@@ -413,6 +483,7 @@ export default function RecordSetup({
         )}
         <Button
           size="lg"
+          className="w-full sm:w-auto"
           disabled={busy || locked || !supported || !headroom.ok}
           onClick={() => {
             dismissError()

@@ -1,11 +1,9 @@
-import Lottie from '#/components/ClientLottie'
 import confetti from 'canvas-confetti'
 import { BicepsFlexed, Flame, PartyPopper, Tornado, Trophy } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { m } from 'motion/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import success from '#/assets/lottie/success.json'
 import { ScoreRing, StatTile } from '#/components/ScoreCardParts'
 import ScoreCardShare from '#/components/ScoreCardShare'
 import { achievementIcon } from '#/components/progress/achievementIcons'
@@ -53,6 +51,7 @@ export default function ResultCard({
   onNext: () => void
 }) {
   const g = grade(score)
+  const perfect = Math.round(accuracy * 100) === 100
   useEffect(() => {
     if (score < 80) return
     const end = Date.now() + 900
@@ -85,15 +84,7 @@ export default function ResultCard({
         variant="glass"
         className="mx-auto max-w-md rounded-3xl p-8 text-center"
       >
-        <ScoreRing score={score} animated>
-          {score >= 80 && (
-            <Lottie
-              animationData={success}
-              loop={false}
-              className="absolute -right-3 -top-3 h-16 w-16"
-            />
-          )}
-        </ScoreRing>
+        <ScoreRing score={score} animated />
         <h2 className="mt-4 flex items-center justify-center gap-2 text-2xl font-bold">
           <g.Icon className="size-6 shrink-0" aria-hidden />
           {g.label}
@@ -144,9 +135,11 @@ export default function ResultCard({
         {children}
         <ScoreCardShare attemptId={attemptId} />
         <div className="mt-6 flex gap-3">
-          <Button variant="outline" className="flex-1 py-3" onClick={onRetry}>
-            Retry
-          </Button>
+          {!perfect && (
+            <Button variant="outline" className="flex-1 py-3" onClick={onRetry}>
+              Retry
+            </Button>
+          )}
           <Button className="flex-1 py-3" onClick={onNext}>
             Next twister →
           </Button>

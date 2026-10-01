@@ -1,7 +1,16 @@
 import { Check, Copy, Link2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { SelectField } from '#/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import type { ShareCreated, ShareExpiry } from '#/lib/api'
 import { friendlyError } from '#/components/feedback'
 import { useShareMutations, useShares } from '#/lib/record/useRecordings'
@@ -66,132 +75,139 @@ export default function ShareDialog({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
-      title="Share this recording"
-      description="Anyone with the link can watch it until it expires or you revoke it."
+      onOpenChange={(next) => {
+        if (!next) onClose()
+      }}
     >
-      <div className="space-y-4 text-left text-sm">
-        {anonymous && (
-          <p
-            role="note"
-            className="rounded-xl bg-card px-3 py-2 text-muted-foreground"
-          >
-            You haven’t set a name, so viewers will see this as shared by
-            “Anonymous”. Add one below if you’d like credit.
-          </p>
-        )}
-        <PublicNameField />
-        {created ? (
-          <div className="space-y-2">
-            <label className="block font-semibold" htmlFor="share-url">
-              Your link
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="share-url"
-                ref={input}
-                readOnly
-                value={created.url}
-                className="min-w-0 flex-1 rounded-xl border border-input bg-card px-3 py-2"
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Share this recording</DialogTitle>
+          <DialogDescription>
+            Anyone with the link can watch it until it expires or you revoke it.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-left text-sm">
+          {anonymous && (
+            <p
+              role="note"
+              className="rounded-xl bg-card px-3 py-2 text-muted-foreground"
+            >
+              You haven’t set a name, so viewers will see this as shared by
+              “Anonymous”. Add one below if you’d like credit.
+            </p>
+          )}
+          <PublicNameField />
+          {created ? (
+            <div className="space-y-2">
+              <Label htmlFor="share-url" className="block font-semibold">
+                Your link
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="share-url"
+                  ref={input}
+                  readOnly
+                  value={created.url}
+                  className="min-w-0 flex-1"
+                />
+                <Button onClick={() => void copy()}>
+                  {copied ? (
+                    <Check className="mr-1 size-4" aria-hidden />
+                  ) : (
+                    <Copy className="mr-1 size-4" aria-hidden />
+                  )}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <p role="status" className="text-xs text-muted-foreground">
+                Copy it now — for your security we can’t show this link again.
+                You can always make another.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-end gap-2">
+              <SelectField
+                label="Link expires after"
+                labelClassName="font-semibold"
+                value={expires}
+                onValueChange={(value) => setExpires(value as ShareExpiry)}
+                triggerClassName="w-auto"
+                options={options.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
               />
-              <Button onClick={() => void copy()}>
-                {copied ? (
-                  <Check className="mr-1 size-4" aria-hidden />
-                ) : (
-                  <Copy className="mr-1 size-4" aria-hidden />
-                )}
-                {copied ? 'Copied' : 'Copy'}
+              <Button
+                disabled={create.isPending}
+                onClick={() =>
+                  create.mutate(expires, {
+                    onSuccess: (r) => {
+                      setCreated(r)
+                      track('record_share_create', { expires_in: expires })
+                    },
+                  })
+                }
+              >
+                <Link2 className="mr-1 size-4" aria-hidden />
+                {create.isPending ? 'Creating…' : 'Create link'}
               </Button>
             </div>
-            <p role="status" className="text-xs text-muted-foreground">
-              Copy it now — for your security we can’t show this link again. You
-              can always make another.
+          )}
+          {create.isError && (
+            <p role="alert" className="text-pink">
+              {friendlyError(create.error)}
             </p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="block">
-              <span className="mb-1 block font-semibold">
-                Link expires after
-              </span>
-              <select
-                value={expires}
-                onChange={(e) => setExpires(e.target.value as ShareExpiry)}
-                className="rounded-xl border border-input bg-card px-3 py-2"
-              >
-                {options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          )}
+          {created && (
             <Button
-              disabled={create.isPending}
-              onClick={() =>
-                create.mutate(expires, {
-                  onSuccess: (r) => {
-                    setCreated(r)
-                    track('record_share_create', { expires_in: expires })
-                  },
-                })
-              }
+              variant="outline"
+              size="sm"
+              onClick={() => setCreated(null)}
             >
-              <Link2 className="mr-1 size-4" aria-hidden />
-              {create.isPending ? 'Creating…' : 'Create link'}
+              Make another link
+            </Button>
+          )}
+
+          <section aria-label="Active links">
+            <h3 className="mb-1 font-semibold">Active links</h3>
+            {active.length === 0 ? (
+              <p className="text-muted-foreground">None yet.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {active.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 py-2"
+                  >
+                    <span className="text-muted-foreground">
+                      Expires {new Date(s.expires_at).toLocaleDateString()} ·{' '}
+                      {s.view_count} {s.view_count === 1 ? 'view' : 'views'}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={revoke.isPending}
+                      onClick={() => revoke.mutate(s.id)}
+                    >
+                      Revoke
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {revoke.isError && (
+              <p role="alert" className="mt-1 text-pink">
+                {friendlyError(revoke.error)}
+              </p>
+            )}
+          </section>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={onClose}>
+              Done
             </Button>
           </div>
-        )}
-        {create.isError && (
-          <p role="alert" className="text-pink">
-            {friendlyError(create.error)}
-          </p>
-        )}
-        {created && (
-          <Button variant="outline" size="sm" onClick={() => setCreated(null)}>
-            Make another link
-          </Button>
-        )}
-
-        <section aria-label="Active links">
-          <h3 className="mb-1 font-semibold">Active links</h3>
-          {active.length === 0 ? (
-            <p className="text-muted-foreground">None yet.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {active.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex items-center justify-between gap-2 py-2"
-                >
-                  <span className="text-muted-foreground">
-                    Expires {new Date(s.expires_at).toLocaleDateString()} ·{' '}
-                    {s.view_count} {s.view_count === 1 ? 'view' : 'views'}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={revoke.isPending}
-                    onClick={() => revoke.mutate(s.id)}
-                  >
-                    Revoke
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {revoke.isError && (
-            <p role="alert" className="mt-1 text-pink">
-              {friendlyError(revoke.error)}
-            </p>
-          )}
-        </section>
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onClose}>
-            Done
-          </Button>
         </div>
-      </div>
+      </DialogContent>
     </Dialog>
   )
 }

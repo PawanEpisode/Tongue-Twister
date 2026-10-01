@@ -1,4 +1,5 @@
 import { Chip } from '#/components/ui/chip'
+import { ScrollRow } from '#/components/ui/scroll-row'
 import type { BrowseStatus } from '#/lib/api'
 import { BROWSE_STATUSES, STATUS_LABELS } from '#/lib/progress/browseParams'
 
@@ -11,11 +12,7 @@ export function StatusChips({
   onChange: (status: BrowseStatus | undefined) => void
 }) {
   return (
-    <div
-      role="group"
-      aria-label="Your progress"
-      className="flex flex-wrap gap-2"
-    >
+    <ScrollRow wrap role="group" aria-label="Your progress">
       <Chip on={!value} onClick={() => onChange(undefined)}>
         Any progress
       </Chip>
@@ -24,6 +21,6 @@ export function StatusChips({
           {STATUS_LABELS[s]}
         </Chip>
       ))}
-    </div>
+    </ScrollRow>
   )
 }

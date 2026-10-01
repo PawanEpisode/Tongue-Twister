@@ -8,10 +8,18 @@ import {
   Share2,
   Trash2,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import type { Quota, UnlockedAchievement } from '#/lib/api'
 import { toVtt } from '#/lib/record/captions'
 import type { TakeAnalysis, DeliveryHints } from '#/lib/record/analysis'
@@ -81,6 +89,7 @@ export default function RecordReview(p: ReviewProps) {
   const src = useObjectUrl(take.blob)
   const [title, setTitle] = useState(p.defaultTitle)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const titleId = useId()
 
   const vtt = useMemo(
     () =>
@@ -266,15 +275,17 @@ export default function RecordReview(p: ReviewProps) {
                   p.onSave(title)
                 }}
               >
-                <label className="min-w-0 flex-1 text-sm">
-                  <span className="mb-1 block font-semibold">Title</span>
-                  <input
+                <div className="min-w-0 flex-1 text-sm">
+                  <Label htmlFor={titleId} className="mb-1 block font-semibold">
+                    Title
+                  </Label>
+                  <Input
+                    id={titleId}
                     value={title}
                     maxLength={80}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full rounded-xl border border-input bg-card px-3 py-2"
                   />
-                </label>
+                </div>
                 <Button type="submit" disabled={busy}>
                   <CloudUpload className="mr-1.5 size-4" aria-hidden />
                   Save to my account
@@ -311,23 +322,31 @@ export default function RecordReview(p: ReviewProps) {
 
       <Dialog
         open={confirmDiscard}
-        onClose={() => setConfirmDiscard(false)}
-        title="Discard this take?"
-        description="It will be deleted from this device. This can’t be undone."
+        onOpenChange={(next) => {
+          if (!next) setConfirmDiscard(false)
+        }}
       >
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
-            Keep it
-          </Button>
-          <Button
-            onClick={() => {
-              setConfirmDiscard(false)
-              p.onDiscard()
-            }}
-          >
-            Discard
-          </Button>
-        </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard this take?</DialogTitle>
+            <DialogDescription>
+              It will be deleted from this device. This can’t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
+              Keep it
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmDiscard(false)
+                p.onDiscard()
+              }}
+            >
+              Discard
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   )

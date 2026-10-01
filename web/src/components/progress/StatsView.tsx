@@ -1,8 +1,19 @@
+import { useId } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { ErrorState, Skeleton } from '#/components/feedback'
 import { Card } from '#/components/ui/card'
 import { Chip } from '#/components/ui/chip'
+import { Label } from '#/components/ui/label'
+import { PageTitle } from '#/components/ui/page-title'
+import { ScrollRow } from '#/components/ui/scroll-row'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { api } from '#/lib/api'
 import type { Stats, StatsMode, StatsRange } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
@@ -160,6 +171,7 @@ export function StatsView({
   onChange: (next: { range?: StatsRange; mode?: StatsMode | undefined }) => void
 }) {
   const { session } = useAuth()
+  const modeId = useId()
   const q = useQuery({
     queryKey: ['stats', session?.user.id, range, mode],
     queryFn: () => api.stats(range, mode),
@@ -169,9 +181,9 @@ export function StatsView({
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-4xl font-extrabold">Your progress</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <div role="group" aria-label="Time range" className="flex gap-2">
+        <PageTitle>Your progress</PageTitle>
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <ScrollRow role="group" aria-label="Time range">
             {STATS_RANGES.map((r) => (
               <Chip
                 key={r}
@@ -181,26 +193,35 @@ export function StatsView({
                 {RANGE_LABELS[r]}
               </Chip>
             ))}
-          </div>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            Mode
-            <select
-              value={mode ?? ''}
-              onChange={(e) =>
+          </ScrollRow>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Label
+              htmlFor={modeId}
+              className="font-normal text-muted-foreground"
+            >
+              Mode
+            </Label>
+            <Select
+              value={mode ?? 'all'}
+              onValueChange={(value) =>
                 onChange({
-                  mode: STATS_MODES.find((m) => m === e.target.value),
+                  mode: STATS_MODES.find((m) => m === value),
                 })
               }
-              className="min-h-9 rounded-xl border border-border bg-card px-3 py-1.5 text-foreground pointer-coarse:min-h-11"
             >
-              <option value="">All modes</option>
-              {STATS_MODES.map((m) => (
-                <option key={m} value={m}>
-                  {MODE_LABELS[m]}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger id={modeId} className="w-auto py-1.5">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All modes</SelectItem>
+                {STATS_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {MODE_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { friendlyError } from '#/components/feedback'
+import { SelectField } from '#/components/ui/select'
 import { useReminders, useSaveReminders } from '#/lib/reminders/hooks'
 import SettingSwitch from './SettingSwitch'
 import type { AccountSectionProps } from './types'
@@ -41,22 +42,18 @@ export default function RemindersSection({ locked }: AccountSectionProps) {
         onChange={(enabled) => save({ ...p, enabled })}
       />
       <div className="space-y-1 text-sm">
-        <label htmlFor={id} className="block font-semibold">
-          Send it around
-        </label>
-        <select
+        <SelectField
           id={id}
-          value={p.hour_local}
+          label="Send it around"
+          labelClassName="font-semibold"
+          value={String(p.hour_local)}
           disabled={locked || !p.enabled}
-          onChange={(e) => save({ ...p, hour_local: Number(e.target.value) })}
-          className="rounded-xl border border-input bg-card px-3 py-2 disabled:opacity-50"
-        >
-          {Array.from({ length: 24 }, (_, h) => (
-            <option key={h} value={h}>
-              {hourLabel(h)}
-            </option>
-          ))}
-        </select>
+          onValueChange={(hour) => save({ ...p, hour_local: Number(hour) })}
+          options={Array.from({ length: 24 }, (_, hour) => ({
+            value: String(hour),
+            label: hourLabel(hour),
+          }))}
+        />
         <p className="text-xs text-muted-foreground">
           In your time zone (set under Profile). Sent to the email on your
           account.

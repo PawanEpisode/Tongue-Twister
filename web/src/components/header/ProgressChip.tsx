@@ -17,18 +17,29 @@ export function ProgressChip() {
     <Link
       to="/stats"
       aria-label={`${streak}-day streak, level ${level}, ${xp} XP. Open your stats.`}
-      className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/90 py-1 pr-2 pl-1 text-xs font-semibold shadow-sm transition-colors hover:border-pink/40 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:gap-2 sm:pr-2.5 pointer-coarse:min-h-11"
+      className="inline-flex items-center rounded-full text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:gap-2 sm:border sm:border-border/70 sm:bg-card/90 sm:py-1 sm:pr-2.5 sm:pl-1 sm:shadow-sm sm:transition-colors sm:hover:border-pink/40"
     >
+      <span
+        className={cn(
+          'inline-flex size-11 items-center justify-center gap-0.5 rounded-full text-pink sm:hidden',
+          hot ? 'bg-pink/15' : 'bg-muted text-muted-foreground',
+        )}
+      >
+        <Flame className="size-3.5" aria-hidden />
+        <span className="text-[11px] font-bold tabular-nums">{streak}</span>
+      </span>
       <span
         aria-hidden
         className={cn(
-          'grid size-6 shrink-0 place-items-center rounded-full',
+          'hidden size-6 shrink-0 place-items-center rounded-full sm:grid',
           hot ? 'bg-pink/15 text-pink' : 'bg-muted text-muted-foreground',
         )}
       >
         <Flame className="size-3.5" />
       </span>
-      <span className="tabular-nums text-foreground">{streak}</span>
+      <span className="hidden tabular-nums text-foreground sm:inline">
+        {streak}
+      </span>
       <span className="hidden font-medium text-muted-foreground sm:inline">
         {streak === 1 ? 'day' : 'days'}
       </span>

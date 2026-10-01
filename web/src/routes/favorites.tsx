@@ -7,6 +7,7 @@ import {
   TwisterGridSkeleton,
 } from '#/components/TwisterList'
 import { Button } from '#/components/ui/button'
+import { PageTitle } from '#/components/ui/page-title'
 import { api } from '#/lib/api'
 import type { Twister } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
@@ -101,7 +102,7 @@ function FavoritesPage() {
   if (loading) return <PracticeSkeleton />
   return (
     <div>
-      <h1 className="text-4xl font-extrabold">Favourites</h1>
+      <PageTitle>Favourites</PageTitle>
       {session ? (
         <SignedInFavorites userId={session.user.id} />
       ) : (

@@ -8,8 +8,16 @@ import {
   Play,
   SkipForward,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Button } from '#/components/ui/button'
+import { Label } from '#/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { cueAt } from '#/lib/record/captions'
 import type { Cue } from '#/lib/record/captions'
 import { formatClock } from '#/lib/record/quality'
@@ -54,6 +62,7 @@ export default function ReviewPlayer({
   const [now, setNow] = useState(0)
   const [length, setLength] = useState(durationMs / 1000)
   const [speed, setSpeed] = useState<number>(1)
+  const speedId = useId()
   const [captions, setCaptions] = useState(false)
   const [mirror, setMirror] = useState(initialMirror)
   const [failed, setFailed] = useState(false)
@@ -256,20 +265,29 @@ export default function ReviewPlayer({
         <span className="tabular-nums text-muted-foreground" aria-hidden>
           {formatClock(now * 1000)} / {formatClock(total * 1000)}
         </span>
-        <label className="flex items-center gap-1 text-muted-foreground">
-          Speed
-          <select
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="rounded-lg border border-input bg-card px-2 py-1 text-foreground"
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Label
+            htmlFor={speedId}
+            className="font-normal text-muted-foreground"
           >
-            {SPEEDS.map((s) => (
-              <option key={s} value={s}>
-                {s}×
-              </option>
-            ))}
-          </select>
-        </label>
+            Speed
+          </Label>
+          <Select
+            value={String(speed)}
+            onValueChange={(value) => setSpeed(Number(value))}
+          >
+            <SelectTrigger id={speedId} className="w-auto gap-1 px-2 py-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SPEEDS.map((rate) => (
+                <SelectItem key={rate} value={String(rate)}>
+                  {rate}×
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {hasCaptions && (
           <Button
             size="sm"

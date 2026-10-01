@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BarChart3, ChevronDown, LogOut, UserRound } from 'lucide-react'
+import { BarChart3, LogOut, UserRound } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,12 +30,12 @@ function Avatar({ name, url }: { name: string; url?: string }) {
         src={url}
         alt=""
         referrerPolicy="no-referrer"
-        className="size-7 rounded-full object-cover"
+        className="size-full rounded-full object-cover"
       />
     )
   }
   return (
-    <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+    <span className="grid size-full place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
       {name[0]?.toUpperCase()}
     </span>
   )
@@ -47,16 +47,14 @@ export function UserMenu() {
   if (!session) return null
   const { name, avatarUrl, email } = identityOf(session)
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/90 py-1 pr-1.5 pl-1 text-sm font-medium text-foreground outline-none hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring/50 md:pr-2.5 pointer-coarse:min-h-11"
+          className="grid size-11 place-items-center overflow-hidden rounded-full outline-none hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label={`Account menu for ${name}`}
         >
           <Avatar name={name} url={avatarUrl} />
-          <span className="hidden max-w-28 truncate md:inline">{name}</span>
-          <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">

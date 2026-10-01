@@ -3,7 +3,13 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, ErrorState, Skeleton } from '#/components/feedback'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import type { GeneratedTwister } from '#/lib/generate/api'
 import { classifyGenerateError } from '#/lib/generate/errors'
 import { useDeleteMyTwister, useMyTwisters } from '#/lib/generate/hooks'
@@ -82,25 +88,33 @@ export default function MyTwistersList() {
       </ul>
       <Dialog
         open={!!target}
-        onClose={() => setTarget(null)}
-        title="Delete this twister?"
-        description="It will be removed from your account for good."
+        onOpenChange={(next) => {
+          if (!next) setTarget(null)
+        }}
       >
-        <p className="mb-4 text-sm text-muted-foreground">{target?.text}</p>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => setTarget(null)}>
-            Keep it
-          </Button>
-          <Button
-            disabled={del.isPending}
-            onClick={() => {
-              if (target)
-                del.mutate(target.id, { onSettled: () => setTarget(null) })
-            }}
-          >
-            {del.isPending ? 'Deleting…' : 'Delete'}
-          </Button>
-        </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this twister?</DialogTitle>
+            <DialogDescription>
+              It will be removed from your account for good.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{target?.text}</p>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setTarget(null)}>
+              Keep it
+            </Button>
+            <Button
+              disabled={del.isPending}
+              onClick={() => {
+                if (target)
+                  del.mutate(target.id, { onSettled: () => setTarget(null) })
+              }}
+            >
+              {del.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </>
   )

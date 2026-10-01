@@ -1,11 +1,12 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import PendingDeletionBanner from '#/components/account/PendingDeletionBanner'
 import { BrandLink } from '#/components/brand/BrandMark'
-import { NavPill } from '#/components/header/NavLinks'
+import { MobileNav, NavPill } from '#/components/header/NavLinks'
 import { ProgressChip } from '#/components/header/ProgressChip'
 import { UserMenu } from '#/components/header/UserMenu'
 import ThemeMenu from '#/components/ThemeMenu'
 import { Button } from '#/components/ui/button'
+import { ScrollRow } from '#/components/ui/scroll-row'
 import { useAuth } from '#/lib/auth'
 
 export default function Header() {
@@ -14,16 +15,18 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30">
-      <div className="border-b border-border/60 bg-background/75 backdrop-blur-xl">
+      <div className="border-b border-border/60 bg-background/75 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center px-4 sm:px-5">
           <div className="order-1 flex h-16 items-center">
             <BrandLink />
           </div>
           <nav
             aria-label="Main"
-            className="order-3 min-w-0 basis-full overflow-x-auto pb-3 pe-6 [scrollbar-width:none] max-lg:[mask-image:linear-gradient(90deg,#000_0,#000_calc(100%-1.5rem),transparent)] lg:order-2 lg:flex lg:flex-1 lg:basis-auto lg:justify-center lg:overflow-x-auto lg:px-3 lg:pe-0 lg:pb-0 [&::-webkit-scrollbar]:hidden"
+            className="hidden lg:order-2 lg:flex lg:flex-1 lg:justify-center lg:px-3"
           >
-            <NavPill />
+            <ScrollRow className="lg:w-max">
+              <NavPill />
+            </ScrollRow>
           </nav>
           <div className="order-2 ml-auto flex h-16 items-center gap-1.5 sm:gap-2 lg:order-3 lg:ml-0">
             {session && <ProgressChip />}
@@ -42,6 +45,7 @@ export default function Header() {
                 </Link>
               </Button>
             )}
+            <MobileNav />
           </div>
         </div>
       </div>

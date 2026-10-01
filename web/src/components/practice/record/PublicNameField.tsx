@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from 'react'
 import { friendlyError } from '#/components/feedback'
 import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import { PUBLIC_NAME_MAX, validatePublicName } from '#/lib/publicName'
 import { usePublicName } from '#/lib/record/useRecordings'
 import { useMe } from '#/lib/useMe'
@@ -29,11 +31,11 @@ export default function PublicNameField() {
         if (check.ok && dirty) save.mutate(check.value)
       }}
     >
-      <label htmlFor={id} className="block font-semibold">
+      <Label htmlFor={id} className="block font-semibold">
         Name on shared recordings
-      </label>
+      </Label>
       <div className="flex gap-2">
-        <input
+        <Input
           id={id}
           value={draft}
           onChange={(e) => {
@@ -44,7 +46,7 @@ export default function PublicNameField() {
           autoComplete="off"
           aria-invalid={!check.ok}
           aria-describedby={`${id}-hint`}
-          className="min-w-0 flex-1 rounded-xl border border-input bg-card px-3 py-2"
+          className="min-w-0 flex-1"
         />
         <Button
           type="submit"

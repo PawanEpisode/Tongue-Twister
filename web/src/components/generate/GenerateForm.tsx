@@ -4,6 +4,8 @@ import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { SelectField } from '#/components/ui/select'
 import { classifyGenerateError } from '#/lib/generate/errors'
 import { useGenerate } from '#/lib/generate/hooks'
 import { TOPIC_MAX, checkTopic } from '#/lib/generate/topic'
@@ -46,13 +48,11 @@ export default function GenerateForm() {
     <div className="space-y-6 text-left">
       <form
         onSubmit={submit}
-        className="glass space-y-4 rounded-2xl p-6"
+        className="glass space-y-4 rounded-2xl p-4 sm:p-6"
         noValidate
       >
         <div className="space-y-2">
-          <label htmlFor={`${id}-topic`} className="text-sm font-medium">
-            What should it be about?
-          </label>
+          <Label htmlFor={`${id}-topic`}>What should it be about?</Label>
           <Input
             id={`${id}-topic`}
             value={topic}
@@ -73,27 +73,21 @@ export default function GenerateForm() {
             </p>
           )}
         </div>
-        <div className="space-y-2">
-          <label htmlFor={`${id}-level`} className="text-sm font-medium">
-            Difficulty
-          </label>
-          <select
-            id={`${id}-level`}
-            value={difficulty}
-            onChange={(e) => setDifficulty(Number(e.target.value))}
-            className="w-full rounded-xl border border-input bg-card px-4 py-3 text-foreground focus:border-primary"
-          >
-            {LEVELS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          id={`${id}-level`}
+          label="Difficulty"
+          value={String(difficulty)}
+          onValueChange={(value) => setDifficulty(Number(value))}
+          options={LEVELS.map((level) => ({
+            value: String(level.value),
+            label: level.label,
+          }))}
+        />
         <Button
           type="submit"
           disabled={gen.isPending || limited}
           aria-disabled={gen.isPending || limited}
+          className="w-full sm:w-auto"
         >
           {gen.isPending ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -130,7 +124,7 @@ export default function GenerateForm() {
       {result && (
         <section
           aria-labelledby={`${id}-result`}
-          className="glass space-y-3 rounded-2xl p-6"
+          className="glass space-y-3 rounded-2xl p-4 sm:p-6"
         >
           <h2 id={`${id}-result`} className="font-display text-lg font-bold">
             Your new twister

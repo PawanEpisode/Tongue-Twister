@@ -10,7 +10,13 @@ import ShareDialog from '#/components/practice/record/ShareDialog'
 import StorageMeter from '#/components/practice/record/StorageMeter'
 import UploadStatusChip from '#/components/practice/record/UploadStatusChip'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import { twisterSlug } from '#/lib/api'
 import type { RecordingSummary } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
@@ -306,31 +312,39 @@ function RecordingsPage() {
       )}
       <Dialog
         open={!!deleting}
-        onClose={() => setDeleting(null)}
-        title="Delete this recording?"
-        description="You can undo this right after."
+        onOpenChange={(next) => {
+          if (!next) setDeleting(null)
+        }}
       >
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setDeleting(null)}>
-            Keep it
-          </Button>
-          <Button
-            disabled={mutations.remove.isPending}
-            onClick={() => {
-              const target = deleting
-              if (!target) return
-              mutations.remove.mutate(target.id, {
-                onSuccess: () => {
-                  setUndo(target)
-                  if (openId === target.id) setOpenId(null)
-                },
-                onSettled: () => setDeleting(null),
-              })
-            }}
-          >
-            Delete
-          </Button>
-        </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this recording?</DialogTitle>
+            <DialogDescription>
+              You can undo this right after.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Keep it
+            </Button>
+            <Button
+              disabled={mutations.remove.isPending}
+              onClick={() => {
+                const target = deleting
+                if (!target) return
+                mutations.remove.mutate(target.id, {
+                  onSuccess: () => {
+                    setUndo(target)
+                    if (openId === target.id) setOpenId(null)
+                  },
+                  onSettled: () => setDeleting(null),
+                })
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   )

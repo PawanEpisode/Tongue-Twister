@@ -48,7 +48,7 @@ function Thumb({ layout }: { layout: LayoutDef }) {
   )
 }
 
-/** Radio group of layouts. Unsupported ones stay visible but disabled, with the reason as text. */
+/** Layouts this device can actually record. Unsupported ones are omitted. */
 export default function LayoutPicker({
   value,
   onChange,
@@ -58,40 +58,46 @@ export default function LayoutPicker({
   onChange: (id: RecordingLayout) => void
   caps: Capabilities
 }) {
+  const available = LAYOUT_LIST.filter((l) => supportFor(caps, l.needs).ok)
+  const selected = available.find((l) => l.id === value)
+  if (!available.length)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Recording isn’t available in this browser.
+      </p>
+    )
   return (
-    <div
-      role="radiogroup"
-      aria-label="Layout"
-      className="grid gap-3 sm:grid-cols-2"
-    >
-      {LAYOUT_LIST.map((l) => {
-        const support = supportFor(caps, l.needs)
-        const checked = l.id === value
-        return (
-          <button
-            key={l.id}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            disabled={!support.ok}
-            onClick={() => onChange(l.id)}
-            className={cn(
-              'flex items-center gap-3 rounded-2xl border p-3 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50',
-              checked
-                ? 'border-primary bg-primary/10'
-                : 'border-border hover:border-primary/60',
-            )}
-          >
-            <Thumb layout={l} />
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold">{l.label}</span>
-              <span className="block text-xs text-muted-foreground">
-                {support.ok ? l.blurb : support.reason}
-              </span>
-            </span>
-          </button>
-        )
-      })}
+    <div>
+      <div
+        role="radiogroup"
+        aria-label="Layout"
+        className="grid grid-cols-2 gap-3"
+      >
+        {available.map((l) => {
+          const checked = l.id === value
+          return (
+            <button
+              key={l.id}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              onClick={() => onChange(l.id)}
+              className={cn(
+                'flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                checked
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/60',
+              )}
+            >
+              <Thumb layout={l} />
+              <span className="text-sm font-semibold">{l.label}</span>
+            </button>
+          )
+        })}
+      </div>
+      {selected && (
+        <p className="mt-3 text-sm text-muted-foreground">{selected.blurb}</p>
+      )}
     </div>
   )
 }

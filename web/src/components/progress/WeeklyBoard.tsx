@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { EyeOff, UserRound } from 'lucide-react'
+import { useId } from 'react'
 import { ErrorState, Skeleton } from '#/components/feedback'
 import { Badge } from '#/components/ui/badge'
 import { Card } from '#/components/ui/card'
+import { Checkbox } from '#/components/ui/checkbox'
+import { Label } from '#/components/ui/label'
 import { ApiError, api } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { formatDay } from '#/lib/progress/charts'
@@ -14,6 +17,7 @@ const isUnavailable = (e: unknown) => e instanceof ApiError && e.status === 403
 /** This week's best scores on today's twister. Names are the opt-in public name or "Player NNNN". */
 export function WeeklyBoard({ twister }: { twister?: string }) {
   const { session } = useAuth()
+  const hideId = useId()
   const qc = useQueryClient()
   const userId = session?.user.id
   const board = useQuery({
@@ -106,16 +110,20 @@ export function WeeklyBoard({ twister }: { twister?: string }) {
               </p>
             )}
             {session && (
-              <label className="mt-4 flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  className="size-4"
+              <div className="mt-4 flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox
+                  id={hideId}
                   checked={b!.hidden}
                   disabled={hide.isPending}
-                  onChange={(e) => hide.mutate(e.target.checked)}
+                  onCheckedChange={(value) => hide.mutate(value === true)}
                 />
-                Hide me from boards
-              </label>
+                <Label
+                  htmlFor={hideId}
+                  className="font-normal text-muted-foreground"
+                >
+                  Hide me from boards
+                </Label>
+              </div>
             )}
             {hide.isError && (
               <p role="alert" className="mt-2 text-sm text-pink">

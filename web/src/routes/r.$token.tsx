@@ -5,7 +5,15 @@ import { useRef, useState } from 'react'
 import { ErrorState, PracticeSkeleton } from '#/components/feedback'
 import ReviewPlayer from '#/components/practice/record/ReviewPlayer'
 import { Button } from '#/components/ui/button'
-import { Dialog } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import { Label } from '#/components/ui/label'
+import { SelectField } from '#/components/ui/select'
+import { Textarea } from '#/components/ui/textarea'
 import { ApiError, api } from '#/lib/api'
 import type { ReportReason } from '#/lib/api'
 import { formatClock } from '#/lib/record/quality'
@@ -150,7 +158,7 @@ function ReportDialog({
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>(
     'idle',
   )
-  const first = useRef<HTMLSelectElement>(null)
+  const first = useRef<HTMLButtonElement>(null)
 
   const send = async () => {
     setState('sending')
@@ -173,59 +181,68 @@ function ReportDialog({
   return (
     <Dialog
       open={open}
-      onClose={close}
-      title="Report this recording"
-      initialFocus={first}
+      onOpenChange={(next) => {
+        if (!next) close()
+      }}
     >
-      {state === 'sent' ? (
-        <div className="space-y-4 text-sm">
-          <p role="status">Thank you. We’ll take a look.</p>
-          <div className="flex justify-end">
-            <Button onClick={close}>Close</Button>
+      <DialogContent
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          first.current?.focus()
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Report this recording</DialogTitle>
+        </DialogHeader>
+        {state === 'sent' ? (
+          <div className="space-y-4 text-sm">
+            <p role="status">Thank you. We’ll take a look.</p>
+            <div className="flex justify-end">
+              <Button onClick={close}>Close</Button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-3 text-left text-sm">
-          <label className="block">
-            <span className="mb-1 block font-semibold">What’s wrong?</span>
-            <select
-              ref={first}
+        ) : (
+          <div className="space-y-3 text-left text-sm">
+            <SelectField
+              id="report-reason"
+              label="What’s wrong?"
+              labelClassName="font-semibold"
               value={reason}
-              onChange={(e) => setReason(e.target.value as ReportReason)}
-              className="w-full rounded-xl border border-input bg-card px-3 py-2"
-            >
-              {REASONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block font-semibold">Details (optional)</span>
-            <textarea
-              value={details}
-              maxLength={500}
-              rows={3}
-              onChange={(e) => setDetails(e.target.value)}
-              className="w-full rounded-xl border border-input bg-card px-3 py-2"
+              onValueChange={(value) => setReason(value as ReportReason)}
+              options={REASONS}
+              triggerRef={first}
             />
-          </label>
-          {state === 'error' && (
-            <p role="alert" className="text-pink">
-              We couldn’t send that. Please try again.
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={close}>
-              Cancel
-            </Button>
-            <Button disabled={state === 'sending'} onClick={() => void send()}>
-              {state === 'sending' ? 'Sending…' : 'Send report'}
-            </Button>
+            <div className="space-y-1">
+              <Label htmlFor="report-details" className="block font-semibold">
+                Details (optional)
+              </Label>
+              <Textarea
+                id="report-details"
+                value={details}
+                maxLength={500}
+                rows={3}
+                onChange={(e) => setDetails(e.target.value)}
+              />
+            </div>
+            {state === 'error' && (
+              <p role="alert" className="text-pink">
+                We couldn’t send that. Please try again.
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={close}>
+                Cancel
+              </Button>
+              <Button
+                disabled={state === 'sending'}
+                onClick={() => void send()}
+              >
+                {state === 'sending' ? 'Sending…' : 'Send report'}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </DialogContent>
     </Dialog>
   )
 }

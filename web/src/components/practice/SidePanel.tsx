@@ -71,6 +71,22 @@ function AttemptDetailView({ id, twister }: { id: number; twister: Twister }) {
   )
 }
 
+function trendOf(scores: number[]) {
+  if (scores.length < 2) return 'One more try'
+  const first = scores[0]
+  const last = scores[scores.length - 1]
+  if (last > first) return `Up to ${last} from ${first}`
+  if (last < first) return `Down from ${first}`
+  return `Steady at ${last}`
+}
+
+function attemptDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 /** Best score, attempts, tip and focus sounds. Hidden until there is something to show (PRD 01 H5). */
 export default function SidePanel({ twister }: { twister: Twister }) {
   const { session } = useAuth()
@@ -85,52 +101,97 @@ export default function SidePanel({ twister }: { twister: Twister }) {
   if (!hasHistory && !twister.focus_sounds.length) return null
 
   const scores = (h?.results ?? []).map((r) => r.score).reverse()
+  const trend = trendOf(scores)
   return (
     <aside
       aria-label="Your progress on this twister"
-      className="glass mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl px-5 py-3 text-sm text-muted-foreground"
+      className="glass mx-auto mt-8 max-w-md rounded-2xl px-5 py-4 text-left text-sm"
     >
+      <h2 className="text-center font-display text-lg font-bold text-foreground">
+        Your progress
+      </h2>
       {hasHistory && (
         <>
-          <span>
-            Best <b className="text-lime">{h.best_score}</b>
-          </span>
-          <span>
-            Attempts <b className="text-foreground">{h.count}</b>
-          </span>
-          <Sparkline scores={scores} />
+          <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <dt className="text-xs text-muted-foreground">Best</dt>
+              <dd className="font-display text-2xl font-bold text-lime">
+                {h.best_score}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Tries</dt>
+              <dd className="font-display text-2xl font-bold text-foreground">
+                {h.count}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Trend</dt>
+              <dd className="text-sm leading-snug font-semibold text-foreground">
+                {trend}
+              </dd>
+            </div>
+          </dl>
+          <figure className="mt-3 flex flex-col items-center">
+            <Sparkline scores={scores} />
+            <figcaption className="mt-1 text-center text-xs text-muted-foreground">
+              {trend}
+            </figcaption>
+          </figure>
         </>
       )}
       {twister.focus_sounds.length > 0 && (
-        <span>
-          Focus sounds{' '}
-          <b className="text-foreground">{twister.focus_sounds.join(' · ')}</b>
-        </span>
-      )}
-      {hasHistory && (
-        <div className="w-full">
-          <p className="text-center text-xs">Recent attempts</p>
-          <ul className="mt-2 flex flex-wrap justify-center gap-2">
-            {h.results.slice(0, 5).map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  aria-expanded={openId === r.id}
-                  onClick={() => setOpenId(openId === r.id ? null : r.id)}
-                  className="rounded-full border border-border px-3 py-1 text-xs hover:bg-card aria-expanded:bg-card aria-expanded:text-foreground"
-                >
-                  {r.score} ·{' '}
-                  {new Date(r.created_at).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </button>
+        <div className="mt-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Sounds to land
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {twister.focus_sounds.map((sound) => (
+              <li
+                key={sound}
+                className="rounded-full bg-primary/10 px-2.5 py-0.5 font-semibold text-foreground"
+              >
+                {sound}
               </li>
             ))}
           </ul>
-          {openId != null && (
-            <AttemptDetailView key={openId} id={openId} twister={twister} />
-          )}
+        </div>
+      )}
+      {hasHistory && (
+        <div className="mt-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Recent tries
+          </p>
+          <ul className="mt-1 divide-y divide-border">
+            {h.results.slice(0, 5).map((r) => {
+              const best = r.score === h.best_score
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    aria-expanded={openId === r.id}
+                    onClick={() => setOpenId(openId === r.id ? null : r.id)}
+                    className="flex w-full items-center justify-between py-2 text-left outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <span className="text-muted-foreground">
+                      {attemptDate(r.created_at)}
+                    </span>
+                    <span className="font-semibold text-foreground tabular-nums">
+                      {r.score}
+                      {best && (
+                        <span className="ml-2 text-xs font-medium text-lime">
+                          Best
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                  {openId === r.id && (
+                    <AttemptDetailView id={r.id} twister={twister} />
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
     </aside>

@@ -144,3 +144,11 @@ def test_cors_allow_list_and_vary_origin_still_work(client, settings):
     assert "origin" in ok["Vary"].lower()
     bad = client.get("/api/health/", HTTP_ORIGIN="https://evil.example")
     assert "Access-Control-Allow-Origin" not in bad
+    preflight = client.options(
+        "/api/v1/attempts/",
+        HTTP_ORIGIN="http://localhost:3000",
+        HTTP_ACCESS_CONTROL_REQUEST_METHOD="POST",
+        HTTP_ACCESS_CONTROL_REQUEST_HEADERS="authorization,content-type,idempotency-key",
+    )
+    assert preflight.status_code == 200
+    assert "idempotency-key" in preflight["Access-Control-Allow-Headers"]

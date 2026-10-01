@@ -1,5 +1,7 @@
 import { useId, useMemo } from 'react'
 import { Button } from '#/components/ui/button'
+import { Label } from '#/components/ui/label'
+import { nativeSelectClass } from '#/components/ui/select'
 import { saveStatusText } from '#/lib/account/optimistic'
 import { timezoneOptions } from '#/lib/account/timezones'
 import { useProfileSetting } from '#/lib/account/useProfileSetting'
@@ -25,16 +27,16 @@ export default function TimezoneField({
 
   return (
     <div className="space-y-1 text-left text-sm">
-      <label htmlFor={id} className="block font-semibold">
+      <Label htmlFor={id} className="block font-semibold">
         Time zone
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <select
           id={id}
           value={current}
           disabled={disabled}
           onChange={(e) => save(e.target.value)}
-          className="min-w-0 flex-1 rounded-xl border border-input bg-card px-3 py-2"
+          className={nativeSelectClass}
         >
           {options.map((zone) => (
             <option key={zone} value={zone}>

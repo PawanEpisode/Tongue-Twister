@@ -29,7 +29,7 @@ export default function ThemeMenuImpl({
 }) {
   const { preference, setPreference } = useTheme()
   return (
-    <DropdownMenu defaultOpen={defaultOpen}>
+    <DropdownMenu defaultOpen={defaultOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <ThemeTrigger />
       </DropdownMenuTrigger>

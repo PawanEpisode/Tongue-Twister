@@ -1,8 +1,10 @@
 import { Check, EqualApproximately, Minus, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { FEEDBACK_COMMENT_MAX } from '#/lib/api'
 import type { WordFeedback } from '#/lib/api'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import { extraWords, problemRows, summarise } from '#/lib/speak/display'
 import type { DisplayWord, WordRow } from '#/lib/speak/display'
 import type { WordStatus } from '#/lib/speak/similarity'
@@ -160,6 +162,7 @@ function FeedbackForm({
 }) {
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState('')
+  const noteId = useId()
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>(
     'idle',
   )
@@ -191,15 +194,21 @@ function FeedbackForm({
   const busy = state === 'sending'
   return (
     <div className="mt-2 space-y-2">
-      <label className="block text-xs text-muted-foreground">
-        Add a note (optional)
-        <input
+      <div className="block text-xs text-muted-foreground">
+        <Label
+          htmlFor={noteId}
+          className="text-xs font-normal text-muted-foreground"
+        >
+          Add a note (optional)
+        </Label>
+        <Input
+          id={noteId}
           value={note}
           maxLength={FEEDBACK_COMMENT_MAX}
           onChange={(e) => setNote(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground"
+          className="mt-1 px-2 py-1 text-sm"
         />
-      </label>
+      </div>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

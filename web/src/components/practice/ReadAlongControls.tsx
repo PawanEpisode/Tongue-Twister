@@ -1,6 +1,10 @@
-import type { ReactNode } from 'react'
+import { cloneElement, useId } from 'react'
+import type { ReactElement } from 'react'
 import { Button } from '#/components/ui/button'
+import { Checkbox } from '#/components/ui/checkbox'
 import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { SelectField } from '#/components/ui/select'
 import type { DisplayStyle } from '#/lib/api'
 import { PREFERENCE_RANGES } from '#/lib/preferences'
 import { MAX_WPM, MIN_WPM } from '#/lib/readAlong/timeline'
@@ -96,12 +100,21 @@ export type ControlHandlers = {
   onVoice: (voiceURI: string) => void
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactElement<{ id?: string }>
+}) {
+  const id = useId()
   return (
-    <label className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-      {label}
-      {children}
-    </label>
+    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+      <Label htmlFor={id} className="font-normal text-muted-foreground">
+        {label}
+      </Label>
+      {cloneElement(children, { id })}
+    </div>
   )
 }
 
@@ -215,30 +228,27 @@ export default function ReadAlongControls({
           ))}
           {TOGGLES.map(([key, label]) => (
             <Field key={key} label={label}>
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={v.toggles[key]}
                 disabled={key === 'listenFirst' && !v.voices.length}
-                onChange={() => h.onToggle(key)}
-                className="size-5 accent-brand"
+                onCheckedChange={() => h.onToggle(key)}
               />
             </Field>
           ))}
           {v.voices.length > 0 && (
-            <Field label="Model voice">
-              <select
-                value={v.voiceURI}
-                onChange={(e) => h.onVoice(e.target.value)}
-                className="max-w-44 rounded-lg border border-input bg-card px-2 py-1"
-              >
-                <option value="">Recommended</option>
-                {v.voices.map((voice) => (
-                  <option key={voice.voiceURI} value={voice.voiceURI}>
-                    {voice.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <SelectField
+              label="Model voice"
+              value={v.voiceURI}
+              onValueChange={h.onVoice}
+              triggerClassName="w-full sm:max-w-44"
+              options={[
+                { value: '', label: 'Recommended' },
+                ...v.voices.map((voice) => ({
+                  value: voice.voiceURI,
+                  label: voice.name,
+                })),
+              ]}
+            />
           )}
         </div>
       </details>

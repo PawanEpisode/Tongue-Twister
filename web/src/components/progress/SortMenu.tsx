@@ -29,7 +29,7 @@ export function SortMenu({
     (s) => signedIn || !SIGNED_IN_SORTS.includes(s),
   )
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"

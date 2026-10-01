@@ -22,7 +22,7 @@ export function DifficultyBadge({ level }: { level: 1 | 2 | 3 | 4 }) {
 export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
   return (
     <m.div
-      className="h-full"
+      className="flex"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i, 8) * 0.04 }}
@@ -31,12 +31,12 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
       {/* The star is a sibling of the link, not inside it: a button can't live in an anchor. */}
       <Card
         variant="glass"
-        className="group relative h-50 rounded-2xl transition-colors focus-within:border-primary/60 hover:border-primary/60"
+        className="group relative flex w-full flex-col rounded-2xl transition-colors focus-within:border-primary/60 hover:border-primary/60"
       >
         <Link
           to="/twisters/$slug"
           params={{ slug: t.slug }}
-          className="flex h-full flex-col rounded-2xl p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex flex-1 flex-col rounded-2xl p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <div className="mb-3 flex items-center gap-2 pr-9">
             <DifficultyBadge level={t.difficulty} />
@@ -46,7 +46,7 @@ export function TwisterCard({ t, i = 0 }: { t: Twister; i?: number }) {
             </span>
           </div>
           {/* Fixed 3-line preview: every card is the same height; the full text is on the practice screen. */}
-          <p className="line-clamp-3 h-18 font-display text-lg leading-6 text-foreground">
+          <p className="line-clamp-3 flex-1 font-display text-lg leading-6 text-foreground">
             {t.text}
           </p>
           <div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground">

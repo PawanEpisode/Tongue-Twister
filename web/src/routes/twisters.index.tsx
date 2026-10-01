@@ -5,21 +5,18 @@ import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import type { BrowseSort, BrowseStatus } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
-import { CategoryIcon } from '#/lib/categoryIcons'
 import { browseContext } from '#/lib/browseContext'
 import {
   parseSort,
   parseStatus,
   toApiParams,
 } from '#/lib/progress/browseParams'
+import { BrowseFilters } from '#/components/browse/BrowseFilters'
 import { PagedTwisters } from '#/components/TwisterList'
-import { RandomButton } from '#/components/progress/RandomButton'
-import { SortMenu } from '#/components/progress/SortMenu'
-import { StatusChips } from '#/components/progress/StatusChips'
 import { Button } from '#/components/ui/button'
-import { Chip } from '#/components/ui/chip'
 import { Input } from '#/components/ui/input'
-import { ChipsSkeleton, EmptyState } from '#/components/feedback'
+import { PageTitle } from '#/components/ui/page-title'
+import { EmptyState } from '#/components/feedback'
 
 type Search = {
   difficulty?: string
@@ -101,7 +98,7 @@ function Browse() {
 
   return (
     <div>
-      <h1 className="text-4xl font-extrabold">Browse twisters</h1>
+      <PageTitle>Browse twisters</PageTitle>
       <form
         className="mt-5"
         onSubmit={(e) => {
@@ -117,78 +114,22 @@ function Browse() {
           className="glass rounded-2xl px-5 py-3"
         />
       </form>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Chip on={!s.difficulty} onClick={() => set({ difficulty: undefined })}>
-          All levels
-        </Chip>
-        {['Easy', 'Medium', 'Hard', 'Insane'].map((n, i) => (
-          <Chip
-            key={n}
-            on={s.difficulty === String(i + 1)}
-            count={counts?.levels[String(i + 1)]}
-            onClick={() => set({ difficulty: String(i + 1) })}
-          >
-            {n}
-          </Chip>
-        ))}
-        <span className="mx-2 w-px bg-border" />
-        <Chip on={!s.origin} onClick={() => set({ origin: undefined })}>
-          Classic + Modern
-        </Chip>
-        <Chip
-          on={s.origin === 'classic'}
-          count={counts?.origins.classic}
-          onClick={() => set({ origin: 'classic' })}
-        >
-          Classic
-        </Chip>
-        <Chip
-          on={s.origin === 'modern'}
-          count={counts?.origins.modern}
-          onClick={() => set({ origin: 'modern' })}
-        >
-          Modern
-        </Chip>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Chip on={!s.category} onClick={() => set({ category: undefined })}>
-          Every sound
-        </Chip>
-        {cats.isPending && <ChipsSkeleton />}
-        {cats.isError && (
-          <Chip on={false} onClick={() => void cats.refetch()}>
-            Couldn’t load sounds — retry
-          </Chip>
-        )}
-        {cats.data?.map((c) => (
-          <Chip
-            key={c.slug}
-            on={s.category === c.slug}
-            count={counts?.categories[c.slug]}
-            className="gap-1.5"
-            onClick={() => set({ category: c.slug })}
-          >
-            <CategoryIcon slug={c.slug} className="size-3.5" />
-            {c.name}
-          </Chip>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {signedIn && (
-          <StatusChips
-            value={s.status}
-            onChange={(status) => set({ status })}
-          />
-        )}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <RandomButton filters={filters} />
-          <SortMenu
-            value={s.sort}
-            signedIn={signedIn}
-            onChange={(sort) => set({ sort: parseSort(sort) })}
-          />
-        </div>
-      </div>
+      <BrowseFilters
+        difficulty={s.difficulty}
+        origin={s.origin}
+        category={s.category}
+        status={s.status}
+        sort={s.sort}
+        signedIn={signedIn}
+        counts={counts}
+        categories={cats.data}
+        categoriesPending={cats.isPending}
+        categoriesError={cats.isError}
+        onRetryCategories={() => void cats.refetch()}
+        onChange={(patch) =>
+          set(patch.sort ? { ...patch, sort: parseSort(patch.sort) } : patch)
+        }
+      />
       <PagedTwisters
         query={list}
         empty={

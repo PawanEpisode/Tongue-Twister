@@ -132,19 +132,23 @@ function Home() {
           }
           transition={{ repeat: Infinity, duration: 6 }}
         >
-          <Card variant="glass" className="rounded-3xl p-7">
-            <div className="text-xs font-semibold uppercase tracking-widest text-pink">
-              Try this twister!
-            </div>
+          <Card
+            variant="glass"
+            className="relative rounded-3xl transition-colors has-[a:hover]:border-primary/60 has-[a:focus-visible]:border-primary/60"
+          >
             {daily.isPending ? (
-              <div className="mt-4 space-y-3" aria-busy>
+              <div className="space-y-3 p-7" aria-busy>
+                <Skeleton className="h-3 w-32" />
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-5/6" />
                 <Skeleton className="mt-5 h-3 w-2/3" />
               </div>
             ) : daily.isError ? (
-              <div role="alert" className="mt-3">
-                <p className="text-muted-foreground">
+              <div role="alert" className="p-7">
+                <div className="text-xs font-semibold uppercase tracking-widest text-pink">
+                  Try this twister!
+                </div>
+                <p className="mt-3 text-muted-foreground">
                   Couldn’t load today’s twister.
                 </p>
                 <Button
@@ -158,28 +162,42 @@ function Home() {
               </div>
             ) : (
               <>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <DifficultyBadge level={daily.data.difficulty} />
-                  <MasteryBadge state={daily.data.mastery} />
-                  <Badge
-                    variant={daily.data.best_score != null ? 'lime' : 'outline'}
-                  >
-                    Best {daily.data.best_score ?? 'N/A'}
-                  </Badge>
-                  <FavoriteButton twister={daily.data} className="ml-auto" />
-                </div>
-                <p className="mt-2 line-clamp-4 font-display text-2xl leading-snug">
-                  {daily.data.text}
-                </p>
-                {daily.data.tip && (
-                  <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
-                    <Lightbulb
-                      className="mt-0.5 size-4 shrink-0 text-brand"
-                      aria-hidden
-                    />
-                    {daily.data.tip}
+                <Link
+                  to="/twisters/$slug"
+                  params={{ slug: daily.data.slug }}
+                  className="block rounded-3xl p-7 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <div className="text-xs font-semibold uppercase tracking-widest text-pink">
+                    Try this twister!
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 pr-11">
+                    <DifficultyBadge level={daily.data.difficulty} />
+                    <MasteryBadge state={daily.data.mastery} />
+                    <Badge
+                      variant={
+                        daily.data.best_score != null ? 'lime' : 'outline'
+                      }
+                    >
+                      Best {daily.data.best_score ?? 'N/A'}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 line-clamp-4 font-display text-2xl leading-snug">
+                    {daily.data.text}
                   </p>
-                )}
+                  {daily.data.tip && (
+                    <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+                      <Lightbulb
+                        className="mt-0.5 size-4 shrink-0 text-brand"
+                        aria-hidden
+                      />
+                      {daily.data.tip}
+                    </p>
+                  )}
+                </Link>
+                <FavoriteButton
+                  twister={daily.data}
+                  className="absolute top-3 right-3"
+                />
               </>
             )}
           </Card>
@@ -190,9 +208,10 @@ function Home() {
 
       <section>
         <h2 className="mb-5 text-2xl font-bold">Pick your level</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {LEVELS.map((l, i) => (
             <m.div
+              className='flex'
               key={l.d}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -203,10 +222,10 @@ function Home() {
               <Link
                 to="/twisters"
                 search={{ difficulty: String(l.d) }}
-                className="glass block rounded-2xl p-5 hover:border-primary/60"
+                className="glass rounded-2xl flex flex-col flex-1 p-3 sm:p-5 hover:border-primary/60"
               >
-                <l.Icon className={`size-8 ${l.className}`} aria-hidden />
-                <div className="mt-2 font-display text-xl font-bold">
+                <l.Icon className={`size-4 sm:size-8 ${l.className}`} aria-hidden />
+                <div className="mt-2 font-display text-sm sm:text-xl font-bold">
                   {l.name}
                 </div>
                 <div className="text-sm text-muted-foreground">{l.blurb}</div>
@@ -243,7 +262,7 @@ function Home() {
                     <Link
                       to="/twisters"
                       search={{ category: c.slug }}
-                      className="glass flex h-[7.5rem] items-center gap-4 rounded-2xl p-5 hover:border-primary/60"
+                      className="glass flex sm:h-30 items-center gap-4 rounded-2xl p-3 sm:p-5 hover:border-primary/60"
                     >
                       <CategoryIcon
                         slug={c.slug}
