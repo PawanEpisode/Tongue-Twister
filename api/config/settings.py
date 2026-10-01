@@ -336,7 +336,7 @@ SUPABASE_JWT_AUDIENCE = env("SUPABASE_JWT_AUDIENCE", "authenticated")
 # Production-safe defaults; every value has an env override. The API is bearer-token JSON, so the cookie
 # flags only matter for the Django admin.
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", "no-referrer")
+SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", "same-origin")
 X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

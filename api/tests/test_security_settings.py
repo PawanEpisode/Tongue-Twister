@@ -44,7 +44,7 @@ def read_settings(debug: str, **env) -> dict:
 def test_production_defaults():
     s = read_settings("0")
     assert s["SECURE_CONTENT_TYPE_NOSNIFF"] is True
-    assert s["SECURE_REFERRER_POLICY"] == "no-referrer"
+    assert s["SECURE_REFERRER_POLICY"] == "same-origin"
     assert s["X_FRAME_OPTIONS"] == "DENY"
     assert s["SECURE_HSTS_SECONDS"] == 31_536_000
     assert s["SECURE_HSTS_INCLUDE_SUBDOMAINS"] is True
@@ -86,7 +86,7 @@ def test_hsts_header_is_emitted_over_https_in_production(settings, client):
     response = client.get("/api/health/", HTTP_X_FORWARDED_PROTO="https")
     assert response["Strict-Transport-Security"] == "max-age=31536000; includeSubDomains"
     assert response["X-Content-Type-Options"] == "nosniff"
-    assert response["Referrer-Policy"] == "no-referrer"
+    assert response["Referrer-Policy"] == "same-origin"
     assert response["X-Frame-Options"] == "DENY"
 
 
