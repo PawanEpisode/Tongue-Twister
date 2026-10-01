@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '#/components/ui/button'
 import { CONSENT_VERSION } from '#/lib/api'
-import type { Preferences, Twister } from '#/lib/api'
+import type { Preferences, Twister, UnlockedAchievement } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { useFlags } from '#/lib/flags'
@@ -145,6 +145,7 @@ export default function RecordMode({
   const [take, setTake] = useState<Take | null>(null)
   const [pending, setPending] = useState(false)
   const [xp, setXp] = useState<number | undefined>()
+  const [unlocked, setUnlocked] = useState<UnlockedAchievement[]>([])
 
   const recorder = useRecorder({
     twister: { slug: twister.slug, text: twister.text },
@@ -159,6 +160,7 @@ export default function RecordMode({
     onTake: (t) => {
       setTake(t)
       setXp(undefined)
+      setUnlocked([])
       setPending(true)
       void finishTake(t)
     },
@@ -227,6 +229,7 @@ export default function RecordMode({
     })
     if (!result) return
     setXp(result.xp_awarded)
+    setUnlocked(result.achievements_unlocked)
     if (result.id != null) {
       const attemptId = result.id
       setTake((cur) => (cur?.id === t.id ? { ...cur, attemptId } : cur))
@@ -541,6 +544,7 @@ export default function RecordMode({
           hints={hints}
           pending={pending}
           xp={xp}
+          unlocked={unlocked}
           access={access}
           canShare={canShare({
             flags,

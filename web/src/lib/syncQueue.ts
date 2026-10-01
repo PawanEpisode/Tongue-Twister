@@ -16,6 +16,16 @@ const empty = (): Queue => ({
 const read = () => readJson(KEY, empty)
 const write = (q: Queue) => writeJson(KEY, q)
 
+/** Fired on this tab whenever the on-device favourites change, so lists and stars stay in step. */
+export const GUEST_FAVORITES_EVENT = 'twister:guest-favorites'
+const announceFavorites = () => {
+  try {
+    window.dispatchEvent(new Event(GUEST_FAVORITES_EVENT))
+  } catch {
+    /* no window (SSR): nothing is listening */
+  }
+}
+
 export const guestQueue = {
   addAttempt(a: Omit<GuestAttempt, 'client_attempt_id' | 'created_at'>) {
     const q = read()
@@ -29,14 +39,16 @@ export const guestQueue = {
     ].slice(-MAX_ATTEMPTS)
     write(q)
   },
+  hasAttempts: () => read().attempts.length > 0,
+  favorites: (): string[] => read().favorites,
   isFavorite: (slug: string) => read().favorites.includes(slug),
-  toggleFavorite(slug: string): boolean {
+  /** Explicit target state (idempotent); the stored order is oldest first. */
+  setFavorite(slug: string, on: boolean): boolean {
     const q = read()
-    const on = !q.favorites.includes(slug)
-    q.favorites = on
-      ? [...q.favorites, slug]
-      : q.favorites.filter((s) => s !== slug)
+    const rest = q.favorites.filter((s) => s !== slug)
+    q.favorites = on ? [...rest, slug] : rest
     write(q)
+    announceFavorites()
     return on
   },
   /** The payload to send, or null when there's nothing to import. The batch id is stable across retries. */

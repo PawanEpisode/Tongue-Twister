@@ -1,0 +1,71 @@
+import {
+  Award,
+  BadgeCheck,
+  BookOpen,
+  Brain,
+  Camera,
+  Compass,
+  Crown,
+  Flag,
+  Flame,
+  Footprints,
+  Gauge,
+  Gem,
+  Lock,
+  Medal,
+  Mic,
+  Mountain,
+  Rocket,
+  Route,
+  Skull,
+  Sparkles,
+  Star,
+  Swords,
+  Target,
+  Timer,
+  TrendingUp,
+  Trophy,
+  Video,
+  Wind,
+  Zap,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+
+/** The API sends a lucide icon name (kebab-case). Unknown names get a medal rather than a blank. */
+const ICONS: Record<string, LucideIcon> = {
+  award: Award,
+  'badge-check': BadgeCheck,
+  'book-open': BookOpen,
+  brain: Brain,
+  camera: Camera,
+  compass: Compass,
+  crown: Crown,
+  flag: Flag,
+  flame: Flame,
+  footprints: Footprints,
+  gauge: Gauge,
+  gem: Gem,
+  lock: Lock,
+  medal: Medal,
+  mic: Mic,
+  mountain: Mountain,
+  rocket: Rocket,
+  route: Route,
+  skull: Skull,
+  sparkles: Sparkles,
+  star: Star,
+  swords: Swords,
+  target: Target,
+  timer: Timer,
+  'trending-up': TrendingUp,
+  trophy: Trophy,
+  video: Video,
+  wind: Wind,
+  zap: Zap,
+}
+
+/** Every icon name the API can send; the catalogue test keeps this in step with `catalogue.py`. */
+export const ACHIEVEMENT_ICON_NAMES = Object.keys(ICONS)
+
+export const achievementIcon = (name: string): LucideIcon =>
+  ICONS[name] ?? Medal

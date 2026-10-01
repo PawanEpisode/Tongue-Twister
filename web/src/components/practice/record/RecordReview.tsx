@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
 import { Dialog } from '#/components/ui/dialog'
-import type { Quota } from '#/lib/api'
+import type { Quota, UnlockedAchievement } from '#/lib/api'
 import { toVtt } from '#/lib/record/captions'
 import type { TakeAnalysis, DeliveryHints } from '#/lib/record/analysis'
 import type { SaveAccess } from '#/lib/record/cloudGate'
@@ -58,6 +58,7 @@ export type ReviewProps = {
   /** The transcript is still being matched. */
   pending: boolean
   xp?: number
+  unlocked?: UnlockedAchievement[]
   access: SaveAccess
   canShare: boolean
   defaultTitle: string
@@ -173,6 +174,7 @@ export default function RecordReview(p: ReviewProps) {
           accuracy={analysis.accuracy}
           wpm={analysis.wpm}
           xp={p.xp}
+          unlocked={p.unlocked}
           onRetry={p.onReRecord}
           onNext={p.onNext}
         >

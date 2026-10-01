@@ -1,6 +1,6 @@
 # 12 — Implementation Status (PRD/ERD → code)
 
-Last audited: 2026-09-30. Update this table in the same PR that ships a slice.
+Last audited: 2026-10-01. Update this table in the same PR that ships a slice.
 
 | Slice (ERD) | PRD | Status | Notes |
 |---|---|---|---|
@@ -8,7 +8,7 @@ Last audited: 2026-09-30. Update this table in the same PR that ships a slice.
 | **06a Hub & Read-along** | 01, 02 | ✅ shipped (P1) | See breakdown below |
 | 06b Speak & Score v2 | 03 | ✅ shipped (text layer + trust plumbing) | See breakdown below. Neural engine, worker container and model export are separate deliverables (doc 10) |
 | 06c Record & media | 04 | 🟡 API + web built; needs real camera/screen QA | See breakdown below. Cloud saving and sharing stay behind `record_cloud` / `share_links` (off) until Supabase Pro (D7) |
-| 06d Progress, social, plans | 05 | ⬜ not started | `Plan` table already exists (from 06a) |
+| 06d Progress, social, plans | 05 | 🟡 core slice built (API + web); Generate Twister, reminders and score-card images not started | Spec `14-06d-build-spec.md`. `Plan` table already existed (06a). Needs browser QA and a Postgres run before users see it |
 
 ## 06a breakdown
 
@@ -126,6 +126,41 @@ All request/response types live in `web/src/lib/api.ts`; the recorder is a separ
 - Resolved by A2: `owner.display_name` on public pages now comes only from the opt-in `Profile.public_name` (blank = `null`). The leaderboard endpoints still show `display_name`; review them before making boards public.
 - The threaded `reserve` concurrency test only runs on PostgreSQL (CI); sqlite serialises writers.
 
+## 06d breakdown (core slice)
+
+Spec: `14-06d-build-spec.md`. Migrations `0012` (schema) and `0013` (seeds: 25 achievements, flags `achievements` on / `weekly_boards` off).
+
+| Item | State |
+|---|---|
+| Models `Achievement`, `UserAchievement`, `DailyTwister`, `LeaderboardEntry` (+ `built_at`), `Profile.streak_freezes` (CHECK 0..2) and `hide_from_boards`; admin (editorial daily override, revoke action) | ✅ |
+| `progress/` package: streaks with freezes (D16), mastery states, levels (`twisters/levels.py`), achievements engine + 25-badge catalogue (13 rule types, state-based, idempotent, savepoint-safe, D19), summary, insights, browse, daily, boards | ✅ |
+| Endpoints: `GET /me/summary/`, `GET /me/achievements/`, `POST /me/achievements/seen/`, `GET /me/stats/`, `GET /me/activity/`, `GET /me/favorites/`, `PUT/DELETE /me/favorites/{slug}/`, `GET /twisters/facets/`, `GET /twisters/random/`, `GET /daily/`, `GET /leaderboard/weekly/`; `status` / `sort` / `q` on `GET /twisters/`; `mastery` on every twister | ✅ |
+| Hooks: attempt, Read-along session and recording-complete events; `achievements_unlocked` on attempt and session responses; unseen badges via the summary | ✅ |
+| Jobs: `sync_achievements`, `build_leaderboard` (workflow allow-list + hourly cron) | ✅ |
+| Board privacy (D18): `public_name` or `Player NNNN`, opt-out, under-13 excluded and blocked; also applied to the old per-twister board | ✅ |
+| Web: `ProgressStrip` on Home, "Try this twister!" card, `/stats` (KPIs, score/speed charts, activity heatmap, category bars, weak words, achievements) with data-table fallbacks, `/favorites`, Browse status chips + sort menu + facet counts + Random + mastery badges, shared `FavoriteButton`/`useFavorite` (replaces the hub's own toggle), achievement toasts, inline unlocks on the result card, `WeeklyBoard` (flag), one-time browser-timezone sync | ✅ built; **not seen in a browser** |
+| Tests | API 504 → 815 pass (+ 2 skipped, sqlite); web 321 → 492 pass; ruff, prettier, eslint and `tsc` clean; `vite build` succeeds |
+| G8 score-card **images** and the `/s/:token` landing page (the API for `POST /attempts/{id}/score-card/` and `GET /public/s/{token}/` exists from 06c) | ⬜ next round |
+| G9 Generate Twister (`TwisterGeneration`, `POST /twisters/generate/`, safety pipeline, quotas, kill switch) | ⬜ next round |
+| G10 reminders (`NotificationChannel`, `PUT /me/notifications/`, one-tap unsubscribe, web-push) | ⬜ next round |
+| Night owl mode + `night_owl` / `early_bird` achievements, CSV export, `GET /me/export/`, `DELETE /me/` (D14) | ⬜ |
+
+### 06d deviations / notes
+- Catalogue is 25, not 24 (PRD listed 27 codes; Night-owl pair deferred). `sound_sweep_*` shipped as `sweep_*`.
+- Freeze rule follows the ERD (every 7-day streak), not the PRD's "3 consecutive days" (D16). A saved recording does not qualify for a streak day (D17).
+- `UserTwisterStats` did not gain `total_active_ms` / `read_along_ms` / `is_favorite` (derivable; one writer per fact).
+- No `level` alias on Browse (`difficulty` stays); no `POST /me/timezone/` (`PATCH /me/` does it; the web sets it once per device when the profile is still `UTC`).
+- Badge XP is added to `profile.xp`, so it can exceed an attempt's `xp_awarded`; the session PATCH response now also carries `xp_awarded`.
+- The weak-word query is shared between `/me/words/weak/` and `/me/stats/`; `drill_targets` no longer issues one query per unplaced word.
+- Web: guest favourites stay local and the `/favorites` page fetches each slug; a weak word links to its twister (the `/practice` route only understands `?drill=1`); `DEFAULT_FLAGS` lives in `lib/flags.ts`; a `DailyBars` chart covers `mode=read_along`, where the scored series are empty.
+- `weekly_boards` ships **off**. Turn it on only after the scoring worker makes attempts `verified` (`LEADERBOARD_REQUIRE_VERIFIED=1`), otherwise the board is open to unverified device/text-layer scores.
+
+### Known limits / to verify before enabling 06d for everyone
+- Run the suite on PostgreSQL (CI does) — the 06d tests and both migrations were run on sqlite only here.
+- Look at `/`, `/stats`, `/favorites`, `/twisters` in light and dark, at phone width, with reduced motion, and with a keyboard; check confetti, chart tooltips and the sort dropdown focus.
+- `build_leaderboard` has not run in GitHub Actions and has no load test.
+- Achievement failures are swallowed by design (D19): watch logs for `achievement.evaluation_failed`.
+
 ## Decisions taken while implementing (docs corrected accordingly)
 - `threshold_pct` range is **20–60** (PRD 01 §6, API contract); ERD 06a said 80.
 - `loop_count`: **1–10, 0 = loop forever** (PRD says "1–10 or ∞"; ERD comment said "0 = off").
@@ -145,7 +180,7 @@ All request/response types live in `web/src/lib/api.ts`; the recorder is a separ
 - Web tests run in CI (`npm test`); the shared vectors are read straight from `api/tests/fixtures`, so both suites must be changed together.
 
 ### Running management commands (`.github/workflows/manage-command.yml`)
-Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) and `orphan_sweeper` daily at 04:41. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.
+Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`, `sync_achievements`, `build_leaderboard`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) `orphan_sweeper` daily at 04:41 and `build_leaderboard` hourly at :37 (harmless while the `weekly_boards` flag is off). Run `sync_achievements` after editing `progress/catalogue.py`. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.
 
 ### 06c A2 deviations / operations notes
 - `expiry_reminded_at` was **renamed** (not added alongside) to `reminder_sent_at`; the claim-then-send pattern means a failed delivery releases the flag and the next hourly run retries.
@@ -155,3 +190,28 @@ Actions → **Management command** → *Run workflow*: pick a command from the a
 - A transcode that would not fit the owner's quota is dropped and the original stays the playback file.
 - Worker HMAC has no timestamp/nonce (same scheme as the scoring callback), so a captured request could be replayed over a broken TLS channel; add a signed `ts` if that matters.
 - Run `storage_policies.sql` again in the Supabase SQL editor: it drops the old `own upload/read/delete` policies and adds the deny-all one; the `voice` bucket limit is now 100 MiB (analysis WAVs).
+
+## Pending from the docs (as of 2026-10-01)
+
+**Next 06d round (PRD 05 G8–G10, ERD 06d M5)**
+1. Score-card images (1200×630 and 1080×1080) and the public `/s/:token` page with OG tags (API endpoints already exist from 06c).
+2. Generate Twister: `TwisterGeneration`, `POST /twisters/generate/`, `POST /twisters/{slug}/save/`, prompt and output safety pipeline, alliteration quality check, 10/day quota and cost cap, `generate_twister` kill switch, under-13 block, LLM provider choice (not yet made).
+3. Reminders: `NotificationChannel`, `PUT /me/notifications/`, one-tap unsubscribe token, email + web-push, `reminders` flag, send window and DND rules.
+4. Night owl mode (+ two achievements), CSV export, `GET /me/export/` (JSON export) and `DELETE /me/` (D14; `purge_profile_media` exists as a service only).
+
+**Speech engine (doc 10, E3-3 … E3-6, flag `accurate_mode` off)**
+5. Model export/quantise (your machine), on-device engine in a Web Worker (ONNX Runtime Web) with "Accurate mode" UI, `/dev/calibrate` gold-set page and threshold tuning, scoring-worker container with queue, spot-check flow and the `verified` level.
+6. Once the worker ships: set `LEADERBOARD_REQUIRE_VERIFIED=1`, turn `MASTERY_ALLOW_PROVISIONAL` off, enable the `*/10` `sweep_pending_attempts` cron, then turn the `weekly_boards` flag on.
+7. The scoring step that turns the analysis audio into an `Attempt(kind=record)` (06c leftover).
+
+**Record / cloud (06c leftovers, not code)**
+8. Upgrade Supabase to Pro (D7), run `storage_policies.sql` again, verify `SupabaseStorage` (TUS, `object/info`, signed URLs) against the real project, then enable `record_cloud` and `share_links`.
+9. Real-device QA for Record (Chrome/Edge/Firefox/Safari, phone portrait, Element Capture, long takes, device unplug); real ffmpeg worker, Postgres and SMTP runs; deploy `MEDIA_PATH_SECRET` before the API.
+10. Worker HMAC has no timestamp/nonce (replay over a broken TLS channel) — add a signed `ts` if it matters.
+
+**Platform and ops (doc 09 E7, not started)**
+11. Error tracking and observability (Sentry, structured logs dashboards for attempt latency, recording success, upload failures, storage growth); analytics provider (the telemetry sink is a no-op); Playwright e2e with fake media, visual snapshots, axe a11y checks and a bundle-size budget in CI; CSP and `Permissions-Policy` headers; incident runbooks (worker down, model rollback, storage full, abuse wave); cost dashboard and takedown-SLA doc.
+12. Rollout mechanics from doc 09 §7 (internal allow-list → 10 % → 50 % → 100 % with stop-ship criteria) and the changelog / "What's new" surface.
+
+**Open questions that need data, not docs (doc 11)**
+13. Whether the phoneme model meets accuracy on en-IN speakers; its size after int8 export; whether a paid Pro plan is worth building (after 60 days of cloud-recording cap-hit data).

@@ -14,6 +14,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
+from ..localtime import local_date
 from ..models import (
     Attempt,
     AttemptKind,
@@ -27,7 +28,6 @@ from ..models import (
     Verification,
     WordStatus,
 )
-from ..practice.services import local_date
 from . import trust
 from .normalise import tokenise
 

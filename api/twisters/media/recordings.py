@@ -35,6 +35,7 @@ from ..models import (
     ShareTarget,
     UserConsent,
 )
+from ..progress import achievements
 from . import consent, jobs, quota, shares, uploads
 from .storage import BUCKET_THUMBS, ObjectStat, StorageError, get_storage
 
@@ -155,7 +156,16 @@ def complete(
     if changed and thumbnail:
         attach_thumbnail(profile, recording, thumbnail)
         recording.refresh_from_db()
+    if changed:
+        award_achievements(profile)
     return recording, changed
+
+
+def award_achievements(profile: Profile) -> None:
+    """Evaluate the `recording` event. The unlocks are not returned (the `complete` response is a
+    recording); the web app reads them from `unseen_achievements` in `GET /me/summary/`."""
+    with transaction.atomic():
+        achievements.safely(achievements.Event(achievements.RECORDING, quota.lock_profile(profile)))
 
 
 def attach_thumbnail(profile: Profile, recording: Recording, jpeg: bytes) -> bool:

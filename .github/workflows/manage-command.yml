@@ -21,6 +21,7 @@ on:
     - cron: "17 3 * * *" # nightly 03:17 UTC — reconcile_speak_stats
     - cron: "23 * * * *" # hourly at :23 — expire_recordings (retention, hard delete, consent revocations)
     - cron: "41 4 * * *" # daily 04:41 UTC — orphan_sweeper (abandoned uploads)
+    - cron: "37 * * * *" # hourly at :37 — build_leaderboard (weekly boards; harmless while `weekly_boards` is off)
     # - cron: "*/10 * * * *" # enable with the scoring worker — sweep_pending_attempts
 
 # Two runs of the same command must never overlap (they would fight over the same rows).
@@ -68,13 +69,14 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper"
+          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper sync_achievements build_leaderboard"
 
           if [ -n "${SCHEDULE:-}" ]; then
             case "$SCHEDULE" in
               "17 3 * * *")   command=reconcile_speak_stats ;;
               "23 * * * *")   command=expire_recordings ;;
               "41 4 * * *")   command=orphan_sweeper ;;
+              "37 * * * *")   command=build_leaderboard ;;
               "*/10 * * * *") command=sweep_pending_attempts ;;
               *) echo "No command mapped to schedule '$SCHEDULE'" >&2; exit 1 ;;
             esac

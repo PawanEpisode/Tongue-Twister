@@ -6,7 +6,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
+from django.utils import timezone
 
+from .levels import level_for
 from .names import PUBLIC_NAME_MAX, validate_public_name
 
 
@@ -140,7 +142,21 @@ class Profile(models.Model):
     )
     age_band = models.CharField(max_length=8, choices=AgeBand.choices, default=AgeBand.UNKNOWN)
     guest_migrated_at = models.DateTimeField(null=True, blank=True)
+    streak_freezes = models.PositiveSmallIntegerField(
+        default=0, help_text="Banked streak freezes; one bridges one missed day (D16)"
+    )
+    hide_from_boards = models.BooleanField(
+        default=False, help_text="Opt out of every public leaderboard (D18)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(streak_freezes__gte=0, streak_freezes__lte=settings.STREAK_FREEZE_MAX),
+                name="profile_streak_freezes_range",
+            )
+        ]
 
     # DRF compatibility: behave like an authenticated user object.
     is_authenticated = True
@@ -151,7 +167,7 @@ class Profile(models.Model):
 
     @property
     def level(self) -> int:
-        return 1 + self.xp // 200
+        return level_for(self.xp)
 
 
 class AccentLang(models.TextChoices):
@@ -1403,3 +1419,150 @@ class ModerationReport(models.Model):
 
     def __str__(self):
         return f"{self.reason} on {self.share_link_id}"
+
+
+# --- Progress, achievements & boards (ERD 06d, spec 14) ---------------------------------------------
+
+
+class AchievementTier(models.TextChoices):
+    BRONZE = "bronze", "Bronze"
+    SILVER = "silver", "Silver"
+    GOLD = "gold", "Gold"
+
+
+class AchievementCategory(models.TextChoices):
+    START = "start", "Getting started"
+    STREAK = "streak", "Streaks"
+    MASTERY = "mastery", "Mastery"
+    SKILL = "skill", "Skill"
+    EXPLORE = "explore", "Explore"
+
+
+class Achievement(models.Model):
+    """One badge. Rules are data (`criteria`), evaluated by `progress.achievements`; the catalogue in
+    `progress.catalogue` is the source of truth and `sync_achievements` upserts it."""
+
+    code = models.SlugField(primary_key=True, max_length=40)
+    name = models.CharField(max_length=60)
+    description = models.CharField(max_length=200)
+    icon = models.CharField(max_length=40, help_text="lucide icon name")
+    tier = models.CharField(max_length=6, choices=AchievementTier.choices)
+    category = models.CharField(max_length=8, choices=AchievementCategory.choices)
+    criteria = models.JSONField(default=dict)
+    xp_reward = models.PositiveSmallIntegerField(default=0)
+    verified_only = models.BooleanField(
+        default=False,
+        help_text="Only attempts whose result can be trusted (mastery trust rules) count",
+    )
+    hidden = models.BooleanField(default=False, help_text="Shown as a secret until unlocked")
+    active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "code"]
+        constraints = [
+            models.CheckConstraint(condition=_in("tier", AchievementTier), name="achievement_tier"),
+            models.CheckConstraint(
+                condition=_in("category", AchievementCategory), name="achievement_category"
+            ),
+        ]
+
+    def __str__(self):
+        return self.code
+
+
+class UserAchievement(models.Model):
+    """An unlock. Never deleted by the engine; `revoked` is an admin-only decision (PRD 05 edge 2)."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="achievements")
+    achievement = models.ForeignKey(
+        Achievement,
+        to_field="code",
+        db_column="achievement_code",
+        on_delete=models.PROTECT,
+        related_name="unlocks",
+    )
+    unlocked_at = models.DateTimeField(default=timezone.now)
+    progress = models.FloatField(
+        null=True, blank=True, help_text="0..1 at unlock; NULL for event rules"
+    )
+    revoked = models.BooleanField(default=False)
+    seen = models.BooleanField(default=False, help_text="The user has been shown the toast")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "achievement"], name="uniq_user_achievement"
+            ),
+            models.CheckConstraint(
+                condition=Q(progress__isnull=True) | Q(progress__gte=0, progress__lte=1),
+                name="user_achievement_progress_range",
+            ),
+        ]
+        indexes = [models.Index(fields=["profile", "seen"], name="user_achievement_seen_idx")]
+
+    def __str__(self):
+        return f"{self.profile_id}:{self.achievement_id}"
+
+
+class DailyTwisterSource(models.TextChoices):
+    EDITORIAL = "editorial", "Editorial"
+    AUTO = "auto", "Automatic"
+
+
+class DailyTwister(models.Model):
+    """The featured twister of one UTC day. A row in admin *is* the editorial override; otherwise the
+    first request of the day persists the deterministic pick so it never changes afterwards."""
+
+    day = models.DateField(primary_key=True)
+    twister = models.ForeignKey(Twister, on_delete=models.PROTECT, related_name="daily_features")
+    source = models.CharField(
+        max_length=9, choices=DailyTwisterSource.choices, default=DailyTwisterSource.EDITORIAL
+    )
+    locked_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-day"]
+        constraints = [
+            models.CheckConstraint(
+                condition=_in("source", DailyTwisterSource), name="daily_twister_source"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.day} {self.twister_id}"
+
+
+class LeaderboardEntry(models.Model):
+    """A profile's best eligible score on one twister in one UTC week, ranked. Rebuilt hourly by
+    `build_leaderboard`; reads never aggregate live."""
+
+    week_start = models.DateField(help_text="Monday, UTC")
+    twister = models.ForeignKey(Twister, on_delete=models.CASCADE, related_name="board_entries")
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="board_entries")
+    best_score = models.PositiveSmallIntegerField()
+    best_attempt = models.ForeignKey(
+        Attempt, null=True, blank=True, on_delete=models.SET_NULL, related_name="board_entries"
+    )
+    achieved_at = models.DateTimeField()
+    rank = models.PositiveIntegerField()
+    built_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "leaderboard entries"
+        ordering = ["week_start", "twister", "rank"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week_start", "twister", "profile"], name="uniq_leaderboard_entry"
+            ),
+            models.CheckConstraint(
+                condition=Q(best_score__gte=0, best_score__lte=100), name="leaderboard_score_range"
+            ),
+            models.CheckConstraint(condition=Q(rank__gte=1), name="leaderboard_rank_positive"),
+        ]
+        indexes = [
+            models.Index(fields=["week_start", "twister", "rank"], name="leaderboard_rank_idx")
+        ]
+
+    def __str__(self):
+        return f"{self.week_start} {self.twister_id} #{self.rank}"

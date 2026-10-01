@@ -28,7 +28,11 @@ def test_scored_attempt_returns_words_and_persists_everything(user):
     by_target = {w["target"]: w for w in b["words"] if w["target_index"] is not None}
     assert by_target["sells"]["status"] == "wrong" and by_target["sells"]["reason"] == "focus_swap"
     assert by_target["she"]["credit"] == 1.0
-    assert b["profile"]["xp"] == b["xp_awarded"] > 0 and b["profile"]["current_streak"] == 1
+    badge_xp = sum(
+        a["xp_reward"] for a in b["achievements_unlocked"]
+    )  # first-attempt badges pay XP too
+    assert b["profile"]["xp"] == b["xp_awarded"] + badge_xp and b["xp_awarded"] > 0
+    assert b["profile"]["current_streak"] == 1
 
     attempt = Attempt.objects.get(pk=b["id"])
     assert attempt.words.count() == 6 and attempt.profile_id == profile.pk
@@ -50,7 +54,9 @@ def test_same_client_attempt_id_saves_once_and_replays_the_result(user):
     assert second.headers["Idempotent-Replay"] == "true"
     assert first.data["id"] == second.data["id"] and first.data["score"] == second.data["score"]
     assert Attempt.objects.filter(profile=profile).count() == 1
-    assert Profile.objects.get(pk=profile.pk).xp == first.data["xp_awarded"]  # XP paid once
+    badge_xp = sum(a["xp_reward"] for a in first.data["achievements_unlocked"])
+    assert Profile.objects.get(pk=profile.pk).xp == first.data["xp_awarded"] + badge_xp  # paid once
+    assert second.data["achievements_unlocked"] == []  # a replay does not re-announce badges
 
 
 def test_idempotency_key_header_acts_as_client_attempt_id(user):

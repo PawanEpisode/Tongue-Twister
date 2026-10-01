@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from .media import moderation, shares
 from .models import (
+    Achievement,
     AcousticModelVersion,
     Attempt,
     AttemptFeedback,
@@ -10,8 +11,10 @@ from .models import (
     AttemptWord,
     Category,
     DailyActivity,
+    DailyTwister,
     Favorite,
     FeatureFlag,
+    LeaderboardEntry,
     MediaAsset,
     MediaJob,
     ModerationReport,
@@ -27,6 +30,7 @@ from .models import (
     SyncBatch,
     Twister,
     TwisterPronunciation,
+    UserAchievement,
     UserConsent,
     UserPhonemeStat,
     UserPreference,
@@ -269,3 +273,50 @@ admin.site.register(
         ScoringProfile,
     ]
 )
+
+
+@admin.register(Achievement)
+class AchievementAdmin(admin.ModelAdmin):
+    """Edits here are overwritten by the next `sync_achievements`: the catalogue in code is the source
+    of truth. Use the admin for a quick hotfix (hide or deactivate a badge), then change the code."""
+
+    list_display = ["code", "name", "tier", "category", "xp_reward", "verified_only", "active"]
+    list_filter = ["tier", "category", "active", "verified_only"]
+    search_fields = ["code", "name"]
+
+
+@admin.register(UserAchievement)
+class UserAchievementAdmin(ReadOnlyAdmin):
+    """Unlocks are facts: the only staff decision is to revoke one (PRD 05 edge 2). A revoked row keeps
+    its slot, so the engine never re-grants it."""
+
+    list_display = ["unlocked_at", "profile", "achievement", "revoked", "seen"]
+    list_filter = ["revoked", "achievement__tier"]
+    raw_id_fields = ["profile"]
+    actions = ["revoke"]
+
+    @admin.action(description="Revoke selected achievements")
+    def revoke(self, request, queryset):
+        self.message_user(
+            request, f"Revoked {queryset.filter(revoked=False).update(revoked=True)}."
+        )
+
+
+@admin.register(DailyTwister)
+class DailyTwisterAdmin(admin.ModelAdmin):
+    """A row for a day *is* the editorial override; days without one fall back to the automatic pick
+    (which is saved the first time the day is requested)."""
+
+    list_display = ["day", "twister", "source", "locked_at"]
+    list_filter = ["source"]
+    raw_id_fields = ["twister"]
+    date_hierarchy = "day"
+
+
+@admin.register(LeaderboardEntry)
+class LeaderboardEntryAdmin(ReadOnlyAdmin):
+    """Materialised by `build_leaderboard`; edits would be overwritten within the hour."""
+
+    list_display = ["week_start", "twister", "rank", "best_score", "profile", "built_at"]
+    list_filter = ["week_start"]
+    raw_id_fields = ["profile", "twister", "best_attempt"]

@@ -12,6 +12,7 @@ import type {
   LowConfidenceResult,
   SubmitAttemptBody,
   Twister,
+  UnlockedAchievement,
 } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { attemptQueue, isTransient } from '#/lib/attemptQueue'
@@ -30,6 +31,8 @@ import type { WordStatus } from '#/lib/speak/similarity'
 import type { SpeechResult } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
 import { draft } from '#/lib/draft'
+import { invalidateProgress } from '#/lib/progress/invalidate'
+import { announceAchievements } from '#/lib/progress/useAchievementToasts'
 import { guestQueue } from '#/lib/syncQueue'
 import { useTake } from '#/lib/useTake'
 import { cn } from '#/lib/utils'
@@ -43,6 +46,7 @@ type Result = {
   xp?: number
   personalBest?: boolean
   levelUp?: boolean
+  unlocked?: UnlockedAchievement[]
   notice?: string
   attemptId?: number | null
   breakdown?: {
@@ -130,6 +134,7 @@ export default function SpeakAndScore({
         xp: r.xp_awarded,
         personalBest: r.personal_best,
         levelUp: r.level_up,
+        unlocked: r.achievements_unlocked,
         attemptId: r.id,
         notice: r.focus_gated ? GATED_NOTICE : undefined,
         breakdown: rows && {
@@ -138,8 +143,9 @@ export default function SpeakAndScore({
           rows,
         },
       })
-      qc.invalidateQueries({ queryKey: ['me'] })
-      qc.invalidateQueries({ queryKey: ['history'] })
+      announceAchievements(r.achievements_unlocked)
+      void invalidateProgress(qc)
+      void qc.invalidateQueries({ queryKey: ['history'] })
     },
   })
 
@@ -250,6 +256,7 @@ export default function SpeakAndScore({
               xp={result.xp}
               personalBest={result.personalBest}
               levelUp={result.levelUp}
+              unlocked={result.unlocked}
               notice={result.notice}
               onRetry={retry}
               onNext={() => void twisterNav.next()}

@@ -10,6 +10,8 @@ import { AuthProvider } from '#/lib/auth'
 import AttemptSync from '#/components/AttemptSync'
 import GuestSync from '#/components/GuestSync'
 import Header from '#/components/Header'
+import { AchievementToaster } from '#/components/progress/AchievementToaster'
+import TimezoneSync from '#/components/progress/TimezoneSync'
 import UploadSync from '#/components/UploadSync'
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, seo } from '#/lib/seo'
 import { ThemeProvider, THEME_COLORS, themeBootScript } from '#/lib/theme'
@@ -105,10 +107,12 @@ function RootLayout() {
           <GuestSync />
           <AttemptSync />
           <UploadSync />
+          <TimezoneSync />
           <Header />
           <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
             <Outlet />
           </main>
+          <AchievementToaster />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -1,5 +1,7 @@
 # 06d — ERD: Progress, gamification, discovery & notifications
-PRD: `05-prd-progress-and-gamification.md` · Master model: `06` · Decisions: `11` (D4, D5, D11, D13, D14)
+PRD: `05-prd-progress-and-gamification.md` · Master model: `06` · Decisions: `11` (D4, D5, D11, D13, D14, D16–D19)
+
+> **Built (core slice):** `Achievement`, `UserAchievement`, `DailyTwister`, `LeaderboardEntry`, `Profile.streak_freezes/hide_from_boards` — see `14-06d-build-spec.md`. **Not built yet:** `NotificationChannel`, `TwisterGeneration`; the `UserTwisterStats` columns `total_active_ms`, `read_along_ms`, `is_favorite` were dropped on purpose (derivable from `DailyActivity` / `Favorite`).
 
 ```mermaid
 erDiagram

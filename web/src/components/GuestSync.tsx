@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { api } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
+import { invalidateProgress } from '#/lib/progress/invalidate'
 import { guestQueue } from '#/lib/syncQueue'
 
 /**
@@ -23,7 +24,7 @@ export default function GuestSync() {
       .then(() => {
         guestQueue.clear()
         if (cancelled) return
-        void qc.invalidateQueries({ queryKey: ['me'] })
+        void invalidateProgress(qc)
         void qc.invalidateQueries({ queryKey: ['twister'] })
         void qc.invalidateQueries({ queryKey: ['history'] })
       })

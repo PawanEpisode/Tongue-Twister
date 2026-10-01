@@ -3,7 +3,6 @@ import json
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
@@ -25,9 +24,7 @@ from ..models import (
     ScoringJob,
     ScoringProfile,
     Twister,
-    TwisterPronunciation,
     UserPhonemeStat,
-    UserWordStat,
     Verification,
 )
 from ..practice import flags
@@ -265,32 +262,9 @@ class AttemptViewSet(
 @permission_classes([permissions.IsAuthenticated])
 def weak_words(request):
     """The 'practise weak words' queue: weakest first; `?due=1` keeps only words whose review is due."""
-    qs = UserWordStat.objects.filter(profile=request.user, weakness__gt=0)
-    if request.query_params.get("due") in ("1", "true"):
-        qs = qs.filter(Q(next_review_at__isnull=True) | Q(next_review_at__lte=timezone.now()))
-    rows = list(qs.order_by("-weakness", "word_norm")[: _limit(request)])
-    hints = dict(
-        TwisterPronunciation.objects.filter(word__in=[r.word_norm for r in rows])
-        .exclude(respelling="")
-        .order_by("-twister_id")  # global rows (NULL) sort last, so a twister-specific hint wins
-        .values_list("word", "respelling")
-    )
-    targets = queries.drill_targets(request.user, [r.word_norm for r in rows])
+    due = request.query_params.get("due") in ("1", "true")
     return Response(
-        {
-            "results": [
-                {
-                    "word": r.word_norm,
-                    "seen": r.seen,
-                    "miss_rate": round((r.wrong + r.missed) / r.seen, 3),
-                    "weakness": round(r.weakness, 3),
-                    "next_review_at": r.next_review_at,
-                    "respelling": hints.get(r.word_norm, ""),
-                    "drill": targets.get(r.word_norm),
-                }
-                for r in rows
-            ]
-        }
+        {"results": queries.weak_word_rows(request.user, limit=_limit(request), due=due)}
     )
 
 

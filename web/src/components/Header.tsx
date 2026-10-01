@@ -1,22 +1,20 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Flame, Tornado } from 'lucide-react'
+import { BarChart3, Flame, Star, Tornado } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
-import { api } from '#/lib/api'
 import { supabase } from '#/lib/supabase'
 import ThemeMenu from '#/components/ThemeMenu'
 import { useFlag } from '#/lib/flags'
+import { useSummary } from '#/lib/progress/useSummary'
+import { useMe } from '#/lib/useMe'
 
 export default function Header() {
   const { session, loading } = useAuth()
   const recordCloud = useFlag('record_cloud')
   const here = useRouterState({ select: (s) => s.location.href })
-  const { data: me } = useQuery({
-    queryKey: ['me'],
-    queryFn: api.me,
-    enabled: !!session,
-  })
+  const { data: me } = useMe()
+  // The summary knows the *effective* streak (0 once lapsed); the profile's stored value can be stale.
+  const { data: summary } = useSummary()
   const meta = (session?.user.user_metadata ?? {}) as {
     full_name?: string
     name?: string
@@ -35,7 +33,7 @@ export default function Header() {
           <span className="text-gradient">Twister</span>
           <Tornado className="size-5 text-brand" aria-hidden />
         </Link>
-        <nav className="flex items-center gap-3 text-sm text-muted-foreground">
+        <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <ThemeMenu />
           <Link
             to="/twisters"
@@ -67,11 +65,32 @@ export default function Header() {
                   Recordings
                 </Link>
               )}
+              <Link
+                to="/stats"
+                className="inline-flex items-center gap-1 hover:text-foreground pointer-coarse:min-h-11 pointer-coarse:items-center"
+                activeProps={{ className: 'text-foreground' }}
+              >
+                <BarChart3 className="size-4" aria-hidden />
+                Stats
+              </Link>
+              <Link
+                to="/favorites"
+                className="inline-flex items-center gap-1 hover:text-foreground pointer-coarse:min-h-11 pointer-coarse:items-center"
+                activeProps={{ className: 'text-foreground' }}
+              >
+                <Star className="size-4" aria-hidden />
+                Favourites
+              </Link>
               {me && (
-                <span className="hidden items-center gap-1.5 rounded-full bg-card px-3 py-1 text-xs sm:inline-flex">
+                <Link
+                  to="/stats"
+                  aria-label={`${summary?.current_streak ?? me.current_streak}-day streak, level ${summary?.level ?? me.level}, ${summary?.xp ?? me.xp} XP. Open your stats.`}
+                  className="hidden items-center gap-1.5 rounded-full bg-card px-3 py-1 text-xs hover:text-foreground sm:inline-flex"
+                >
                   <Flame className="size-3.5 text-pink" aria-hidden />
-                  {me.current_streak} · Lv {me.level} · {me.xp} XP
-                </span>
+                  {summary?.current_streak ?? me.current_streak} · Lv{' '}
+                  {summary?.level ?? me.level} · {summary?.xp ?? me.xp} XP
+                </Link>
               )}
               <span className="flex items-center gap-2 text-foreground">
                 {meta.avatar_url ? (

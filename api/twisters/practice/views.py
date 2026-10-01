@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from ..errors import Conflict
 from ..media import quota
 from ..models import PracticeSession, Profile, SessionStatus, UserPreference
+from ..progress.serializers import unlocked_payload
 from ..serializers import ProfileSerializer
 from . import flags, guest_sync, services
 from .serializers import (
@@ -108,17 +109,18 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         session = self.get_object()
         session.profile = profile
 
-        xp = 0
+        update = services.SessionUpdate(0, [])
         if (
             session.status == SessionStatus.ACTIVE
         ):  # terminal sessions are immutable → replays are harmless no-ops
             ser = SessionUpdateSerializer(session, data=request.data, partial=True)
             ser.is_valid(raise_exception=True)
-            xp = services.apply_session_update(session, dict(ser.validated_data))
+            update = services.apply_session_update(session, dict(ser.validated_data))
         return Response(
             {
                 **SessionSerializer(session).data,
-                "xp_awarded": xp,
+                "xp_awarded": update.xp,
+                "achievements_unlocked": unlocked_payload(update.achievements_unlocked),
                 "profile": ProfileSerializer(profile).data,
             }
         )

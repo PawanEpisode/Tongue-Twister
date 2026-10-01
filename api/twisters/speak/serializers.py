@@ -26,6 +26,7 @@ from ..models import (
     WordReason,
 )
 from ..practice import flags
+from ..progress.serializers import unlocked_payload
 from . import device, service
 from .normalise import tokenise
 
@@ -424,7 +425,7 @@ def result_body(result: service.Result, profile: Profile, *, include_words: bool
         "personal_best": result.personal_best,
         "level_up": result.level_up,
         "mastered_now": result.mastered_now,
-        "achievements_unlocked": [],
+        "achievements_unlocked": unlocked_payload(result.achievements_unlocked),
         "low_confidence": False,
         "warning": result.warning,
         "profile": profile_summary(profile),

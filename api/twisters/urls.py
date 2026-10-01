@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .media import views as media
 from .practice import views as practice
+from .progress import views as progress
 from .speak import views as speak
 
 router = DefaultRouter()
@@ -16,6 +17,15 @@ router.register("shares", media.ShareViewSet, basename="share")
 
 urlpatterns = [
     path("me/", views.me),
+    path("me/summary/", progress.me_summary),
+    path("me/achievements/", progress.me_achievements),
+    path("me/achievements/seen/", progress.me_achievements_seen),
+    path("me/stats/", progress.me_stats),
+    path("me/activity/", progress.me_activity),
+    path("me/favorites/", progress.FavoriteList.as_view()),
+    path("me/favorites/<slug:slug>/", progress.me_favorite),
+    path("daily/", progress.daily_view),
+    path("leaderboard/weekly/", progress.weekly_board),
     path("me/preferences/", practice.preferences),
     path("me/entitlements/", practice.entitlements),
     path("me/words/weak/", speak.weak_words),

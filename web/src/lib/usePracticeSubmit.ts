@@ -4,6 +4,8 @@ import { api } from './api'
 import type { AttemptResult, AttemptKind, Segment } from './api'
 import { useAuth } from './auth'
 import { attemptQueue, isTransient } from './attemptQueue'
+import { invalidateProgress } from './progress/invalidate'
+import { announceAchievements } from './progress/useAchievementToasts'
 
 export type PracticeTake = {
   twister: string
@@ -48,7 +50,8 @@ export function usePracticeSubmit() {
       try {
         const r = await api.submitAttempt(body)
         if (r.low_confidence) return null
-        void qc.invalidateQueries({ queryKey: ['me'] })
+        announceAchievements(r.achievements_unlocked)
+        void invalidateProgress(qc)
         void qc.invalidateQueries({ queryKey: ['weak-words'] })
         return r
       } catch (err) {

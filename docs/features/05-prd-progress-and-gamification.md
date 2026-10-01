@@ -35,7 +35,10 @@ Skeletons + error states for the strip (same treatment as existing cards).
 - Mastery can lapse? **No** — once mastered, stays mastered (badge history). A "Refresh" nudge appears after 60 days.
 - Filters on Browse: All · Not started · In progress · Mastered · Favourites.
 
-## 5. Achievements (catalogue v1 — 24)
+## 5. Achievements (catalogue v1 — 25 shipped; see `14-06d-build-spec.md`)
+
+> Built in `14-06d-build-spec.md`. The table lists 27 codes: `night_owl`/`early_bird` are deferred with Night owl mode, and the six `sound_sweep_*` rows ship as `sweep_hissers` … `sweep_benders`, leaving 25.
+
 
 | Code | Name | Rule |
 |---|---|---|

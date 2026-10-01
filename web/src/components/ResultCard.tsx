@@ -6,8 +6,10 @@ import { animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import success from '#/assets/lottie/success.json'
+import { achievementIcon } from '#/components/progress/achievementIcons'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
+import type { UnlockedAchievement } from '#/lib/api'
 import { readAccentColors } from '#/lib/theme'
 
 function grade(score: number): { label: string; Icon: LucideIcon } {
@@ -24,6 +26,7 @@ export default function ResultCard({
   xp,
   personalBest,
   levelUp,
+  unlocked,
   notice,
   children,
   onRetry,
@@ -35,6 +38,8 @@ export default function ResultCard({
   xp?: number
   personalBest?: boolean
   levelUp?: boolean
+  /** Achievements this attempt just unlocked (the toaster announces them too). */
+  unlocked?: UnlockedAchievement[]
   /** A line of context under the score (offline, capped, estimated…). */
   notice?: string
   /** Detail below the stats, e.g. the word-by-word view. */
@@ -142,6 +147,28 @@ export default function ResultCard({
             <PartyPopper className="size-4" aria-hidden />
             Level up!
           </p>
+        )}
+        {unlocked && unlocked.length > 0 && (
+          <ul
+            aria-label="Achievements unlocked"
+            className="mt-3 space-y-1 text-sm"
+          >
+            {unlocked.map((a) => {
+              const Icon = achievementIcon(a.icon)
+              return (
+                <li
+                  key={a.code}
+                  className="flex items-center justify-center gap-1.5 font-semibold text-cyan"
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden />
+                  Unlocked: {a.name}
+                  <span className="font-normal text-muted-foreground">
+                    +{a.xp_reward} XP
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
         )}
         <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
           <Stat k="Accuracy" v={`${Math.round(accuracy * 100)}%`} />

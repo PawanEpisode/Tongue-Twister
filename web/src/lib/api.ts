@@ -16,6 +16,8 @@ export type Twister = {
   word_count: number
   is_favorite: boolean
   best_score: number | null
+  /** Per-twister progress for the signed-in caller; null for guests. */
+  mastery: MasteryState | null
 }
 export type Category = {
   slug: string
@@ -40,6 +42,11 @@ export type Profile = {
   age_band?: AgeBand
   /** Opt-in name shown on recordings you share; blank = anonymous. Never falls back to `display_name`. */
   public_name?: string
+  /** IANA zone used for streak days; `UTC` until the browser's zone has been synced. */
+  timezone?: string
+  /** Opt out of public leaderboards (D18). */
+  hide_from_boards?: boolean
+  streak_freezes?: number
 }
 export type WordStatus = 'correct' | 'near' | 'wrong' | 'missed' | 'extra'
 export type WordReason = '' | 'homophone' | 'focus_swap'
@@ -71,6 +78,7 @@ export type AttemptResult = {
   words?: AttemptWord[]
   low_confidence?: false
   warning?: string | null
+  achievements_unlocked: UnlockedAchievement[]
   profile: Profile
 }
 /** 200 with no attempt saved: the recogniser was too unsure to score fairly (PRD 03 §4). */
@@ -183,7 +191,12 @@ export type SessionUpdate = Partial<{
   passes_completed: number
   avg_wpm: number
 }>
-export type SessionResult = { id: string; xp_awarded: number; profile: Profile }
+export type SessionResult = {
+  id: string
+  xp_awarded: number
+  profile: Profile
+  achievements_unlocked?: UnlockedAchievement[]
+}
 export type FeatureFlags = Record<string, boolean>
 export type GuestAttempt = {
   client_attempt_id: string
@@ -214,6 +227,134 @@ export type History = {
   }[]
 }
 type Page<T> = { count: number; results: T[] }
+
+// ─── Progress, mastery, achievements, stats and discovery (docs/features/14-06d-build-spec.md §4) ───
+
+export type MasteryState = 'new' | 'practising' | 'almost' | 'mastered'
+export type AchievementTier = 'bronze' | 'silver' | 'gold'
+export type AchievementCategory =
+  'start' | 'streak' | 'mastery' | 'skill' | 'explore'
+/** An achievement as announced by an attempt/session response. `icon` is a lucide icon name. */
+export type UnlockedAchievement = {
+  code: string
+  name: string
+  description: string
+  icon: string
+  tier: AchievementTier
+  xp_reward: number
+}
+export type AchievementView = UnlockedAchievement & {
+  category: AchievementCategory
+  unlocked_at: string | null
+  /** Fraction 0–1 for counter-shaped rules, null for event-shaped and secret ones. */
+  progress: number | null
+  seen: boolean
+}
+export type Summary = {
+  mastered: number
+  total: number
+  current_streak: number
+  best_streak: number
+  streak_at_risk: boolean
+  streak_freezes: number
+  next_streak_milestone: number | null
+  practised_today: boolean
+  achievements: { unlocked: number; total: number }
+  xp: number
+  level: number
+  xp_in_level: number
+  xp_for_next_level: number
+  timezone: string
+  /** The caller's local date, `YYYY-MM-DD`. */
+  today: string
+  unseen_achievements: (UnlockedAchievement & { unlocked_at: string })[]
+}
+export type AchievementsPayload = {
+  unlocked: number
+  total: number
+  results: AchievementView[]
+}
+export type StatsRange = '7d' | '30d' | '90d' | 'all'
+export type StatsMode = 'speak_score' | 'read_along' | 'record'
+export type Stats = {
+  range: StatsRange
+  mode: StatsMode | null
+  from: string
+  to: string
+  kpis: {
+    attempts: number
+    practice_ms: number
+    avg_score: number | null
+    best_streak: number
+    mastered: number
+    xp: number
+    level: number
+  }
+  score_series: { date: string; avg: number; rolling: number; count: number }[]
+  speed_series: { date: string; avg_wpm: number }[]
+  attempts_by_day: { date: string; attempts: number; active_ms: number }[]
+  category_accuracy: {
+    category: string
+    name: string
+    avg_accuracy: number
+    attempts: number
+  }[]
+  weak_words: (Pick<WeakWord, 'word' | 'miss_rate' | 'seen'> & {
+    drill: DrillTarget | null
+  })[]
+}
+export type ActivityDay = {
+  date: string
+  attempts: number
+  active_ms: number
+  read_along_ms: number
+  qualifies_streak: boolean
+  freeze_used: boolean
+}
+export type Activity = { from: string; to: string; days: ActivityDay[] }
+export type Facets = {
+  total: number
+  levels: Record<string, number>
+  categories: Record<string, number>
+  origins: Record<string, number>
+}
+export type BrowseStatus =
+  'mastered' | 'in_progress' | 'not_started' | 'favorites'
+export type BrowseSort =
+  | 'recommended'
+  | 'newest'
+  | 'shortest'
+  | 'longest'
+  | 'hardest'
+  | 'easiest'
+  | 'best_desc'
+  | 'best_asc'
+export type DailyPayload = {
+  day: string
+  source: 'auto' | 'editorial'
+  twister: Twister
+}
+export type WeeklyBoard = {
+  week_start: string
+  week_end: string
+  twister: { slug: string; text: string }
+  top: {
+    rank: number
+    name: string
+    emoji: string
+    score: number
+    achieved_at: string
+    is_me: boolean
+  }[]
+  me: { rank: number; score: number } | null
+  /** The viewer opted out of boards. */
+  hidden: boolean
+  updated_at: string | null
+}
+/** Filters the list, facets and random endpoints share. */
+export type TwisterFilters = Partial<
+  Record<'difficulty' | 'category' | 'origin' | 'search', string>
+>
 
 // ─── Record mode, media, sharing and consent (docs/features/13-06c-build-spec.md §1) ───
 // Every request/response shape of the recordings API lives here so a contract fix is a one-file change.
@@ -419,16 +560,51 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>
 }
 
+/** Query string from the defined, non-empty values. */
+function query(params: Record<string, string | undefined>): string {
+  return new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v) as [string, string][],
+  ).toString()
+}
+
 export const api = {
   categories: () => request<Category[]>('/categories/'),
-  twisters: (params: Record<string, string | undefined> = {}) => {
-    const qs = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v) as [string, string][],
-    )
-    return request<Page<Twister>>(`/twisters/?${qs}`)
-  },
+  twisters: (
+    params: TwisterFilters & {
+      status?: BrowseStatus
+      sort?: BrowseSort
+      page?: string
+    } = {},
+  ) => request<Page<Twister>>(`/twisters/?${query(params)}`),
   twister: (slug: string) => request<Twister>(`/twisters/${slug}/`),
-  daily: () => request<Twister>('/twisters/daily/'),
+  facets: (filters: TwisterFilters = {}) =>
+    request<Facets>(`/twisters/facets/?${query(filters)}`),
+  /** `exclude`: slugs to skip (the API caps them; callers trim). 404 when nothing is left. */
+  randomTwister: (filters: TwisterFilters = {}, exclude: string[] = []) =>
+    request<Twister>(
+      `/twisters/random/?${query({ ...filters, exclude: exclude.join(',') })}`,
+    ),
+  /** Today's twister (UTC). Reads `/daily/` and unwraps it so existing callers keep a bare Twister. */
+  daily: () => request<DailyPayload>('/daily/').then((r) => r.twister),
+  summary: () => request<Summary>('/me/summary/'),
+  achievements: () => request<AchievementsPayload>('/me/achievements/'),
+  markAchievementsSeen: (codes?: string[]) =>
+    request<{ marked: number }>('/me/achievements/seen/', {
+      method: 'POST',
+      body: JSON.stringify(codes ? { codes } : {}),
+    }),
+  stats: (range: StatsRange, mode?: StatsMode) =>
+    request<Stats>(`/me/stats/?${query({ range, mode })}`),
+  activity: (weeks = 12) => request<Activity>(`/me/activity/?weeks=${weeks}`),
+  favorites: (page = 1) =>
+    request<Page<Twister>>(`/me/favorites/?page=${page}`),
+  /** Explicit target state, so a double tap or a retry can never flip it the wrong way. */
+  setFavorite: (slug: string, on: boolean) =>
+    request<{ is_favorite: boolean }>(`/me/favorites/${slug}/`, {
+      method: on ? 'PUT' : 'DELETE',
+    }),
+  weeklyBoard: (twister?: string) =>
+    request<WeeklyBoard>(`/leaderboard/weekly/?${query({ twister })}`),
   favorite: (slug: string) =>
     request<{ is_favorite: boolean }>(`/twisters/${slug}/favorite/`, {
       method: 'POST',
@@ -472,6 +648,16 @@ export const api = {
     request<Profile>('/me/', {
       method: 'PATCH',
       body: JSON.stringify({ age_band }),
+    }),
+  setTimezone: (timezone: string) =>
+    request<Profile>('/me/', {
+      method: 'PATCH',
+      body: JSON.stringify({ timezone }),
+    }),
+  setHideFromBoards: (hide_from_boards: boolean) =>
+    request<Profile>('/me/', {
+      method: 'PATCH',
+      body: JSON.stringify({ hide_from_boards }),
     }),
   setPublicName: (public_name: string) =>
     request<Profile>('/me/', {

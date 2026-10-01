@@ -19,6 +19,10 @@ Format: lightweight ADRs. Every numeric value below lives in **config** (`settin
 | D13 | Leaderboards | Weekly, verified-only, opt-out, materialised table; P5 |
 | D15 | Hosting stance | Never depend on a free host: device engine is serverless; worker is a portable container |
 | D14 | Delete & export | Account deletion purges media in ≤ 24 h, anonymises stats in ≤ 30 d; JSON export before deletion |
+| D16 | Streak freezes | One freeze banked per 7-day streak multiple (max 2), auto-consumed to bridge one missed local day |
+| D17 | Recordings and streaks | A saved recording does not count toward the streak; it only feeds `recorded_1` |
+| D18 | Board names | `public_name` or stable `Player NNNN`; opted-out and under-13 excluded; under-13 viewers get 403 |
+| D19 | Achievement evaluation | In-request, in a savepoint under the Profile lock; state-based; never auto-revoked; 25 achievements |
 
 ---
 
@@ -74,6 +78,18 @@ Weekly board on the daily twister (Mon–Sun UTC), **verified-only**, display-na
 
 ## D14 — Deletion and export
 JSON export (profile, attempts, stats) available before deletion. Delete request ⇒ media purged ≤ 24 h, PII anonymised ≤ 30 d, any worker-retained audio and donated audio deleted on request. Consent log retained per legal policy.
+
+## D16 — Streak freezes
+A freeze is banked each time `current_streak` reaches a multiple of 7 (`STREAK_FREEZE_EVERY`), capped at 2 (`STREAK_FREEZE_MAX`, also a DB CHECK). It is consumed automatically to bridge exactly one missed local day: the bridged day gets a `DailyActivity` row with `freeze_used=True`, `qualifies_streak=False`, and the streak continues (+1 for the day that just qualified). A gap of two or more days, or no freeze, resets the streak to 1. All rules live in `progress/streaks.py`.
+
+## D17 — Recordings and streaks
+A saved recording does not qualify for the streak; it only feeds the `recorded_1` achievement.
+
+## D18 — Board names
+Boards show `public_name` or a stable `Player NNNN`. Profiles with `hide_from_boards` and under-13s are excluded from both the weekly and the per-twister boards. Under-13 viewers get `403 minor_not_allowed` on boards.
+
+## D19 — Achievement evaluation
+Achievements are evaluated in-request inside a savepoint while the caller holds the Profile row lock; exceptions are logged and swallowed so a bad rule never fails an attempt. Rules are state-based and idempotent, so replays unlock nothing. Unlocks are never auto-revoked (admin can revoke). Catalogue size is 25. The earlier idea of extra `UserTwisterStats` columns was dropped: mastery is derived from existing stats.
 
 ---
 

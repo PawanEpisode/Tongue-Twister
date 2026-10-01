@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { api } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { flushAttemptQueue } from '#/lib/attemptQueue'
+import { invalidateProgress } from '#/lib/progress/invalidate'
 
 /**
  * Renders nothing. Uploads attempts a signed-in user made offline: at start-up, on sign-in and
@@ -18,7 +19,7 @@ export default function AttemptSync() {
     const flush = () =>
       void flushAttemptQueue(userId, api.syncAttempts).then((r) => {
         if (!r.uploaded) return
-        void qc.invalidateQueries({ queryKey: ['me'] })
+        void invalidateProgress(qc)
         void qc.invalidateQueries({ queryKey: ['twister'] })
         void qc.invalidateQueries({ queryKey: ['history'] })
       })

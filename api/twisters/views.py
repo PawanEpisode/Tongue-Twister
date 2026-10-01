@@ -1,27 +1,19 @@
 from django.db.models import Count, Max, Q
-from django.utils import timezone
-from django_filters import rest_framework as filters
-from rest_framework import permissions, status, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
+from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
-from .models import Attempt, AttemptKind, Category, Favorite, Profile, Twister
-from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer
-from .speak.queries import best_scores, leaderboard_attempts
+from .filters import TwisterFilter, TwisterSearchFilter
+from .models import Attempt, AttemptKind, Category, Favorite, Twister
+from .progress import boards, browse, daily
+from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer, twister_context
+from .speak.queries import best_scores
 from .speak.serializers import AttemptSerializer
 
-
-class TwisterFilter(filters.FilterSet):
-    category = filters.CharFilter(field_name="category__slug")
-    difficulty = filters.NumberFilter()
-    origin = filters.CharFilter()
-    min_words = filters.NumberFilter(field_name="word_count", lookup_expr="gte")
-    max_words = filters.NumberFilter(field_name="word_count", lookup_expr="lte")
-
-    class Meta:
-        model = Twister
-        fields = ["category", "difficulty", "origin", "min_words", "max_words"]
+ANON_FACET_CACHE = "public, max-age=60, stale-while-revalidate=300"
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -38,26 +30,33 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TwisterSerializer
     lookup_field = "slug"
     filterset_class = TwisterFilter
+    filter_backends = [DjangoFilterBackend, TwisterSearchFilter, OrderingFilter]
     search_fields = ["text", "tip"]
     ordering_fields = ["difficulty", "word_count", "created_at"]
 
     def get_serializer_context(self):
-        ctx = super().get_serializer_context()
-        user = self.request.user
-        if getattr(user, "is_authenticated", False) and isinstance(user, Profile):
-            ctx["favorite_ids"] = set(user.favorites.values_list("twister_id", flat=True))
-            ctx["best_scores"] = best_scores(user.attempts.all())
-        return ctx
+        return {**super().get_serializer_context(), **twister_context(self.request.user)}
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        return browse.refine(queryset, self.request) if self.action == "list" else queryset
+
+    @action(detail=False, methods=["get"])
+    def facets(self, request):
+        """Counts behind the Browse chips (each facet ignores its own filter)."""
+        headers = {} if request.user.is_authenticated else {"Cache-Control": ANON_FACET_CACHE}
+        return Response(browse.facets(self, self.get_queryset()), headers=headers)
+
+    @action(detail=False, methods=["get"])
+    def random(self, request):
+        twister = browse.random_twister(self)
+        return Response(self.get_serializer(twister).data, headers={"Cache-Control": "no-store"})
 
     @action(detail=False, methods=["get"])
     def daily(self, request):
-        """Same twister for everyone each UTC day — deterministic rotation."""
-        ids = list(self.get_queryset().values_list("id", flat=True).order_by("id"))
-        if not ids:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        pick = ids[timezone.now().date().toordinal() % len(ids)]
-        obj = self.get_queryset().get(id=pick)
-        return Response(self.get_serializer(obj).data)
+        """Same twister for everyone each UTC day (bare twister; `GET /daily/` has the envelope)."""
+        row = daily.daily_twister(daily.today_utc())
+        return Response(self.get_serializer(row.twister).data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, slug=None):
@@ -92,24 +91,7 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["get"])
     def leaderboard(self, request, slug=None):
-        twister = self.get_object()
-        rows = (
-            leaderboard_attempts()
-            .filter(twister=twister)
-            .values("profile_id", "profile__display_name", "profile__avatar_emoji")
-            .annotate(best=Max("score"))
-            .order_by("-best")[:10]
-        )
-        return Response(
-            [
-                {
-                    "user": r["profile__display_name"] or "Anonymous",
-                    "emoji": r["profile__avatar_emoji"],
-                    "score": r["best"],
-                }
-                for r in rows
-            ]
-        )
+        return Response(boards.twister_board(self.get_object()))
 
 
 @api_view(["GET", "PATCH"])

@@ -5,18 +5,15 @@ inside ``transaction.atomic`` so concurrent requests cannot double-count a day.
 """
 
 import datetime as dt
-from zoneinfo import ZoneInfo
+from typing import NamedTuple
 
 from django.conf import settings
 from django.utils import timezone
 
 from .. import scoring
+from ..localtime import local_date
 from ..models import DailyActivity, PracticeMode, PracticeSession, Profile, SessionStatus
-
-
-def local_date(profile: Profile, now: dt.datetime | None = None) -> dt.date:
-    """'Today' in the profile's timezone (never the request's or the server's)."""
-    return (now or timezone.now()).astimezone(ZoneInfo(profile.timezone)).date()
+from ..progress import achievements, streaks
 
 
 def _today_row(profile: Profile, now: dt.datetime | None) -> DailyActivity:
@@ -26,17 +23,8 @@ def _today_row(profile: Profile, now: dt.datetime | None) -> DailyActivity:
 
 
 def _mark_streak(profile: Profile, day: DailyActivity) -> None:
-    """Advance the cached streak the first time a local day qualifies."""
-    if day.qualifies_streak:
-        return
-    day.qualifies_streak = True
-    last = profile.last_activity_date
-    if last is not None and day.local_date <= last:
-        return  # today already counted, or a back-dated (offline) day: it qualifies but the streak doesn't move
-    continues = last == day.local_date - dt.timedelta(days=1)
-    profile.current_streak = profile.current_streak + 1 if continues else 1
-    profile.best_streak = max(profile.best_streak, profile.current_streak)
-    profile.last_activity_date = day.local_date
+    """Advance the cached streak the first time a local day qualifies (rules live in `streaks`)."""
+    streaks.advance(profile, day)
 
 
 def record_attempt(profile: Profile, xp: int, now: dt.datetime | None = None) -> None:
@@ -78,10 +66,16 @@ def record_read_along(
     return xp
 
 
+class SessionUpdate(NamedTuple):
+    xp: int
+    achievements_unlocked: list[achievements.Unlocked]
+
+
 def apply_session_update(
     session: PracticeSession, data: dict, now: dt.datetime | None = None
-) -> int:
-    """Apply a heartbeat/finish payload to an *active* session; returns XP awarded on completion.
+) -> SessionUpdate:
+    """Apply a heartbeat/finish payload to an *active* session; returns the XP and badges earned when
+    a Read-along session completes (nothing for heartbeats).
 
     ``active_ms`` is monotonic and can never exceed wall-clock time since the session started,
     so a tampered client cannot claim minutes it did not spend.
@@ -102,6 +96,10 @@ def apply_session_update(
     if finishing:
         session.ended_at = now
     session.save()
-    if finishing and session.mode == PracticeMode.READ_ALONG:
-        return record_read_along(session.profile, session, now)
-    return 0
+    if not (finishing and session.mode == PracticeMode.READ_ALONG):
+        return SessionUpdate(0, [])
+    xp = record_read_along(session.profile, session, now)
+    unlocked = achievements.safely(
+        achievements.Event(achievements.SESSION, session.profile, twister=session.twister)
+    )
+    return SessionUpdate(xp, unlocked)

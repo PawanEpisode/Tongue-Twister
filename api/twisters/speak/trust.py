@@ -38,22 +38,31 @@ def initial_verification(engine: str, distrusted: bool) -> str:
     return Verification.NONE
 
 
-def counts_for_mastery(attempt: Attempt, *, distrusted: bool) -> bool:
-    """D5/D8: a verified test, or a device test from a trusted user; provisional only while allowed."""
-    if attempt.kind != AttemptKind.TEST or attempt.flagged:
-        return False
-    if attempt.score_version < 2 or attempt.score < settings.MASTERY_MIN_SCORE:
+def is_trusted(attempt: Attempt, *, distrusted: bool) -> bool:
+    """Can this attempt's score be believed (D5/D8)? Kind and score thresholds are the caller's business.
+
+    A verified result always; a device result from a trusted user (pending and failed-to-verify keep
+    the device result, because a worker outage must not cost users progress); a provisional text-layer
+    result only while `MASTERY_ALLOW_PROVISIONAL` is on and the recogniser was confident enough.
+    """
+    if attempt.flagged or attempt.score_version < 2:
         return False
     status = attempt.verification_status
     if status == Verification.VERIFIED:
         return True
-    # Pending and failed-to-verify keep the device result (a worker outage must not cost users progress).
     if status in (Verification.DEVICE, Verification.PENDING, Verification.FAILED):
         return not distrusted
     if status == Verification.NONE and settings.MASTERY_ALLOW_PROVISIONAL:
         confidence = attempt.engine_confidence
         return confidence is None or confidence >= settings.MASTERY_PROVISIONAL_MIN_CONFIDENCE
     return False
+
+
+def counts_for_mastery(attempt: Attempt, *, distrusted: bool) -> bool:
+    """D5/D8: a trusted test at or above the mastery score."""
+    if attempt.kind != AttemptKind.TEST or attempt.score < settings.MASTERY_MIN_SCORE:
+        return False
+    return is_trusted(attempt, distrusted=distrusted)
 
 
 def is_transcript_spam(

@@ -247,3 +247,43 @@ Binding JSON for the worker lives in `13-06c-build-spec.md` A2.2; summary of wha
 - **`GET /me/` / `PATCH /me/`** gain `public_name` (string, ≤ 40, default `""`, opt-in). Trimmed/collapsed; rejected with `400 validation_error` if it has control characters, e-mail/link/markup characters or a blocked term. `owner.display_name` on `GET /public/r/{token}/` is **only** `public_name` (`null` when blank); the account display name and e-mail are never exposed.
 - **Opaque paths.** New objects live at `{hmac(profile_id)[:16]}/{yyyy}/{mm}/{asset_id}.{ext}` (`MEDIA_PATH_SECRET`); older assets keep their stored path. Storage RLS is deny-all for clients (`storage_policies.sql`); uploads use API-minted signed upload tokens, playback signed URLs.
 - New error codes: `409 lease_lost`, `409 job_closed`.
+
+---
+
+## 15. As built (06d core)
+
+Spec: `14-06d-build-spec.md`. Decisions: D16–D19 in `11`. Shapes below are what ships; where they differ from earlier sections of this file, this section wins.
+
+### Endpoints
+
+| Endpoint | Auth | Shape |
+|---|---|---|
+| `GET /me/summary/` | yes | `{mastered,total,current_streak,best_streak,streak_at_risk,streak_freezes,next_streak_milestone,practised_today,achievements:{unlocked,total},xp,level,xp_in_level,xp_for_next_level,timezone,today,unseen_achievements:[{code,name,description,icon,tier,xp_reward,unlocked_at}]}`. `current_streak` is the effective streak (0 once lapsed; the stored value is untouched). `private, no-store`. |
+| `GET /me/achievements/` | yes | `{unlocked,total,results:[{code,name,description,icon,tier,category,xp_reward,unlocked_at,progress,seen}]}` ordered by `sort_order`. Locked `hidden` rows are masked: name `"Secret achievement"`, description `"Keep practising to find it."`, icon `"lock"`, `progress: null`. |
+| `POST /me/achievements/seen/` | yes | Body `{codes?: [..]}` (omit = all unseen, at most `ACHIEVEMENT_SEEN_MAX_CODES`). `200 {"marked": n}`. Unknown codes are ignored. |
+| `GET /me/stats/?range=7d\|30d\|90d\|all&mode=speak_score\|read_along\|record` | yes | `{range,mode,from,to,kpis:{attempts,practice_ms,avg_score,best_streak,mastered,xp,level},score_series,speed_series,attempts_by_day,category_accuracy,weak_words}` as in spec §4.1. Days are local dates. `rolling` is a 7-day trailing mean weighted by `count`. Series are capped at `STATS_MAX_POINTS`; a longer `all` range is bucketed by ISO week (`date` = Monday). Bad `range`/`mode` gives `400 validation_error`. |
+| `GET /me/activity/?weeks=12` | yes | `weeks` 1-52. `{from,to,days:[{date,attempts,active_ms,read_along_ms,qualifies_streak,freeze_used}]}`; only days with a row, oldest first. |
+| `GET /me/favorites/` | yes | Paginated Twister list (same serializer and context as Browse), newest favourite first. |
+| `PUT` / `DELETE /me/favorites/{slug}/` | yes | Idempotent, `200 {"is_favorite": bool}`. Unknown or unpublished slug is `404`. The old `POST /twisters/{slug}/favorite/` toggle remains. |
+| `GET /daily/?day=YYYY-MM-DD` | no | `{day,source:"auto"\|"editorial",twister}`. Default is today in UTC; `day` may be today or up to `DAILY_LOOKBACK_DAYS` (60) back. Only ASCII `YYYY-MM-DD` is accepted. `public, max-age=60`. `GET /twisters/daily/` delegates to the same service. |
+| `GET /twisters/facets/` | no | `{total,levels,categories,origins}`. Takes the list filters except `status`/`sort`; each facet ignores its own filter. Anonymous: `public, max-age=60, stale-while-revalidate=300`. |
+| `GET /twisters/random/` | no | One Twister. Params `difficulty`, `category`, `origin`, `exclude=a,b` (at most `RANDOM_EXCLUDE_MAX`). Signed-in picks a bucket by `RANDOM_WEIGHTS` (empty buckets dropped, weights renormalised). Empty set is `404 not_found`. `no-store`. |
+| `GET /leaderboard/weekly/?twister=<slug>` | no | Flag `weekly_boards` off is `403 feature_disabled`; under-13 viewer is `403 minor_not_allowed`. `{week_start,week_end,twister:{slug,text},top:[{rank,name,emoji,score,achieved_at,is_me}],me:{rank,score}\|null,hidden,updated_at}`. Reads `LeaderboardEntry` only. |
+| `GET /twisters/{slug}/leaderboard/` | no | Shape unchanged. `user` now comes from the board name (D18); opted-out and under-13 profiles are excluded. |
+
+### Changed existing contracts
+
+- `GET /twisters/`: new `status=mastered|in_progress|not_started|favorites` (anonymous gets `400 validation_error`), `sort=recommended|newest|shortest|longest|hardest|easiest|best_desc|best_asc` (wins over `ordering`; unknown is 400) and `q` (alias of `search`). `best_*` sorts use a subquery on the caller's best test score.
+- `Twister.mastery`: `"new"|"practising"|"almost"|"mastered"` for signed-in callers, `null` for anonymous.
+- `GET/PATCH /me/`: `hide_from_boards` (writable), `streak_freezes` (read-only). Timezone stays on `PATCH /me/`; no separate timezone endpoint.
+- Attempt responses (`POST /attempts/`) and the `PATCH /sessions/{id}/` response carry `achievements_unlocked: [{code,name,description,icon,tier,xp_reward}]` (empty list on replay). The session response also carries `xp_awarded`. Badge XP is added to the profile total, so `profile.xp` can exceed the attempt's own `xp_awarded`.
+- Recording `complete` evaluates achievements server-side; its response is unchanged (the next `GET /me/summary/` shows the unseen badge).
+- Level maths lives in `twisters/levels.py` (`XP_PER_LEVEL = 200`).
+
+### Deviations and notes
+
+- No `level` alias on the twister list: `difficulty` is the established name.
+- Catalogue size is 25 (seeded by `0013_progress_seeds`; `sync_achievements` re-applies edits).
+- `LeaderboardEntry` has an extra `built_at` column. Hourly rebuild: `build_leaderboard` (cron `37 * * * *` in `manage-command.yml`).
+- Seed flags: `achievements` on, `weekly_boards` off.
+- Achievements are evaluated in-request inside a savepoint; errors are logged and swallowed (D19). Unlocks are never auto-revoked.

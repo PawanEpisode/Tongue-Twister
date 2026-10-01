@@ -70,12 +70,10 @@ def quota_exceeded(limit: str, **details) -> ApiProblem:
     )
 
 
-def minor_not_allowed() -> ApiProblem:
-    return ApiProblem(
-        status.HTTP_403_FORBIDDEN,
-        "minor_not_allowed",
-        "Cloud recordings and voice uploads are for people aged 13 or older.",
-    )
+def minor_not_allowed(
+    message: str = "Cloud recordings and voice uploads are for people aged 13 or older.",
+) -> ApiProblem:
+    return ApiProblem(status.HTTP_403_FORBIDDEN, "minor_not_allowed", message)
 
 
 def age_required() -> ApiProblem:

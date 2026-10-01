@@ -1,27 +1,33 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import type { ComponentProps } from 'react'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
+import type { BrowseSort, BrowseStatus } from '#/lib/api'
+import { useAuth } from '#/lib/auth'
 import { CategoryIcon } from '#/lib/categoryIcons'
 import { browseContext } from '#/lib/browseContext'
-import { TwisterCard } from '#/components/ui'
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
 import {
-  ChipsSkeleton,
-  EmptyState,
-  ErrorState,
-  TwisterCardSkeleton,
-} from '#/components/feedback'
-import { cn } from '#/lib/utils'
+  parseSort,
+  parseStatus,
+  toApiParams,
+} from '#/lib/progress/browseParams'
+import { PagedTwisters } from '#/components/TwisterList'
+import { RandomButton } from '#/components/progress/RandomButton'
+import { SortMenu } from '#/components/progress/SortMenu'
+import { StatusChips } from '#/components/progress/StatusChips'
+import { Button } from '#/components/ui/button'
+import { Chip } from '#/components/ui/chip'
+import { Input } from '#/components/ui/input'
+import { ChipsSkeleton, EmptyState } from '#/components/feedback'
 
 type Search = {
   difficulty?: string
   category?: string
   origin?: string
   q?: string
+  status?: BrowseStatus
+  sort?: BrowseSort
 }
 export const Route = createFileRoute('/twisters/')({
   head: () =>
@@ -36,48 +42,41 @@ export const Route = createFileRoute('/twisters/')({
     category: s.category ? String(s.category) : undefined,
     origin: s.origin ? String(s.origin) : undefined,
     q: s.q ? String(s.q) : undefined,
+    status: parseStatus(s.status),
+    sort: parseSort(s.sort),
   }),
   component: Browse,
 })
 
-function Chip({
-  on,
-  className,
-  ...props
-}: { on: boolean } & ComponentProps<typeof Button>) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className={cn(
-        'px-4 py-1.5 font-normal',
-        on
-          ? 'border-primary bg-primary/20 text-foreground hover:border-primary'
-          : 'text-muted-foreground',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
 function Browse() {
   const s = Route.useSearch()
   const nav = useNavigate({ from: '/twisters/' })
+  const { session, loading: authLoading } = useAuth()
+  const signedIn = !!session
   const [q, setQ] = useState(s.q ?? '')
   const set = (patch: Partial<Search>) =>
     nav({ search: (p) => ({ ...p, ...patch }) })
+  const filters = {
+    difficulty: s.difficulty,
+    category: s.category,
+    origin: s.origin,
+  }
   const cats = useQuery({ queryKey: ['categories'], queryFn: api.categories })
+  // Counts on the chips: each dimension ignores its own filter, so a chip shows what switching to it gives.
+  const facets = useQuery({
+    queryKey: ['facets', { ...filters, search: s.q }],
+    queryFn: () => api.facets({ ...filters, search: s.q }),
+    placeholderData: (prev) => prev,
+  })
   const list = useInfiniteQuery({
-    queryKey: ['twisters', s],
+    queryKey: ['twisters', s, signedIn],
     initialPageParam: 1,
+    enabled: !authLoading, // progress filters need to know who is asking
     queryFn: ({ pageParam }) =>
       api.twisters({
-        difficulty: s.difficulty,
-        category: s.category,
-        origin: s.origin,
+        ...filters,
         search: s.q,
+        ...toApiParams(s, signedIn),
         page: String(pageParam),
       }),
     getNextPageParam: (last, pages) =>
@@ -86,7 +85,6 @@ function Browse() {
         : undefined,
   })
   const items = list.data?.pages.flatMap((p) => p.results) ?? []
-  const total = list.data?.pages[0]?.count ?? 0
   // Lets the twister page's next/previous follow this list (see lib/browseContext).
   useEffect(() => {
     if (items.length) browseContext.set(items.map((t) => t.slug))
@@ -95,6 +93,7 @@ function Browse() {
     setQ('')
     nav({ search: {} })
   }
+  const counts = facets.data
 
   return (
     <div>
@@ -110,6 +109,7 @@ function Browse() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search — try “peter” or “lorry”"
+          aria-label="Search twisters"
           className="glass rounded-2xl px-5 py-3"
         />
       </form>
@@ -121,6 +121,7 @@ function Browse() {
           <Chip
             key={n}
             on={s.difficulty === String(i + 1)}
+            count={counts?.levels[String(i + 1)]}
             onClick={() => set({ difficulty: String(i + 1) })}
           >
             {n}
@@ -132,12 +133,14 @@ function Browse() {
         </Chip>
         <Chip
           on={s.origin === 'classic'}
+          count={counts?.origins.classic}
           onClick={() => set({ origin: 'classic' })}
         >
           Classic
         </Chip>
         <Chip
           on={s.origin === 'modern'}
+          count={counts?.origins.modern}
           onClick={() => set({ origin: 'modern' })}
         >
           Modern
@@ -157,6 +160,7 @@ function Browse() {
           <Chip
             key={c.slug}
             on={s.category === c.slug}
+            count={counts?.categories[c.slug]}
             className="gap-1.5"
             onClick={() => set({ category: c.slug })}
           >
@@ -165,64 +169,36 @@ function Browse() {
           </Chip>
         ))}
       </div>
-      {list.isError && !items.length ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : list.isPending ? (
-        <div
-          className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          aria-busy
-          aria-label="Loading twisters"
-        >
-          {Array.from({ length: 9 }, (_, i) => (
-            <TwisterCardSkeleton key={i} />
-          ))}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {signedIn && (
+          <StatusChips
+            value={s.status}
+            onChange={(status) => set({ status })}
+          />
+        )}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <RandomButton filters={filters} />
+          <SortMenu
+            value={s.sort}
+            signedIn={signedIn}
+            onChange={(sort) => set({ sort: parseSort(sort) })}
+          />
         </div>
-      ) : items.length === 0 ? (
-        <EmptyState
-          title="No twisters match"
-          hint="Try a different search or loosen a filter."
-          action={
-            <Button variant="outline" onClick={clearFilters}>
-              Clear filters
-            </Button>
-          }
-        />
-      ) : (
-        <>
-          <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">
-            Showing {items.length} of {total}
-          </p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((t, i) => (
-              <TwisterCard key={t.slug} t={t} i={i % 24} />
-            ))}
-            {list.isFetchingNextPage &&
-              Array.from({ length: 3 }, (_, i) => (
-                <TwisterCardSkeleton key={`sk${i}`} />
-              ))}
-          </div>
-          {list.isError && (
-            <ErrorState
-              compact
-              title="Couldn’t load more"
-              error={list.error}
-              onRetry={() => void list.fetchNextPage()}
-            />
-          )}
-          {list.hasNextPage && !list.isError && (
-            <div className="mt-8 text-center">
-              <Button
-                variant="outline"
-                size="lg"
-                disabled={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
-                {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
+      </div>
+      <PagedTwisters
+        query={list}
+        empty={
+          <EmptyState
+            title="No twisters match"
+            hint="Try a different search or loosen a filter."
+            action={
+              <Button variant="outline" onClick={clearFilters}>
+                Clear filters
               </Button>
-            </div>
-          )}
-        </>
-      )}
+            }
+          />
+        }
+      />
     </div>
   )
 }

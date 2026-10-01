@@ -33,6 +33,7 @@ from ..models import (
     WordStatus,
 )
 from ..practice import services
+from ..progress import achievements
 from . import device, pipeline, stats, trust
 from . import scoring as v2
 from .normalise import tokenise
@@ -90,6 +91,7 @@ class Result:
     level_up: bool = False
     mastered_now: bool = False
     warning: str | None = None
+    achievements_unlocked: list[achievements.Unlocked] = field(default_factory=list)
 
 
 def accepted_variants(twister: Twister, lang: str) -> dict[str, set[str]]:
@@ -179,21 +181,16 @@ def _breakdown(evaluation, offset: int = 0) -> dict:
     }
 
 
-def _personal_best(
-    profile: Profile, submission: Submission, score: int, when, flagged: bool
-) -> bool:
+def _previous_best(profile: Profile, twister: Twister, when) -> int | None:
     """Best among *earlier* unflagged v2 tests (offline attempts may arrive out of order)."""
-    if submission.kind != AttemptKind.TEST or flagged:
-        return False
-    previous = Attempt.objects.filter(
+    return Attempt.objects.filter(
         profile=profile,
-        twister=submission.twister,
+        twister=twister,
         kind=AttemptKind.TEST,
         flagged=False,
         score_version=SCORE_VERSION_CURRENT,
         created_at__lt=when,
     ).aggregate(best=Max("score"))["best"]
-    return previous is None or score > previous
 
 
 def _award(
@@ -272,7 +269,9 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
     warning = evaluation.flags[0] if evaluation.flags else ("repeated_transcript" if spam else None)
     distrusted = trust.device_distrusted(profile, now)
     score = evaluation.score
-    is_best = _personal_best(profile, submission, score.score, when, flagged)
+    can_be_best = submission.kind == AttemptKind.TEST and not flagged
+    previous_best = _previous_best(profile, twister, when) if can_be_best else None
+    is_best = can_be_best and (previous_best is None or score.score > previous_best)
     xp = _award(submission, evaluation, flagged, when, now, share)
     gop = [r.acoustic_score for r in reports.values() if r.acoustic_score is not None]
 
@@ -353,6 +352,19 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
     )
     twister_stats = stats.record_attempt(profile, twister, attempt)
 
+    unlocked: list[achievements.Unlocked] = []
+    if xp is not None:  # flagged, guest-imported and stale offline attempts earn no progress (D19)
+        unlocked = achievements.safely(
+            achievements.Event(
+                achievements.ATTEMPT,
+                profile,
+                attempt=attempt,
+                twister=twister,
+                twister_stats=twister_stats,
+                previous_best=previous_best,
+            )
+        )  # before `level_up` is read: a badge's XP can itself level the user up
+
     if trust.wants_spot_check(attempt, is_personal_best=is_best):
         trust.schedule_spot_check(attempt, profile)
 
@@ -363,6 +375,7 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
         level_up=profile.level > old_level,
         mastered_now=before is None and twister_stats.mastered_at is not None,
         warning=warning,
+        achievements_unlocked=unlocked,
     )
 
 

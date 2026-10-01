@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth'
+import { invalidateProgress } from '../progress/invalidate'
 import { hasPendingUploads } from './pendingUploads'
 import type { UploadJob, UploadManager } from './uploadManager'
 
@@ -46,6 +47,8 @@ export function useUploads(opts: { load?: boolean } = {}) {
         doneSeen.current.add(j.id)
         void qc.invalidateQueries({ queryKey: ['recordings'] })
         void qc.invalidateQueries({ queryKey: ['storage'] })
+        // A saved recording can unlock "On Camera"; it arrives via the summary's unseen list.
+        void invalidateProgress(qc)
       }
   }, [jobs, qc])
 

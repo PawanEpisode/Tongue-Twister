@@ -210,6 +210,25 @@ WEAK_WORD_LADDER_DAYS = (
 )  # spaced review: next_review_at after 1, 2, 3, 4+ correct in a row
 XP_KIND_MULTIPLIER = {"test": 1.0, "train": 0.5, "drill": 0.25, "record": 1.0}
 
+# Progress, achievements & discovery (docs/features/14-06d-build-spec.md). Rules, not secrets: safe
+# defaults, tunable per environment without a migration -- except STREAK_FREEZE_MAX, which is also a
+# DB CHECK on Profile.streak_freezes, so changing it needs a migration.
+STREAK_FREEZE_MAX = 2
+# A freeze is banked each time the streak reaches a multiple of this (D16).
+STREAK_FREEZE_EVERY = int(env("STREAK_FREEZE_EVERY", "7"))
+STREAK_MILESTONES = (3, 7, 14, 30, 60, 100)
+# Local hour from which an idle, live streak counts as "at risk".
+STREAK_AT_RISK_HOUR = int(env("STREAK_AT_RISK_HOUR", "18"))
+# A best score at or above this makes a twister "almost" mastered.
+MASTERY_ALMOST_SCORE = int(env("MASTERY_ALMOST_SCORE", "80"))
+LEADERBOARD_TOP_N = int(env("LEADERBOARD_TOP_N", "10"))
+# Random's bucket weights (PRD 05 S7): favour what the user has not mastered.
+RANDOM_WEIGHTS = {"new": 60, "practising": 30, "mastered": 10}
+RANDOM_EXCLUDE_MAX = 20  # slugs a client may ask Random to skip
+STATS_MAX_POINTS = int(env("STATS_MAX_POINTS", "400"))  # longer ranges are bucketed by ISO week
+DAILY_LOOKBACK_DAYS = 60  # how far back GET /daily/?day= may look
+ACHIEVEMENT_SEEN_MAX_CODES = 100  # codes one "mark seen" request may name
+
 # Record, media, sharing & consent (docs/features/13-06c-build-spec.md). Numbers that belong to a plan live
 # in Plan.limits (decision D1); PLAN_LIMIT_DEFAULTS only fills keys a plan row does not define.
 PLAN_LIMIT_DEFAULTS = {

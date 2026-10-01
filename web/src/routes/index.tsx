@@ -2,9 +2,18 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Flame, Lightbulb, Mic, Skull, Sprout, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
+import { FavoriteButton } from '#/components/progress/FavoriteButton'
+import { MasteryBadge } from '#/components/progress/MasteryBadge'
+import { ProgressStrip } from '#/components/progress/ProgressStrip'
+import { StreakBanner } from '#/components/progress/StreakBanner'
+import { WeeklyBoard } from '#/components/progress/WeeklyBoard'
+import { DifficultyBadge } from '#/components/ui'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
+import { useFlag } from '#/lib/flags'
+import { useSummary } from '#/lib/progress/useSummary'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
 import { CategoryIcon } from '#/lib/categoryIcons'
@@ -59,8 +68,17 @@ const LEVELS: {
 function Home() {
   const daily = useQuery({ queryKey: ['daily'], queryFn: api.daily })
   const cats = useQuery({ queryKey: ['categories'], queryFn: api.categories })
+  const weeklyBoards = useFlag('weekly_boards')
+  const summary = useSummary()
+  const reduceMotion = useReducedMotion()
   return (
     <div className="space-y-16">
+      <div className="space-y-3 pt-2">
+        <ProgressStrip />
+        {summary.data && (
+          <StreakBanner summary={summary.data} twisterSlug={daily.data?.slug} />
+        )}
+      </div>
       <section className="relative grid items-center gap-10 pt-6 md:grid-cols-[1.2fr_1fr]">
         <div>
           <motion.p
@@ -103,12 +121,14 @@ function Home() {
           </div>
         </div>
         <motion.div
-          animate={{ y: [0, -12, 0], rotate: [-2, 2, -2] }}
+          animate={
+            reduceMotion ? undefined : { y: [0, -12, 0], rotate: [-2, 2, -2] }
+          }
           transition={{ repeat: Infinity, duration: 6 }}
         >
           <Card variant="glass" className="rounded-3xl p-7">
             <div className="text-xs font-semibold uppercase tracking-widest text-pink">
-              Today’s twister
+              Try this twister!
             </div>
             {daily.isPending ? (
               <div className="mt-4 space-y-3" aria-busy>
@@ -132,7 +152,17 @@ function Home() {
               </div>
             ) : (
               <>
-                <p className="mt-3 line-clamp-4 font-display text-2xl leading-snug">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <DifficultyBadge level={daily.data.difficulty} />
+                  <MasteryBadge state={daily.data.mastery} />
+                  <Badge
+                    variant={daily.data.best_score != null ? 'lime' : 'outline'}
+                  >
+                    Best {daily.data.best_score ?? 'N/A'}
+                  </Badge>
+                  <FavoriteButton twister={daily.data} className="ml-auto" />
+                </div>
+                <p className="mt-2 line-clamp-4 font-display text-2xl leading-snug">
                   {daily.data.text}
                 </p>
                 {daily.data.tip && (
@@ -149,6 +179,8 @@ function Home() {
           </Card>
         </motion.div>
       </section>
+
+      {weeklyBoards && <WeeklyBoard />}
 
       <section>
         <h2 className="mb-5 text-2xl font-bold">Pick your level</h2>

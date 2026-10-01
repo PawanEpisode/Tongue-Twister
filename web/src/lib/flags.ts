@@ -14,6 +14,9 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   record_region: true,
   record_cloud: false,
   share_links: false,
+  // Progress (06d): achievements ship on; the weekly board waits for enough players.
+  achievements: true,
+  weekly_boards: false,
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

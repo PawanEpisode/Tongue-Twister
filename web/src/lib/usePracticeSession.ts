@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { api } from './api'
 import type { PracticeMode, SessionResult, SessionUpdate } from './api'
 import { useAuth } from './auth'
+import { invalidateProgress } from './progress/invalidate'
+import { announceAchievements } from './progress/useAchievementToasts'
 
 /**
  * Advisory server-side ledger for one practice run (streak, minutes, capped XP). Guests skip it,
@@ -47,7 +49,8 @@ export function usePracticeSession(
       if (!sessionId) return null
       try {
         const result = await api.updateSession(sessionId, patch)
-        if (terminal) void qc.invalidateQueries({ queryKey: ['me'] })
+        announceAchievements(result.achievements_unlocked)
+        if (terminal) void invalidateProgress(qc)
         return result
       } catch {
         return null
