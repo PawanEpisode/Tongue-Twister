@@ -11,6 +11,7 @@ import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '#/components/ui/button'
+import { DeleteDialogWrapper } from '#/components/ui/delete-dialog'
 import {
   Dialog,
   DialogContent,
@@ -294,40 +295,25 @@ export default function RecordingStage({
           </div>
         </DialogContent>
       </Dialog>
-      <Dialog
+      <DeleteDialogWrapper
         open={confirm === 'restart' || confirm === 'discard'}
         onOpenChange={(next) => {
           if (!next) setConfirm(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {confirm === 'discard'
-                ? 'Discard this take?'
-                : 'Start this take again?'}
-            </DialogTitle>
-            <DialogDescription>
-              What you’ve recorded so far will be deleted from this device.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setConfirm(null)}>
-              Keep it
-            </Button>
-            <Button
-              onClick={() => {
-                const c = confirm
-                setConfirm(null)
-                if (c === 'discard') onDiscard()
-                else onRestart()
-              }}
-            >
-              {confirm === 'discard' ? 'Discard' : 'Restart'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        title={
+          confirm === 'discard'
+            ? 'Discard this take?'
+            : 'Start this take again?'
+        }
+        description="What you’ve recorded so far will be deleted from this device."
+        confirmLabel={confirm === 'discard' ? 'Discard' : 'Restart'}
+        onConfirm={() => {
+          const c = confirm
+          setConfirm(null)
+          if (c === 'discard') onDiscard()
+          else onRestart()
+        }}
+      />
     </div>
   )
 }

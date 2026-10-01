@@ -14,6 +14,7 @@ export type GenerateBody = {
   topic: string
   difficulty?: number
   language?: 'en'
+  words?: number
 }
 /** A generated twister is a normal (private) twister. */
 /** The API also returns the numeric `id` (the DELETE key) on owned twisters. */

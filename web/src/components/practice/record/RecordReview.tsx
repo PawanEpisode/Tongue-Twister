@@ -11,13 +11,7 @@ import {
 import { useEffect, useId, useMemo, useState } from 'react'
 import ResultCard from '#/components/ResultCard'
 import { Button } from '#/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+import { DeleteDialogWrapper } from '#/components/ui/delete-dialog'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import type { Quota, UnlockedAchievement } from '#/lib/api'
@@ -320,34 +314,19 @@ export default function RecordReview(p: ReviewProps) {
         ) : null}
       </section>
 
-      <Dialog
+      <DeleteDialogWrapper
         open={confirmDiscard}
         onOpenChange={(next) => {
           if (!next) setConfirmDiscard(false)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Discard this take?</DialogTitle>
-            <DialogDescription>
-              It will be deleted from this device. This can’t be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
-              Keep it
-            </Button>
-            <Button
-              onClick={() => {
-                setConfirmDiscard(false)
-                p.onDiscard()
-              }}
-            >
-              Discard
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        title="Discard this take?"
+        description="It will be deleted from this device. This can’t be undone."
+        confirmLabel="Discard"
+        onConfirm={() => {
+          setConfirmDiscard(false)
+          p.onDiscard()
+        }}
+      />
     </div>
   )
 }

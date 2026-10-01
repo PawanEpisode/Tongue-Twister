@@ -48,7 +48,12 @@ TIP = "Say it slowly first, then speed up once the repeated sounds feel smooth."
 
 
 class FakeGenerator:
-    def generate(self, topic: str, difficulty: int, language: str) -> Draft:
+    def generate(
+        self, topic: str, difficulty: int, language: str, words: int | None = None
+    ) -> Draft:
+        # Canned lines for tests and machines with no key. Language and length are accepted so the
+        # call matches the real generator; they do not change which line is picked.
+        del language, words
         level = [row for row in BANK if row[0] == difficulty] or list(BANK)
         digest = hashlib.sha256(f"{topic.casefold()}|{difficulty}".encode()).digest()
         _, text, sounds = level[digest[0] % len(level)]

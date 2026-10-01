@@ -211,7 +211,7 @@ function Home() {
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {LEVELS.map((l, i) => (
             <m.div
-              className='flex'
+              className="flex"
               key={l.d}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -224,7 +224,10 @@ function Home() {
                 search={{ difficulty: String(l.d) }}
                 className="glass rounded-2xl flex flex-col flex-1 p-3 sm:p-5 hover:border-primary/60"
               >
-                <l.Icon className={`size-4 sm:size-8 ${l.className}`} aria-hidden />
+                <l.Icon
+                  className={`size-4 sm:size-8 ${l.className}`}
+                  aria-hidden
+                />
                 <div className="mt-2 font-display text-sm sm:text-xl font-bold">
                   {l.name}
                 </div>

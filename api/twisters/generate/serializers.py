@@ -4,6 +4,7 @@ from ..models import Difficulty
 from ..serializers import TwisterSerializer
 from . import topic
 from .drafts import DEFAULT_LANGUAGE, LANGUAGES
+from .validators import MAX_WORDS, MIN_WORDS
 
 
 class GenerateRequestSerializer(serializers.Serializer):
@@ -12,6 +13,7 @@ class GenerateRequestSerializer(serializers.Serializer):
         choices=Difficulty.values, default=Difficulty.MEDIUM, required=False
     )
     language = serializers.ChoiceField(choices=LANGUAGES, default=DEFAULT_LANGUAGE, required=False)
+    words = serializers.IntegerField(min_value=MIN_WORDS, max_value=MAX_WORDS, required=False)
 
     def validate_topic(self, value: str) -> str:
         cleaned = topic.clean(value)

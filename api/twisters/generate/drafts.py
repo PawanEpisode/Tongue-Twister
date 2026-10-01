@@ -31,4 +31,6 @@ class Draft:
 
 
 class Generator(Protocol):
-    def generate(self, topic: str, difficulty: int, language: str) -> Draft: ...
+    def generate(
+        self, topic: str, difficulty: int, language: str, words: int | None = None
+    ) -> Draft: ...

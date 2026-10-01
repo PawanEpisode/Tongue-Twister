@@ -1,19 +1,19 @@
 """Generate a private twister for one person (D24-D26). Views validate and shape; everything else is here.
 
 Order, so the cheap and the safe checks come first: topic check, stored-twister cap, quota slot, generator, output
-validation, then one insert. Nothing is stored for a rejected result, and a provider failure hands the
-quota slot back.
+validation, then one insert. Nothing is stored for a rejected result. The quota slot is handed back
+unless a twister is stored.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import logging
-import secrets
 
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from .. import errors
 from ..models import AgeBand, Origin, Profile, Twister, TwisterVisibility
@@ -24,17 +24,25 @@ from .validators import Rejected, Validated, validate
 
 log = logging.getLogger(__name__)
 
-SLUG_PREFIX = "my-"
-SLUG_BYTES = 6  # 48 random bits: unguessable, and the slug is only ever served to its owner
+SLUG_MAX = 80  # Twister.slug max_length
 
 
-def _new_slug() -> str:
-    return SLUG_PREFIX + secrets.token_hex(SLUG_BYTES)
+def _new_slug(topic_text: str) -> str:
+    """A readable slug from the topic. A clash with an existing slug gets `-2`, `-3`, and so on."""
+    base = (slugify(topic_text) or "twister").strip("-")[:SLUG_MAX].strip("-") or "twister"
+    candidate = base
+    number = 2
+    while Twister.objects.filter(slug=candidate).exists():
+        suffix = f"-{number}"
+        stem = base[: SLUG_MAX - len(suffix)].strip("-") or "twister"
+        candidate = f"{stem}{suffix}"
+        number += 1
+    return candidate
 
 
 def _store(profile: Profile, topic_text: str, difficulty: int, result: Validated) -> Twister:
     return Twister.objects.create(
-        slug=_new_slug(),
+        slug=_new_slug(topic_text),
         text=result.text,
         tip=result.tip,
         focus_sounds=result.focus_sounds,
@@ -54,6 +62,7 @@ def generate(
     topic_text: str,
     difficulty: int,
     language: str,
+    words: int | None = None,
     *,
     generator: Generator | None = None,
     now: dt.datetime | None = None,
@@ -70,19 +79,22 @@ def generate(
     if not quota.reserve(profile, now):
         current = quota.status(profile, now)
         raise errors.generation_limit(current.limit, current.used, current.resets_at)
+    twister = None
     try:
-        draft = (generator or get_generator()).generate(topic_text, difficulty, language)
+        draft = (generator or get_generator()).generate(topic_text, difficulty, language, words)
+        result = validate(draft, topic=topic_text, words=words, difficulty=difficulty)
+        with transaction.atomic():
+            twister = _store(profile, topic_text, difficulty, result)
+        return twister
     except GeneratorUnavailable as exc:
-        quota.release(profile, now)
         log.warning("generate.unavailable topic_len=%d reason=%s", len(topic_text), exc)
         raise errors.generator_unavailable() from None
     except GenerationBlocked as exc:
         log.info("generate.blocked topic_len=%d reason=%s", len(topic_text), exc.reason)
         raise errors.generation_rejected(exc.reason) from None
-    try:
-        result = validate(draft)
     except Rejected as exc:
         log.info("generate.rejected topic_len=%d reason=%s", len(topic_text), exc.reason)
         raise errors.generation_rejected(exc.reason) from None
-    with transaction.atomic():
-        return _store(profile, topic_text, difficulty, result)
+    finally:
+        if twister is None:
+            quota.release(profile, now)

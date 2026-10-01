@@ -52,35 +52,43 @@ def post(client, topic="sea snakes", **extra):
 
 def test_a_generated_twister_is_created_private_and_owned(user, gen):
     client, profile = user
-    r = post(client, "sea snakes", difficulty=3)
+    r = post(client, "sea snakes", difficulty=3, words=len(GOOD_TEXT.split()))
     assert r.status_code == 201
     body = r.data
     assert body["text"] == GOOD_TEXT and body["visibility"] == "private"
     assert body["difficulty"] == 3 and body["difficulty_label"] == "Hard"
-    assert body["topic"] == "sea snakes" and body["slug"].startswith("my-")
+    assert body["topic"] == "sea snakes" and body["slug"] == "sea-snakes"
     assert body["category"] is None and body["origin"] == "modern"
     assert body["quota"]["limit"] == 5 and body["quota"]["used"] == 1
     assert body["quota"]["remaining"] == 4 and body["quota"]["resets_at"]
     twister = Twister.objects.get(pk=body["id"])
     assert twister.owner_id == profile.pk and twister.visibility == TwisterVisibility.PRIVATE
-    assert twister.is_published is False and twister.word_count == 8
+    assert twister.is_published is False and twister.word_count == len(GOOD_TEXT.split())
     assert twister.phonemes["snakes"] and twister.phoneme_version == 1
-    assert gen.calls == [("sea snakes", 3, "en")]
+    assert gen.calls == [("sea snakes", 3, "en", len(GOOD_TEXT.split()))]
+
+
+def test_a_second_twister_on_the_same_topic_gets_a_numbered_slug(user, gen):
+    client, _ = user
+    words = len(GOOD_TEXT.split())
+    assert post(client, words=words).data["slug"] == "sea-snakes"
+    assert post(client, words=words).data["slug"] == "sea-snakes-2"
 
 
 def test_difficulty_and_language_default(user, gen):
     client, _ = user
     assert post(client).status_code == 201
-    assert gen.calls == [("sea snakes", 2, "en")]
+    assert gen.calls == [("sea snakes", 2, "en", None)]
 
 
-def test_the_real_pipeline_works_with_the_fake_backend(user, settings):
-    """No scripted generator: blank key + blank backend means the offline fake, end to end."""
+def test_the_fake_backend_rejects_a_canned_line_that_misses_the_topic(user, settings):
+    """No key means the offline bank. Those lines are not about the topic, so nothing is stored."""
     enable_generation()
     settings.GEMINI_API_KEY = settings.GENERATOR_BACKEND = ""
-    client, _ = user
+    client, profile = user
     r = post(client, "anything at all", difficulty=1)
-    assert r.status_code == 201 and r.data["difficulty"] == 1
+    assert r.status_code == 422 and r.data["error"]["details"]["reason"] == "off_topic"
+    assert Twister.objects.filter(owner=profile).count() == 0
 
 
 def test_the_topic_is_cleaned_before_it_is_used_and_stored(user, gen):
@@ -149,6 +157,9 @@ def test_a_pending_deletion_account_cannot_generate(user, gen):
         {"topic": "ok", "difficulty": 5},
         {"topic": "ok", "difficulty": "hard"},
         {"topic": "ok", "language": "fr"},
+        {"topic": "ok", "words": 7},
+        {"topic": "ok", "words": 201},
+        {"topic": "ok", "words": "lots"},
     ],
 )
 def test_bad_requests_are_400_and_cost_nothing(user, gen, body):
@@ -160,7 +171,9 @@ def test_bad_requests_are_400_and_cost_nothing(user, gen, body):
 
 def test_a_topic_of_exactly_120_characters_is_fine(user, gen):
     client, _ = user
-    assert post(client, "s" * 120).status_code == 201
+    topic = f"sea snakes {'s' * (120 - len('sea snakes '))}"
+    assert len(topic) == 120
+    assert post(client, topic).status_code == 201
 
 
 # --- safety ------------------------------------------------------------------------------------------------
@@ -193,6 +206,7 @@ def test_injection_strings_are_just_a_topic_and_the_output_is_still_checked(user
     assert r.status_code == 422 and r.data["error"]["details"]["reason"] in {
         "unknown_words",
         "unsupported_characters",
+        "off_topic",
     }
     assert Twister.objects.filter(visibility=TwisterVisibility.PRIVATE).count() == 0
     assert gen.calls[0][0] == " ".join(
@@ -208,10 +222,10 @@ def test_injection_strings_are_just_a_topic_and_the_output_is_still_checked(user
         ("Six slick shit snakes slid slowly by the sea.", "blocked_content"),
         ("Visit www.example.com for six slick snakes by the sea.", "unsupported_characters"),
         ("Six slick snakes 123 slid slowly by the sea today.", "unsupported_characters"),
-        ("Qxzv wkrt plmn bvcx zzyq mmnb ttrw ghjk.", "unknown_words"),
+        ("Six slick snakes slid qxzv wkrt plmn bvcx zzyq slowly.", "unknown_words"),
     ],
 )
-def test_a_bad_generation_is_422_with_a_reason_and_still_costs_a_slot(user, gen, text, reason):
+def test_a_bad_generation_is_422_with_a_reason_and_does_not_cost_a_slot(user, gen, text, reason):
     client, profile = user
     gen.result = Draft(text=text)
     r = post(client)
@@ -219,14 +233,15 @@ def test_a_bad_generation_is_422_with_a_reason_and_still_costs_a_slot(user, gen,
     assert r.data["error"]["details"] == {"reason": reason}
     assert text not in str(r.data)  # the model's output is never echoed
     assert Twister.objects.filter(owner=profile).count() == 0
-    assert GenerationUsage.objects.get(profile=profile).count == 1
+    assert GenerationUsage.objects.get(profile=profile).count == 0
 
 
-def test_a_provider_safety_block_is_422(user, gen):
-    client, _ = user
+def test_a_provider_safety_block_is_422_and_does_not_cost_a_slot(user, gen):
+    client, profile = user
     gen.result = blocked("provider_blocked").result
     r = post(client)
     assert r.status_code == 422 and r.data["error"]["details"]["reason"] == "provider_blocked"
+    assert GenerationUsage.objects.get(profile=profile).count == 0
 
 
 def test_the_error_never_echoes_the_topic(user, gen):

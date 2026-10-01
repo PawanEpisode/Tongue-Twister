@@ -14,14 +14,15 @@ from dataclasses import dataclass
 from .. import names
 from ..speak import pronunciations
 from .drafts import Draft
+from .prompts import MAX_WORDS, MIN_WORDS, acceptable_word_range, is_repetitive
 
-MIN_CHARS, MAX_CHARS = 20, 240
-MIN_WORDS, MAX_WORDS = 8, 40
+MIN_CHARS, MAX_CHARS = 20, 2500
 TIP_MAX = 240
 FOCUS_MAX_ITEMS, FOCUS_MAX_LEN = 4, 3
 
 # English letters and ordinary punctuation: no digits, symbols, markup, links, or other scripts.
 _TEXT = re.compile(r"[A-Za-z][A-Za-z'\" ,.;:!?\-]*")
+_WORD = re.compile(r"[A-Za-z]+")
 # A dot between two letters is a domain or file name ("example.com"), never a sentence.
 _LINKISH = re.compile(r"[A-Za-z]\.[A-Za-z]|\bwww\b|\bhttps?\b", re.IGNORECASE)
 _FOCUS = re.compile(r"[a-z]{1,3}")
@@ -88,11 +89,58 @@ def _clean_focus(raw: list[str]) -> list[str]:
     return list(dict.fromkeys(sounds))[:FOCUS_MAX_ITEMS]
 
 
-def validate(draft: Draft) -> Validated:
+def _length_target(words: int | None, difficulty: int | None) -> tuple[int, int] | None:
+    return acceptable_word_range(words, difficulty)
+
+
+def _check_length_target(text: str, words: int | None, difficulty: int | None) -> None:
+    target = _length_target(words, difficulty)
+    if target is None:
+        return
+    low, high = target
+    count = len(text.split())
+    if count < low:
+        raise Rejected("too_few_words")
+    if count > high:
+        raise Rejected("too_many_words")
+
+
+def _topic_needles(topic: str) -> set[str]:
+    """Content words the twister must reuse: tokens of 3+ letters, or the longest token."""
+    tokens = [match.group(0).casefold() for match in _WORD.finditer(topic)]
+    if not tokens:
+        return set()
+    long = {token for token in tokens if len(token) >= 3}
+    if long:
+        return long
+    longest = max(len(token) for token in tokens)
+    return {token for token in tokens if len(token) == longest}
+
+
+def _on_topic(topic: str, text: str) -> bool:
+    needles = _topic_needles(topic)
+    if not needles:
+        return False
+    words = {match.group(0).casefold() for match in _WORD.finditer(text)}
+    return bool(needles & words)
+
+
+def validate(
+    draft: Draft,
+    *,
+    topic: str = "",
+    words: int | None = None,
+    difficulty: int | None = None,
+) -> Validated:
     """The checked twister, or `Rejected(reason)`. Also resolves its pronunciations: a word the lexicon
     cannot place cannot be scored, which also catches non-English and made-up output (D10)."""
     text = _normalise(draft.text)
     _check_text(text)
+    _check_length_target(text, words, difficulty)
+    if is_repetitive(text):
+        raise Rejected("repetitive")
+    if topic and not _on_topic(topic, text):
+        raise Rejected("off_topic")
     phonemes, unknown = pronunciations.resolve(text, pronunciations.override_index())
     if unknown:
         raise Rejected("unknown_words")

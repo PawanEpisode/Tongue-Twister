@@ -18,7 +18,7 @@ export const Route = createFileRoute('/generate')({
 function GeneratePage() {
   return (
     <GenerateGate title="Make a twister">
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-lg space-y-6">
         <PageTitle>Make a twister</PageTitle>
         <GenerateForm />
       </div>

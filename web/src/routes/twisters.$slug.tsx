@@ -133,10 +133,7 @@ function PracticeHub() {
   return (
     <PracticeLockProvider>
       <div className="mx-auto max-w-3xl text-center">
-        <HubHeader
-          twister={t}
-          settingsNotSynced={sync === 'error'}
-        />
+        <HubHeader twister={t} settingsNotSynced={sync === 'error'} />
         {enabled.length > 1 && (
           <ModeSwitcher mode={mode} enabled={enabled} onChange={switchMode} />
         )}

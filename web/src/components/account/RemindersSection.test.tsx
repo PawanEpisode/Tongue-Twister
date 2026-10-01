@@ -26,16 +26,17 @@ afterEach(() => {
 const me = {} as Profile
 
 describe('RemindersSection', () => {
-  it('toggles and changes the hour with the PUT shape', () => {
+  it('toggles and changes the hour with the PUT shape', async () => {
+    Element.prototype.scrollIntoView = () => undefined
     render(<RemindersSection me={me} locked={false} />)
     fireEvent.click(screen.getByRole('switch'))
     expect(save).toHaveBeenCalledWith({ enabled: true, hour_local: 18 })
     q = { ...q, data: { enabled: true, hour_local: 18 } }
     cleanup()
     render(<RemindersSection me={me} locked={false} />)
-    fireEvent.change(screen.getByLabelText('Send it around'), {
-      target: { value: '7' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: /send it around/i }))
+    const options = await screen.findAllByRole('option')
+    fireEvent.click(options[7])
     expect(save).toHaveBeenLastCalledWith({ enabled: true, hour_local: 7 })
   })
   it('is read-only while deletion is pending', () => {

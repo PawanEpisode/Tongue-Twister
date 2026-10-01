@@ -24,8 +24,10 @@ log = logging.getLogger(__name__)
 
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 MAX_ATTEMPTS = 2  # the request and one retry
-MAX_OUTPUT_TOKENS = 400
+LENGTH_ATTEMPTS = 5  # the draft, then rewrites; a truncated reply uses one of these attempts
+MAX_OUTPUT_TOKENS = 4096  # thinking tokens share this budget; 1024 cut off a 100-word JSON body
 TEMPERATURE = 1.0
+THINKING_LEVEL = "minimal"  # gemini-3.5-flash-lite; keeps thinking from eating the output budget
 HARM_CATEGORIES = (
     "HARM_CATEGORY_HARASSMENT",
     "HARM_CATEGORY_HATE_SPEECH",
@@ -68,23 +70,65 @@ class GeminiGenerator:
         self._timeout = timeout
         self._transport = transport
 
-    def generate(self, topic: str, difficulty: int, language: str) -> Draft:
-        body = self._body(topic, difficulty)
-        data = self._call(body)
-        return self._parse(data)
+    def generate(
+        self, topic: str, difficulty: int, language: str, words: int | None = None
+    ) -> Draft:
+        """One draft that fits the requested word band, after at most four rewrites.
 
-    def _body(self, topic: str, difficulty: int) -> bytes:
+        A short or long line is sent back as data (`revision`) so the next call can expand or
+        trim it. A truncated or unreadable reply is tried again. A safety block is not.
+        The last readable draft is returned even if it still misses: `validators.validate` rejects it.
+        """
+        revision = None
+        draft = None
+        blocked: GenerationBlocked | None = None
+        for _ in range(LENGTH_ATTEMPTS):
+            try:
+                draft = self._parse(
+                    self._call(self._body(topic, difficulty, language, words, revision))
+                )
+            except GenerationBlocked as exc:
+                if exc.reason != "malformed_output":
+                    raise
+                blocked = exc
+                log.info("gemini.retry reason=%s", exc.reason)
+                continue
+            revision = prompts.draft_revision(draft.text, words, difficulty)
+            if revision is None:
+                return draft
+        if draft is None:
+            raise blocked or GenerationBlocked("malformed_output")
+        return draft
+
+    def _body(
+        self,
+        topic: str,
+        difficulty: int,
+        language: str,
+        words: int | None,
+        revision: dict | None = None,
+    ) -> bytes:
         return json.dumps(
             {
                 "systemInstruction": {"parts": [{"text": prompts.SYSTEM_INSTRUCTION}]},
                 "contents": [
-                    {"role": "user", "parts": [{"text": prompts.user_prompt(topic, difficulty)}]}
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": prompts.user_prompt(
+                                    topic, difficulty, language, words, revision
+                                )
+                            }
+                        ],
+                    }
                 ],
                 "generationConfig": {
                     "responseMimeType": "application/json",
                     "responseSchema": prompts.RESPONSE_SCHEMA,
                     "temperature": TEMPERATURE,
                     "maxOutputTokens": MAX_OUTPUT_TOKENS,
+                    "thinkingConfig": {"thinkingLevel": THINKING_LEVEL},
                 },
                 "safetySettings": SAFETY_SETTINGS,
             }
@@ -132,11 +176,20 @@ class GeminiGenerator:
         if not candidates:
             raise GenerationBlocked("empty_output")
         candidate = candidates[0]
-        if candidate.get("finishReason") in ("SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII"):
+        finish = candidate.get("finishReason")
+        if finish in ("SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII"):
             raise GenerationBlocked("provider_blocked")
+        if finish == "MAX_TOKENS":
+            log.info("gemini.truncated finish_reason=%s", finish)
+            raise GenerationBlocked("malformed_output")
         try:
             parts = candidate["content"]["parts"]
-            result = json.loads("".join(part.get("text", "") for part in parts))
+            texts = [
+                part.get("text", "")
+                for part in parts
+                if isinstance(part, dict) and not part.get("thought")
+            ]
+            result = json.loads("".join(texts))
             text = result["text"]
         except (KeyError, TypeError, ValueError, AttributeError):
             raise GenerationBlocked("malformed_output") from None

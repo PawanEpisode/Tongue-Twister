@@ -393,8 +393,8 @@ if SENTRY_DSN:
 # --- Round 2 (spec 16): Generate Twister ------------------------------------------------------------------
 # Google Gemini over REST (D24). The key is a secret: server only, never logged or returned.
 GEMINI_API_KEY = env("GEMINI_API_KEY", "")
-GEMINI_MODEL = env("GEMINI_MODEL") or "gemini-2.5-flash"
-GEMINI_TIMEOUT_S = float(env("GEMINI_TIMEOUT_S", "10"))
+GEMINI_MODEL = env("GEMINI_MODEL") or "gemini-3.1-flash-lite"
+GEMINI_TIMEOUT_S = float(env("GEMINI_TIMEOUT_S", "20"))
 # `gemini` | `fake`. Blank = `gemini` when GEMINI_API_KEY is set, otherwise `fake` (canned twisters, no network).
 GENERATOR_BACKEND = env("GENERATOR_BACKEND", "").lower()
 # Generations per person per UTC day (D26); a rejected result still counts, a provider outage does not.

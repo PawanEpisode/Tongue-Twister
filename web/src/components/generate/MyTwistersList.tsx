@@ -3,13 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, ErrorState, Skeleton } from '#/components/feedback'
 import { Button } from '#/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+import { DeleteDialogWrapper } from '#/components/ui/delete-dialog'
 import type { GeneratedTwister } from '#/lib/generate/api'
 import { classifyGenerateError } from '#/lib/generate/errors'
 import { useDeleteMyTwister, useMyTwisters } from '#/lib/generate/hooks'
@@ -86,36 +80,21 @@ export default function MyTwistersList() {
           </li>
         ))}
       </ul>
-      <Dialog
+      <DeleteDialogWrapper
         open={!!target}
         onOpenChange={(next) => {
           if (!next) setTarget(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this twister?</DialogTitle>
-            <DialogDescription>
-              It will be removed from your account for good.
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">{target?.text}</p>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setTarget(null)}>
-              Keep it
-            </Button>
-            <Button
-              disabled={del.isPending}
-              onClick={() => {
-                if (target)
-                  del.mutate(target.id, { onSettled: () => setTarget(null) })
-              }}
-            >
-              {del.isPending ? 'Deleting…' : 'Delete'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        title="Delete this twister?"
+        description="It will be removed from your account for good."
+        preview={target?.text}
+        pending={del.isPending}
+        pendingLabel="Deleting…"
+        onConfirm={() => {
+          if (target)
+            del.mutate(target.id, { onSettled: () => setTarget(null) })
+        }}
+      />
     </>
   )
 }

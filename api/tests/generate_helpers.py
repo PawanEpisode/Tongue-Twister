@@ -8,7 +8,9 @@ from twisters.models import FeatureFlag, Origin, Profile, Twister, TwisterVisibi
 from twisters.speak import pronunciations
 
 API = "/api/v1"
-GOOD_TEXT = "Six slick snakes slid slowly by the sea."
+# Ten words: inside the default Medium band (10-16) and the Easy band (8-12), and it reuses
+# "sea" and "snakes", so a scripted reply about that topic passes the output checks.
+GOOD_TEXT = "Six slick snakes slid slowly beside the shiny sea shore."
 _counter = itertools.count(1)
 
 
@@ -40,8 +42,10 @@ class ScriptedGenerator:
         self.result = result if result is not None else Draft(text=GOOD_TEXT)
         self.calls: list[tuple[str, int, str]] = []
 
-    def generate(self, topic: str, difficulty: int, language: str) -> Draft:
-        self.calls.append((topic, difficulty, language))
+    def generate(
+        self, topic: str, difficulty: int, language: str, words: int | None = None
+    ) -> Draft:
+        self.calls.append((topic, difficulty, language, words))
         if isinstance(self.result, Exception):
             raise self.result
         return self.result

@@ -32,6 +32,7 @@ def generate(request):
         body.validated_data["topic"],
         body.validated_data["difficulty"],
         body.validated_data["language"],
+        body.validated_data.get("words"),
         now=now,
     )
     data = OwnTwisterSerializer(twister, context=twister_context(request.user)).data

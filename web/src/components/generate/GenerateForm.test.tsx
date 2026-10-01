@@ -40,7 +40,10 @@ const submit = (topic = 'otters') => {
 const button = () =>
   screen.getByRole<HTMLButtonElement>('button', { name: /make my twister/i })
 
-beforeEach(() => vi.stubGlobal('fetch', fetchMock))
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock)
+  Element.prototype.scrollIntoView = () => undefined
+})
 afterEach(() => {
   cleanup()
   fetchMock.mockReset()
@@ -49,7 +52,6 @@ afterEach(() => {
 
 describe('GenerateForm', () => {
   it('sends the chosen difficulty', async () => {
-    Element.prototype.scrollIntoView = () => undefined
     fetchMock.mockReturnValue(reply(201, { slug: 's', text: 'Hard hats' }))
     setup()
     fireEvent.click(screen.getByRole('combobox', { name: /difficulty/i }))
@@ -60,7 +62,18 @@ describe('GenerateForm', () => {
     expect(JSON.parse(init.body as string)).toMatchObject({
       topic: 'otters',
       difficulty: 3,
+      words: 12,
     })
+  })
+
+  it('rejects a word count over 200 without calling the API', () => {
+    setup()
+    fireEvent.change(screen.getByLabelText(/number of words/i), {
+      target: { value: '201' },
+    })
+    submit()
+    expect(screen.getByRole('alert').textContent).toMatch(/200/)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('validates an empty topic without calling the API', () => {
@@ -82,6 +95,7 @@ describe('GenerateForm', () => {
     expect(JSON.parse(init.body as string)).toEqual({
       topic: 'otters',
       language: 'en',
+      words: 12,
     })
     done(
       new Response(
@@ -91,6 +105,18 @@ describe('GenerateForm', () => {
     )
     expect(await screen.findByText('Odd otters often orbit')).toBeTruthy()
     expect(screen.getByRole('link', { name: /practise it/i })).toBeTruthy()
+    const quote = screen.getByText('Odd otters often orbit').parentElement
+    expect(quote?.textContent).toBe('“Odd otters often orbit”')
+    expect(screen.getByText('You asked for')).toBeTruthy()
+    expect(screen.getByText('otters')).toBeTruthy()
+    expect(screen.getByText('12')).toBeTruthy()
+    expect(screen.queryByLabelText(/about/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /make another/i }))
+    expect(screen.getByLabelText(/about/i)).toHaveProperty('value', 'otters')
+    expect(screen.getByLabelText(/number of words/i)).toHaveProperty(
+      'value',
+      '12',
+    )
   })
 
   it('shows a limit message and disables the button', async () => {

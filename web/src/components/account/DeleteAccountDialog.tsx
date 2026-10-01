@@ -1,12 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import { friendlyError } from '#/components/feedback'
-import { Button } from '#/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+import { DeleteDialogWrapper } from '#/components/ui/delete-dialog'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import {
@@ -45,72 +39,65 @@ export default function DeleteAccountDialog({
   const submit = () => request.mutate(undefined, { onSuccess: close })
 
   return (
-    <Dialog
+    <DeleteDialogWrapper
       open={open}
       onOpenChange={(next) => {
         if (!next) close()
       }}
+      className="sm:max-w-lg"
+      title="Delete your account?"
+      description={
+        <>
+          Your account is scheduled for deletion and you have{' '}
+          {DELETION_GRACE_DAYS} days to cancel. Share links stop working and you
+          leave the leaderboards straight away. After that, we permanently
+          delete:
+        </>
+      }
+      confirmLabel="Delete my account"
+      cancelLabel="Keep my account"
+      pending={request.isPending}
+      pendingLabel="Deleting…"
+      confirmDisabled={!confirmed}
+      onConfirm={submit}
+      onCancel={close}
+      onOpenAutoFocus={(event) => {
+        event.preventDefault()
+        input.current?.focus()
+      }}
     >
-      <DialogContent
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          input.current?.focus()
+      <form
+        className="space-y-4 text-left text-sm"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (confirmed && !request.isPending) submit()
         }}
       >
-        <DialogHeader>
-          <DialogTitle>Delete your account?</DialogTitle>
-        </DialogHeader>
-        <form
-          className="mt-3 space-y-4 text-left text-sm"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (confirmed && !request.isPending) submit()
-          }}
-        >
-          <p>
-            Your account is scheduled for deletion and you have{' '}
-            {DELETION_GRACE_DAYS} days to cancel. Share links stop working and
-            you leave the leaderboards straight away. After that, we permanently
-            delete:
+        <ul className="list-disc space-y-1 pl-5">
+          {DELETED.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <div>
+          <Label htmlFor={inputId} className="mb-1 block font-semibold">
+            Type {DELETE_CONFIRM_WORD} to confirm
+          </Label>
+          <Input
+            ref={input}
+            id={inputId}
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+          />
+        </div>
+        {request.isError && (
+          <p role="alert" className="text-pink">
+            {friendlyError(request.error)}
           </p>
-          <ul className="list-disc space-y-1 pl-5">
-            {DELETED.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <div>
-            <Label htmlFor={inputId} className="mb-1 block font-semibold">
-              Type {DELETE_CONFIRM_WORD} to confirm
-            </Label>
-            <Input
-              ref={input}
-              id={inputId}
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-            />
-          </div>
-          {request.isError && (
-            <p role="alert" className="text-pink">
-              {friendlyError(request.error)}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={close}>
-              Keep my account
-            </Button>
-            <Button
-              type="submit"
-              className="bg-pink text-white"
-              disabled={!confirmed || request.isPending}
-            >
-              {request.isPending ? 'Deleting…' : 'Delete my account'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+      </form>
+    </DeleteDialogWrapper>
   )
 }

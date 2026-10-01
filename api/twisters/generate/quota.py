@@ -1,8 +1,8 @@
 """The daily generation quota (D26): `GENERATE_DAILY_LIMIT` per person per UTC day.
 
 A slot is reserved with one conditional UPDATE before the provider is called, so concurrent requests
-cannot overshoot the limit. A slot is spent when the provider is asked (a rejected twister still cost
-money) and handed back only when the provider itself failed, so deleting a twister never refunds one.
+cannot overshoot the limit. The slot counts only when a twister is stored, and is handed back on a
+rejected result, a provider failure, or a failed insert. Deleting a twister never refunds one.
 """
 
 from __future__ import annotations
