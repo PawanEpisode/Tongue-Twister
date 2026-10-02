@@ -19,9 +19,9 @@ kill_timeout = 30
   SHUTDOWN_GRACE_S = "20"
   # Server-side spot-checks (docs/features/13). Off until the model is published and the rollout reaches A6;
   # flip with `fly secrets`-free env change: SCORING_ENABLED = "1".
-  SCORING_ENABLED = "0"
+  SCORING_ENABLED = "1"
   ONNX_THREADS = "1"
-  MODEL_DIR = "/tmp/twister-models"
+  MODEL_DIR = "/data/models"
   ALLOWED_DOWNLOAD_HOSTS = "supabase.co"
   # Secrets (never here): API_BASE_URL, WORKER_SHARED_SECRET -> `fly secrets set`, see docs/runbooks/worker-deploy-fly.md
 
@@ -31,3 +31,7 @@ kill_timeout = 30
 [[vm]]
   size = "shared-cpu-1x"
   memory = "2gb"  # wav2vec2 int8 (~300 MB) + a 90 s clip needs headroom; 1 GB OOM-kills under load
+
+[mounts]
+  source = "model_cache"
+  destination = "/data"
