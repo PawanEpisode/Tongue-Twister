@@ -17,6 +17,7 @@ import {
 import type { GoldClip, Scenario, Speaker } from '#/lib/calibrate/clip'
 import { hint, planSwap } from '#/lib/calibrate/swapPlan'
 import { ACCENTS, useAccent, useAccurateEngine } from '#/lib/speak/accurate'
+import type { EngineStatus } from '#/lib/speak/engine/runtime/engine'
 import type { Captured } from '#/lib/speak/engine/runtime/capture'
 import type { Analysis } from '#/lib/speak/engine/runtime/session'
 
@@ -79,6 +80,35 @@ async function startRecorder(): Promise<Recorder> {
       tap.cancel()
       release()
     },
+  }
+}
+
+/** Why the recorder is disabled. The server flag only offers Accurate mode; the engine must also be running here. */
+function notReadyReason(status: EngineStatus): string {
+  switch (status.state) {
+    case 'checking':
+      return 'Checking whether Accurate mode is available…'
+    case 'idle':
+      return 'Accurate mode is available but not started: use the Accurate mode panel above to download the model.'
+    case 'downloading':
+      return 'Downloading the model…'
+    case 'starting':
+      return 'Starting the model…'
+    case 'error':
+      return `Accurate mode failed to start (${status.code}).`
+    case 'unavailable':
+      switch (status.reason) {
+        case 'no_model':
+          return 'No acoustic model is published yet (run publish_acoustic_model and activate it).'
+        case 'server_off':
+          return 'The server has Accurate mode switched off for this account.'
+        case 'manifest_failed':
+          return 'Could not load the model manifest from the API.'
+        default:
+          return `This browser cannot run Accurate mode (${status.reason}).`
+      }
+    default:
+      return 'Accurate mode is not ready.'
   }
 }
 
@@ -443,7 +473,7 @@ export default function CalibratePanel() {
           )}
           {!ready && (
             <span className="text-sm text-muted-foreground">
-              Turn on Accurate mode first.
+              {notReadyReason(status)}
             </span>
           )}
           {ready && !consent && (

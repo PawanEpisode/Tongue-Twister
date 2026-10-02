@@ -18,7 +18,7 @@ Variants = list[list[str]]
 def cmudict_entries() -> dict[str, Variants]:
     try:
         import cmudict
-    except ImportError as exc:  # pragma: no cover - dev/CI dependency, see requirements-dev.txt
+    except ImportError as exc:  # pragma: no cover - runtime dependency, see requirements.txt
         raise RuntimeError("The CMUdict lexicon is missing: pip install cmudict") from exc
     return {
         word: [[p.rstrip("012") for p in variant] for variant in variants]

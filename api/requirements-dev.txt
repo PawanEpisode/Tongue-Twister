@@ -2,4 +2,3 @@
 pytest
 pytest-django
 ruff
-cmudict>=1.0
