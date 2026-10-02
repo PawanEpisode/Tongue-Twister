@@ -21,7 +21,13 @@ test('a take made offline is scored locally and queued on the device', async ({
   await expect(page.getByText('6 of 6 words correct')).toBeVisible({
     timeout: 20_000,
   })
-  await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
+  // A perfect take has nothing to retry, so the card offers only the way forward.
+  await expect(
+    page
+      .locator('#practice-stage')
+      .getByRole('button', { name: 'Next twister' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0)
 
   const queued = await page.evaluate(
     (key) => JSON.parse(localStorage.getItem(key) ?? 'null'),

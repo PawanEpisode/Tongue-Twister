@@ -116,9 +116,13 @@ jobs:
             [ -n "${!name:-}" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "::error title=Missing secrets::Add these to the 'production' environment (Settings → Environments → production → Environment secrets) or to the repository secrets:$missing"
+            echo "::error title=Missing secrets::The job runs in environment 'production' (the name must match exactly) but received no value for:$missing. Secrets (not Variables) go in Settings → Environments → production → Environment secrets, or in Repository secrets. A run only sees secrets that existed when it started, so re-run it after adding them."
             exit 1
           fi
+          # send_reminders builds links from these; the job still runs without them, but the mails would fail.
+          for name in WEB_BASE_URL API_PUBLIC_URL; do
+            [ -n "${!name:-}" ] || echo "::warning title=Unset $name::$name is empty; send_reminders will refuse to run."
+          done
 
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

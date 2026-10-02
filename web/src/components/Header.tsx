@@ -1,13 +1,22 @@
+import { Suspense, lazy } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import PendingDeletionBanner from '#/components/account/PendingDeletionBanner'
 import { BrandLink } from '#/components/brand/BrandMark'
-import { MobileNav, NavPill } from '#/components/header/NavLinks'
+import { NavPill } from '#/components/header/NavLinks'
 import { ProgressChip } from '#/components/header/ProgressChip'
-import { UserMenu } from '#/components/header/UserMenu'
 import ThemeMenu from '#/components/ThemeMenu'
 import { Button } from '#/components/ui/button'
 import { ScrollRow } from '#/components/ui/scroll-row'
 import { useAuth } from '#/lib/auth'
+
+// Signed-in only, and it pulls in the dropdown-menu primitives: keep it out of the first-load bundle.
+const MobileNav = lazy(() => import('#/components/header/MobileNav'))
+
+const UserMenu = lazy(() =>
+  import('#/components/header/UserMenu').then((mod) => ({
+    default: mod.UserMenu,
+  })),
+)
 
 export default function Header() {
   const { session, loading } = useAuth()
@@ -37,7 +46,16 @@ export default function Header() {
                 aria-hidden
               />
             ) : session ? (
-              <UserMenu />
+              <Suspense
+                fallback={
+                  <span
+                    className="size-9 animate-pulse rounded-full bg-card"
+                    aria-hidden
+                  />
+                }
+              >
+                <UserMenu />
+              </Suspense>
             ) : (
               <Button asChild size="sm">
                 <Link to="/login" search={{ redirect: here }}>
@@ -45,7 +63,16 @@ export default function Header() {
                 </Link>
               </Button>
             )}
-            <MobileNav />
+            <Suspense
+              fallback={
+                <span
+                  className="size-11 rounded-full border border-border lg:hidden"
+                  aria-hidden
+                />
+              }
+            >
+              <MobileNav />
+            </Suspense>
           </div>
         </div>
       </div>

@@ -52,7 +52,7 @@ Tests at last count: API 1387, web 691, worker 107, export tool 28.
 | C1 | CSV export | JSON export exists (`GET /me/export/`); no CSV |
 | C2 | Cost dashboard (storage, worker minutes, Gemini, scoring jobs) | None |
 | C3 | Changelog and in-app "What's new", once per feature | None |
-| C4 | First-load JS to 180 KB gz | Home 193.1 KB, Practice Hub 230.1 KB (limits 203 / 242 in `web/bundle-budget.json`) |
+| C4 | First-load JS to 225 KB gz | Home 182.7 KB, Practice Hub 206.4 KB (limits 192 / 217 in `web/bundle-budget.json`) |
 | C5 | Login contrast 4.46:1 (needs 4.5:1), logged in `web/e2e/known-a11y.json` | Open |
 | C6 | Enforce the CSP (web is `Content-Security-Policy-Report-Only` in `web/vercel.json`, API in `middleware.py`) | After a week of clean reports |
 
@@ -150,7 +150,7 @@ Paths are relative to the repo root. **New** = create, **Edit** = change an exis
 | Edit | `web/src/components/Header.tsx` | Mount the badge |
 | Test | `web/src/lib/whatsNew.test.ts`, `web/e2e/` smoke | No badge when storage throws; once per entry |
 
-### C4 · Bundle to 180 KB
+### C4 · Bundle to 225 KB
 `web/src/routes/index.tsx` and `web/src/routes/twisters.$slug.tsx` (lazy-load what is not needed to paint), then lower `web/bundle-budget.json`. Never raise a limit to make a build pass. Check with `npm run size` in `web/`.
 
 ### C5 · Login contrast

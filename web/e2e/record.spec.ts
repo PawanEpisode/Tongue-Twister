@@ -9,10 +9,9 @@ test('Record with fake devices reaches the review screen with a Download button'
   await openApp(page)
   await page.goto(`/twisters/${TWISTER.slug}?mode=record`)
 
-  // camera_text is the default layout; it needs a camera, so this exercises the fake webcam.
-  await expect(
-    page.getByRole('radio', { name: /camera \+ text|camera and text/i }),
-  ).toBeChecked()
+  // camera_text is the default layout (the layout picker sits behind "Layout & settings"; the summary names
+  // the current choice). It needs a camera, so this exercises the fake webcam.
+  await expect(page.getByText(/^Camera \+ text card/)).toBeVisible()
   await page.getByRole('button', { name: 'Start camera' }).click()
 
   await page.getByRole('button', { name: 'Record', exact: true }).click()

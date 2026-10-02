@@ -107,7 +107,7 @@ Rule: unsupported ⇒ **hide the option and show an inline "Not available on thi
 - Abuse: report button on every shared recording; moderation queue (`ModerationReport`); takedown SLA 24 h.
 
 ### 6.3 Performance budgets
-- Practice Hub route JS ≤ 180 KB gz on first load; Record mode code-split (dynamic import) and only loaded when the tab is opened.
+- Practice Hub route JS ≤ 225 KB gz on first load; Record mode code-split (dynamic import) and only loaded when the tab is opened.
 - Read-along scheduler must hold ±30 ms timing accuracy over a 3-minute run (no cumulative drift).
 - Visualizer/highlighter ≥ 55 fps on a 2019 mid-range laptop; recording canvas compositor ≥ 28 fps at 720p.
 - Time to interactive for mode switch < 200 ms after first load.

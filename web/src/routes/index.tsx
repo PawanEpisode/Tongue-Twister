@@ -25,8 +25,8 @@ import {
 
 // Behind a flag and built on the checkbox/label primitives: keep both out of the first-load bundle.
 const WeeklyBoard = lazy(() =>
-  import('#/components/progress/WeeklyBoard').then((m) => ({
-    default: m.WeeklyBoard,
+  import('#/components/progress/WeeklyBoard').then((mod) => ({
+    default: mod.WeeklyBoard,
   })),
 )
 

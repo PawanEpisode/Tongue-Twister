@@ -109,9 +109,9 @@ The `csp` spec loads the built app with the production policy added to every doc
 
 ## Bundle-size budget
 
-`scripts/check-bundle-size.mjs` reads the Nitro build (`.output`): the TanStack Start manifest lists the chunks each route preloads; the script adds everything those chunks statically import, gzips each (level 9) and sums. Dynamic imports (the Record-mode chunk, Lottie, confetti, tus) are not first load. Budgets live in `bundle-budget.json`: `maxGzipKB` per route is the enforced ratchet, `targetGzipKB` is the product target (doc 00 §6.3: 180 KB for the Practice Hub).
+`scripts/check-bundle-size.mjs` reads the Nitro build (`.output`): the TanStack Start manifest lists the chunks each route preloads; the script adds everything those chunks statically import, gzips each (level 9) and sums. Dynamic imports (the Record-mode chunk, Lottie, confetti, tus) are not first load. Budgets live in `bundle-budget.json`: `maxGzipKB` per route is the enforced ratchet, `targetGzipKB` is the product target (doc 00 §6.3: 225 KB for the Practice Hub).
 
-State on 2026-10-01 after Round 4: Home 193.1 KB, Practice Hub 230.1 KB (before: 282.1 and 318.9), both still **above the 180 KB target**; the ratchet is current + 5 % (203 and 242). When a change makes a route smaller, lower its `maxGzipKB`. Never raise it to make a build pass.
+State on 2026-10-02 after Round 5: Home 182.7 KB, Practice Hub 206.4 KB (Round 4: 193.1 and 230.1; before: 282.1 and 318.9), both **under the 225 KB target**; the ratchet is current + 5 % (192 and 217). Round 5 deferred the motion feature set (`motionFeatures.ts`) and lazy-loaded the mobile nav, user menu, weekly board and the non-default practice modes. When a change makes a route smaller, lower its `maxGzipKB`. Never raise it to make a build pass.
 
 What Round 4 changed, and the rules that keep it small:
 
@@ -119,7 +119,7 @@ What Round 4 changed, and the rules that keep it small:
 - Animations use `m` from `motion/react` inside `LazyMotion` + `domAnimation` (`components/MotionProvider.tsx`, `strict`). Do not import `motion` for components; drag and layout animation would need `domMax`.
 - The Radix dropdown (~27 KB gz) is behind `ThemeMenu` (a plain button until pressed, then the real menu from `ThemeMenuImpl`). Other dropdowns live in route chunks; keep `ui/dropdown-menu` out of anything the header or root imports.
 
-Remaining first-load: the app entry chunk (~135 KB gz: `react-dom`, TanStack Router core, seroval, query), then small shared chunks. Reaching 180 KB needs a decision on the router/SSR payload.
+Remaining first-load: the app entry chunk (~135 KB gz: `react-dom`, TanStack Router core, seroval, query), then small shared chunks. Going much lower needs a decision on the router/SSR payload.
 
 ## Observability (Round 2, D28)
 

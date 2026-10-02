@@ -1,13 +1,11 @@
+import { Suspense, lazy } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import ModeSwitcher, { BUILT_MODES } from '#/components/practice/ModeSwitcher'
 import type { ModeKey } from '#/components/practice/ModeSwitcher'
-import ReadAlongMode from '#/components/practice/ReadAlongMode'
 import HubHeader from '#/components/practice/HubHeader'
-import RecordEntry from '#/components/practice/record/RecordEntry'
 import SidePanel from '#/components/practice/SidePanel'
 import SpeakAndScore from '#/components/practice/SpeakAndScore'
-import TrainMode from '#/components/practice/TrainMode'
 import { Button } from '#/components/ui/button'
 import { ErrorState, PracticeSkeleton } from '#/components/feedback'
 import { api } from '#/lib/api'
@@ -48,6 +46,13 @@ function parseSearch(raw: Record<string, unknown>): Search {
     ...(style && { style }),
   }
 }
+
+// Only one mode is on screen at a time, so the others stay out of the first-load bundle.
+const ReadAlongMode = lazy(() => import('#/components/practice/ReadAlongMode'))
+const RecordEntry = lazy(
+  () => import('#/components/practice/record/RecordEntry'),
+)
+const TrainMode = lazy(() => import('#/components/practice/TrainMode'))
 
 export const Route = createFileRoute('/twisters/$slug')({
   // Runs on the server for first loads so link-preview scrapers (WhatsApp, iMessage, Slack) get real tags.
@@ -143,36 +148,38 @@ function PracticeHub() {
           role="tabpanel"
           aria-labelledby={`tab-${mode}`}
         >
-          {mode === 'read' ? (
-            <ReadAlongMode
-              key={t.slug}
-              twister={t}
-              prefs={prefs}
-              update={update}
-              overrides={{ wpm: search.wpm, style: search.style }}
-              onSwitchMode={() => switchMode('speak')}
-            />
-          ) : mode === 'record' ? (
-            <RecordEntry
-              key={t.slug}
-              twister={t}
-              prefs={prefs}
-              onSwitchMode={() => switchMode('speak')}
-            />
-          ) : mode === 'train' ? (
-            <TrainMode
-              key={t.slug}
-              twister={t}
-              prefs={prefs}
-              onSwitchMode={() => switchMode('speak')}
-            />
-          ) : (
-            <SpeakAndScore
-              key={t.slug}
-              t={t}
-              onReadAlong={() => switchMode('read')}
-            />
-          )}
+          <Suspense fallback={<PracticeSkeleton />}>
+            {mode === 'read' ? (
+              <ReadAlongMode
+                key={t.slug}
+                twister={t}
+                prefs={prefs}
+                update={update}
+                overrides={{ wpm: search.wpm, style: search.style }}
+                onSwitchMode={() => switchMode('speak')}
+              />
+            ) : mode === 'record' ? (
+              <RecordEntry
+                key={t.slug}
+                twister={t}
+                prefs={prefs}
+                onSwitchMode={() => switchMode('speak')}
+              />
+            ) : mode === 'train' ? (
+              <TrainMode
+                key={t.slug}
+                twister={t}
+                prefs={prefs}
+                onSwitchMode={() => switchMode('speak')}
+              />
+            ) : (
+              <SpeakAndScore
+                key={t.slug}
+                t={t}
+                onReadAlong={() => switchMode('read')}
+              />
+            )}
+          </Suspense>
         </div>
         <SidePanel twister={t} />
       </div>
