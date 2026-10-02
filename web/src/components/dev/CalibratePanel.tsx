@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import BenchmarkPanel from '#/components/dev/calibrate/BenchmarkPanel'
+import ClipsPanel from '#/components/dev/calibrate/ClipsPanel'
+import RecorderStage, {
+  SCENARIO_COPY,
+} from '#/components/dev/calibrate/RecorderStage'
+import type { Phase } from '#/components/dev/calibrate/RecorderStage'
+import SpeakerCard from '#/components/dev/calibrate/SpeakerCard'
+import TwisterPicker, {
+  useTwisterCatalogue,
+} from '#/components/dev/calibrate/TwisterPicker'
 import AccurateModePrompt from '#/components/practice/AccurateModePrompt'
 import { Button } from '#/components/ui/button'
 import { api } from '#/lib/api'
@@ -6,23 +17,23 @@ import type { AccentLang, Pronunciations } from '#/lib/api'
 import { runBenchmark } from '#/lib/calibrate/benchmark'
 import type { BenchmarkResult } from '#/lib/calibrate/benchmark'
 import {
-  AGE_BANDS,
-  DEVICE_CLASSES,
-  SCENARIOS,
   buildClip,
   bundleJson,
   clipId,
   deviceClass,
 } from '#/lib/calibrate/clip'
 import type { GoldClip, Scenario, Speaker } from '#/lib/calibrate/clip'
+import { freeTake, nextUnrecorded, takeCounts } from '#/lib/calibrate/coverage'
+import { startRecorder } from '#/lib/calibrate/recorder'
+import type { Recorder } from '#/lib/calibrate/recorder'
 import { hint, planSwap } from '#/lib/calibrate/swapPlan'
 import { ACCENTS, useAccent, useAccurateEngine } from '#/lib/speak/accurate'
 import type { EngineStatus } from '#/lib/speak/engine/runtime/engine'
-import type { Captured } from '#/lib/speak/engine/runtime/capture'
 import type { Analysis } from '#/lib/speak/engine/runtime/session'
 
 const CLIPS_KEY = 'twister.calibrate.clips.v1'
 const SPEAKER_KEY = 'twister.calibrate.speaker.v1'
+const SLUG_KEY = 'twister.calibrate.slug.v1'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -46,50 +57,13 @@ const PROMPT: Record<Exclude<Scenario, 'swap'>, string> = {
   slur: 'Read it quickly and sloppily, running the words together.',
 }
 
-type Recorder = { stop: () => Captured | null; cancel: () => void }
-
-async function startRecorder(): Promise<Recorder> {
-  // The same constraints as the Speak screen: the gold set has to match what the engine hears in production.
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    },
-  })
-  const ctx = new AudioContext()
-  await ctx.resume()
-  const source = ctx.createMediaStreamSource(stream)
-  const { startTap } = await import('#/lib/speak/engine/runtime/tap')
-  const tap = await startTap(ctx, source, stream.getAudioTracks()[0])
-  const release = () => {
-    stream.getTracks().forEach((t) => t.stop())
-    void ctx.close().catch(() => undefined)
-  }
-  if (!tap) {
-    release()
-    throw new Error('This browser has no AudioWorklet.')
-  }
-  return {
-    stop: () => {
-      const captured = tap.stop()
-      release()
-      return captured
-    },
-    cancel: () => {
-      tap.cancel()
-      release()
-    },
-  }
-}
-
 /** Why the recorder is disabled. The server flag only offers Accurate mode; the engine must also be running here. */
 function notReadyReason(status: EngineStatus): string {
   switch (status.state) {
     case 'checking':
       return 'Checking whether Accurate mode is available…'
     case 'idle':
-      return 'Accurate mode is available but not started: use the Accurate mode panel above to download the model.'
+      return 'Turn on Accurate mode above to download the model.'
     case 'downloading':
       return 'Downloading the model…'
     case 'starting':
@@ -112,6 +86,14 @@ function notReadyReason(status: EngineStatus): string {
   }
 }
 
+const pronVocab = (p: Pronunciations) => [
+  ...new Set(p.words.flatMap((w) => w.variants.flat())),
+]
+
+const isTyping = (t: EventTarget | null) =>
+  t instanceof HTMLElement &&
+  (t.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName))
+
 export default function CalibratePanel() {
   const { engine, status } = useAccurateEngine(true)
   // This page exists to measure devices, slow ones included: never hide the model behind the speed ceiling here.
@@ -131,33 +113,70 @@ export default function CalibratePanel() {
     }),
   )
   const [consent, setConsent] = useState(false)
-  const [slug, setSlug] = useState('')
+  const [slug, setSlug] = useState(() => load<string>(SLUG_KEY, ''))
+  const [pickerOpen, setPickerOpen] = useState(
+    () => !load<string>(SLUG_KEY, ''),
+  )
   const [pron, setPron] = useState<Pronunciations | null>(null)
+  const [pronLoading, setPronLoading] = useState(false)
   const [pronError, setPronError] = useState<string | null>(null)
   const [scenario, setScenario] = useState<Scenario>('clean')
   const [clips, setClips] = useState<GoldClip[]>(() =>
     load<GoldClip[]>(CLIPS_KEY, []),
   )
   const [recording, setRecording] = useState<Recorder | null>(null)
+  const [starting, setStarting] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [benching, setBenching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [last, setLast] = useState<{ analysis: Analysis } | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
   const [bench, setBench] = useState<BenchmarkResult | null>(null)
   const recorderRef = useRef<Recorder | null>(null)
 
+  const catalogue = useTwisterCatalogue()
+  const twisters = useMemo(() => catalogue.data ?? [], [catalogue.data])
+
   useEffect(() => {
-    setSpeaker((s) => ({
-      ...s,
-      device_class:
-        s.device_class === 'unknown'
-          ? deviceClass(navigator.userAgent, navigator.maxTouchPoints > 0)
-          : s.device_class,
-      accent: s.accent,
-    }))
+    setSpeaker((s) =>
+      s.device_class === 'unknown'
+        ? {
+            ...s,
+            device_class: deviceClass(
+              navigator.userAgent,
+              navigator.maxTouchPoints > 0,
+            ),
+          }
+        : s,
+    )
   }, [])
   useEffect(() => save(SPEAKER_KEY, speaker), [speaker])
   useEffect(() => save(CLIPS_KEY, clips), [clips])
+  useEffect(() => save(SLUG_KEY, slug), [slug])
   useEffect(() => () => recorderRef.current?.cancel(), [])
+
+  // Load the pronunciations whenever the twister or the accent changes: no separate Load button.
+  useEffect(() => {
+    setPron(null)
+    setPronError(null)
+    if (!slug) return
+    let cancelled = false
+    setPronLoading(true)
+    api
+      .pronunciations(slug, speaker.accent)
+      .then((p) => !cancelled && setPron(p))
+      .catch(
+        () =>
+          !cancelled &&
+          setPronError(
+            'Could not load that twister’s pronunciations (unknown slug, or it has no scoring data).',
+          ),
+      )
+      .finally(() => !cancelled && setPronLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [slug, speaker.accent])
 
   const plan = useMemo(
     () =>
@@ -165,27 +184,43 @@ export default function CalibratePanel() {
     [pron, engine],
   )
 
-  async function fetchTwister() {
-    setPronError(null)
-    setPron(null)
-    try {
-      setPron(await api.pronunciations(slug.trim(), speaker.accent))
-    } catch {
-      setPronError(
-        'Could not load that twister’s pronunciations (unknown slug, or it has no scoring data).',
-      )
-    }
+  const counts = useMemo(
+    () => takeCounts(clips, speaker.id, scenario),
+    [clips, speaker.id, scenario],
+  )
+  const slugs = useMemo(() => twisters.map((t) => t.slug), [twisters])
+  const next = useMemo(
+    () => nextUnrecorded(slugs, clips, speaker.id, scenario, slug || undefined),
+    [slugs, clips, speaker.id, scenario, slug],
+  )
+
+  function pick(nextSlug: string) {
+    setSlug(nextSlug)
+    setLast(null)
+    setError(null)
+    setSavedId(null)
   }
 
   async function begin() {
     setError(null)
     setLast(null)
+    setSavedId(null)
+    setStarting(true)
     try {
       const r = await startRecorder()
       recorderRef.current = r
       setRecording(r)
     } catch (e) {
-      setError(String((e as Error).message ?? e))
+      const err = e as Error
+      setError(
+        err.name === 'NotAllowedError'
+          ? 'Microphone access was blocked. Allow it in the browser’s address bar, then try again.'
+          : err.name === 'NotFoundError'
+            ? 'No microphone was found.'
+            : String(err.message ?? e),
+      )
+    } finally {
+      setStarting(false)
     }
   }
 
@@ -196,7 +231,9 @@ export default function CalibratePanel() {
     setRecording(null)
     const captured = r.stop()
     if (!captured || captured.samples.length < 4000)
-      return setError('Nothing was captured.')
+      return setError(
+        'Nothing was captured. Press Stop only after you have read the twister.',
+      )
     setBusy(true)
     try {
       const analysis = await engine.analyse({
@@ -225,17 +262,16 @@ export default function CalibratePanel() {
     )
       return
     const a = last.analysis
-    const take =
-      clips.filter(
-        (c) =>
-          c.speaker.id === speaker.id &&
-          c.twister.slug === pron.slug &&
-          c.scenario === scenario,
-      ).length + 1
+    const id = clipId(
+      speaker.id,
+      pron.slug,
+      scenario,
+      freeTake(clips, speaker.id, pron.slug, scenario),
+    )
     setClips((all) => [
       ...all,
       buildClip({
-        id: clipId(speaker.id, pron.slug, scenario, take),
+        id,
         speaker,
         scenario,
         swapWord: scenario === 'swap' ? (plan?.wordIndex ?? null) : null,
@@ -252,6 +288,12 @@ export default function CalibratePanel() {
       }),
     ])
     setLast(null)
+    setSavedId(id)
+  }
+
+  function discard() {
+    setLast(null)
+    setError(null)
   }
 
   function download() {
@@ -266,7 +308,7 @@ export default function CalibratePanel() {
 
   async function benchmark() {
     if (!engine) return
-    setBusy(true)
+    setBenching(true)
     setError(null)
     try {
       const mem = (
@@ -287,349 +329,177 @@ export default function CalibratePanel() {
     } catch (e) {
       setError(String((e as Error).message ?? e))
     } finally {
-      setBusy(false)
+      setBenching(false)
     }
   }
 
   const ready = status.state === 'ready'
-  const canRecord =
-    ready && !!pron && consent && !busy && !(scenario === 'swap' && !plan)
-  const select =
-    'rounded-lg border border-border bg-background px-2 py-1.5 text-sm'
-  const field = 'flex flex-col gap-1 text-sm text-muted-foreground'
+  const swapBlocked = scenario === 'swap' && !!pron && !plan
+
+  const blockers: string[] = []
+  if (!ready) blockers.push(notReadyReason(status))
+  if (!speaker.id) blockers.push('Enter a speaker id.')
+  if (!consent) blockers.push('Confirm the speaker’s consent to record.')
+  if (!slug) blockers.push('Choose a twister.')
+  else if (pronLoading) blockers.push('Loading the twister…')
+  else if (pronError) blockers.push(pronError)
+  if (swapBlocked)
+    blockers.push(
+      'No word in this twister can be swapped for a sound the model knows. Pick another twister.',
+    )
+
+  const phase: Phase = recording
+    ? 'recording'
+    : starting
+      ? 'starting'
+      : busy
+        ? 'analysing'
+        : last
+          ? 'result'
+          : 'idle'
+
+  const instruction = !pron
+    ? null
+    : scenario === 'swap'
+      ? plan
+        ? `In “${plan.word}”, say the ${hint(plan.from)} sound as ${hint(plan.to)} instead. Everything else as normal.`
+        : 'No word in this twister can be swapped for a sound the model knows.'
+      : PROMPT[scenario]
+
+  const keepable =
+    last?.analysis.kind === 'scored' && !!last.analysis.posteriors
+
+  // Keyboard: R records/stops, K keeps, D discards. Never while typing in a field.
+  const actions = useRef({ begin, finish, keep, discard })
+  actions.current = { begin, finish, keep, discard }
+  const phaseRef = useRef({ phase, blocked: blockers.length > 0, keepable })
+  phaseRef.current = { phase, blocked: blockers.length > 0, keepable }
+  const onKey = useCallback((e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
+    const { phase: p, blocked, keepable: k } = phaseRef.current
+    const key = e.key.toLowerCase()
+    if (key === 'r') {
+      if (p === 'recording') void actions.current.finish()
+      else if (p === 'idle' && !blocked) void actions.current.begin()
+    } else if (key === 'k' && p === 'result' && k) actions.current.keep()
+    else if (key === 'd' && p === 'result') actions.current.discard()
+  }, [])
+  useEffect(() => {
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onKey])
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 text-left">
-      <header>
-        <h1 className="font-display text-3xl font-bold">Calibration</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Staff only. Record the gold set: scripted reads whose correct answer
-          is known, kept as frame posteriors so thresholds can be tuned offline
-          (tools/calibrate). Audio never leaves this page; only posteriors are
-          saved.
-        </p>
-      </header>
-
-      <AccurateModePrompt
-        engine={engine}
-        status={status}
-        accent={accent}
-        onAccent={setAccent}
-      />
-
-      <section
-        aria-label="Speaker"
-        className="grid gap-3 rounded-2xl border border-border/60 p-4 sm:grid-cols-3"
-      >
-        <label className={field}>
-          Speaker id (no names)
-          <input
-            className={select}
-            value={speaker.id}
-            onChange={(e) =>
-              setSpeaker({ ...speaker, id: e.target.value.trim() })
-            }
-          />
-        </label>
-        <label className={field}>
-          Accent
-          <select
-            className={select}
-            value={speaker.accent}
-            onChange={(e) => {
-              setSpeaker({ ...speaker, accent: e.target.value as AccentLang })
-              setPron(null)
-            }}
-          >
-            {ACCENTS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={field}>
-          Age band
-          <select
-            className={select}
-            value={speaker.age_band}
-            onChange={(e) =>
-              setSpeaker({
-                ...speaker,
-                age_band: e.target.value as Speaker['age_band'],
-              })
-            }
-          >
-            {AGE_BANDS.map((b) => (
-              <option key={b}>{b}</option>
-            ))}
-          </select>
-        </label>
-        <label className={field}>
-          Device
-          <select
-            className={select}
-            value={speaker.device_class}
-            onChange={(e) =>
-              setSpeaker({
-                ...speaker,
-                device_class: e.target.value as Speaker['device_class'],
-              })
-            }
-          >
-            {DEVICE_CLASSES.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={speaker.native}
-            onChange={(e) =>
-              setSpeaker({ ...speaker, native: e.target.checked })
-            }
-          />
-          Native English speaker
-        </label>
-        <label className="flex items-center gap-2 text-sm sm:col-span-3">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-          />
-          This speaker agreed to be recorded and to keep the resulting
-          posteriors for calibration.
-        </label>
-      </section>
-
-      <section
-        aria-label="Twister"
-        className="space-y-3 rounded-2xl border border-border/60 p-4"
-      >
-        <div className="flex flex-wrap items-end gap-3">
-          <label className={field}>
-            Twister slug
-            <input
-              className={select}
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="she-sells-sea-shells"
-            />
-          </label>
-          <Button
-            size="sm"
-            onClick={() => void fetchTwister()}
-            disabled={!slug.trim()}
-          >
-            Load
-          </Button>
-          <label className={field}>
-            Scenario
-            <select
-              className={select}
-              value={scenario}
-              onChange={(e) => setScenario(e.target.value as Scenario)}
-            >
-              {SCENARIOS.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {pronError && (
-          <p role="alert" className="text-sm text-pink">
-            {pronError}
+    <div className="mx-auto max-w-5xl space-y-6 text-left">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <h1 className="font-display text-3xl font-bold">Calibration</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Staff only. Record scripted reads whose right answer is known. Only
+            the frame posteriors are saved, so thresholds can be tuned offline.
+            Audio never leaves this page.
           </p>
-        )}
-        {pron && (
-          <div>
-            <p className="font-display text-2xl font-bold">
-              {pron.words.map((w) => w.text).join(' ')}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {scenario === 'swap'
-                ? plan
-                  ? `In “${plan.word}”, say the ${hint(plan.from)} sound as ${hint(plan.to)} instead. Everything else as normal.`
-                  : 'No word in this twister can be swapped for a sound the model knows; pick another twister.'
-                : PROMPT[scenario]}
-            </p>
+        </div>
+        {ready && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/40 px-3 py-2 text-sm">
+            <ShieldCheck className="size-4 text-lime" aria-hidden />
+            <span className="font-semibold">Accurate mode on</span>
+            <label className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="sr-only sm:not-sr-only">Counts as right:</span>
+              <select
+                value={accent}
+                onChange={(e) => setAccent(e.target.value as AccentLang)}
+                aria-label="Accent that counts as right"
+                className="rounded-lg border border-border bg-background px-2 py-1 text-foreground"
+              >
+                {ACCENTS.map((a) => (
+                  <option key={a.value} value={a.value}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => engine?.disable()}
+              disabled={phase === 'recording' || phase === 'analysing'}
+            >
+              Turn off
+            </Button>
           </div>
         )}
-      </section>
+      </header>
 
-      <section aria-label="Recorder" className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {recording ? (
-            <Button onClick={() => void finish()}>Stop</Button>
-          ) : (
-            <Button onClick={() => void begin()} disabled={!canRecord}>
-              Record take
-            </Button>
-          )}
-          {recording && (
-            <span role="status" className="text-sm text-pink">
-              Recording…
-            </span>
-          )}
-          {busy && (
-            <span role="status" className="text-sm text-muted-foreground">
-              Working…
-            </span>
-          )}
-          {!ready && (
-            <span className="text-sm text-muted-foreground">
-              {notReadyReason(status)}
-            </span>
-          )}
-          {ready && !consent && (
-            <span className="text-sm text-muted-foreground">
-              Tick the consent box to record.
-            </span>
-          )}
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-pink">
-            {error}
-          </p>
-        )}
-        {last && (
-          <Outcome
-            analysis={last.analysis}
-            onKeep={keep}
-            onDiscard={() => setLast(null)}
+      {!ready && (
+        <div className="[&>section]:mx-0 [&>section]:mt-0 [&>section]:max-w-none">
+          <AccurateModePrompt
+            engine={engine}
+            status={status}
+            accent={accent}
+            onAccent={setAccent}
           />
-        )}
-      </section>
-
-      <section aria-label="Clips" className="space-y-2">
-        <h2 className="font-display text-xl font-bold">
-          Kept clips ({clips.length})
-        </h2>
-        <ClipSummary clips={clips} />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={download} disabled={!clips.length}>
-            Download gold set
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setClips([])}
-            disabled={!clips.length}
-          >
-            Clear all
-          </Button>
         </div>
-        <ul className="max-h-48 divide-y divide-border/50 overflow-y-auto text-sm">
-          {clips.map((c) => (
-            <li key={c.id} className="flex items-center justify-between py-1">
-              <span>{c.id}</span>
-              <button
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => setClips(clips.filter((x) => x.id !== c.id))}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      )}
 
-      <section aria-label="Benchmark" className="space-y-2">
-        <h2 className="font-display text-xl font-bold">Device benchmark</h2>
-        <Button
-          size="sm"
-          onClick={() => void benchmark()}
-          disabled={!ready || busy}
-        >
-          Run benchmark
-        </Button>
-        {bench && (
-          <pre className="overflow-x-auto rounded-xl bg-card p-3 text-xs">
-            {JSON.stringify(bench, null, 2)}
-          </pre>
-        )}
-      </section>
-    </div>
-  )
-}
-
-const pronVocab = (p: Pronunciations) => [
-  ...new Set(p.words.flatMap((w) => w.variants.flat())),
-]
-
-function ClipSummary({ clips }: { clips: GoldClip[] }) {
-  const by = (f: (c: GoldClip) => string) =>
-    Object.entries(
-      clips.reduce<Record<string, number>>(
-        (acc, c) => ({ ...acc, [f(c)]: (acc[f(c)] ?? 0) + 1 }),
-        {},
-      ),
-    )
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(' · ')
-  if (!clips.length)
-    return (
-      <p className="text-sm text-muted-foreground">Nothing recorded yet.</p>
-    )
-  return (
-    <p className="text-sm text-muted-foreground">
-      {by((c) => c.scenario)} — speakers{' '}
-      {new Set(clips.map((c) => c.speaker.id)).size}, twisters{' '}
-      {new Set(clips.map((c) => c.twister.slug)).size}
-    </p>
-  )
-}
-
-function Outcome({
-  analysis,
-  onKeep,
-  onDiscard,
-}: {
-  analysis: Analysis
-  onKeep: () => void
-  onDiscard: () => void
-}) {
-  if (analysis.kind !== 'scored')
-    return (
-      <div
-        role="status"
-        className="rounded-xl border border-border/60 p-3 text-sm"
-      >
-        {analysis.kind === 'gate'
-          ? `Not usable: ${analysis.message}`
-          : `Not scorable (${analysis.reason}).`}{' '}
-        Discard it and record again.
-        <div className="mt-2">
-          <Button size="sm" variant="ghost" onClick={onDiscard}>
-            Discard
-          </Button>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="space-y-4">
+          <SpeakerCard
+            speaker={speaker}
+            onChange={setSpeaker}
+            consent={consent}
+            onConsent={setConsent}
+          />
+          <TwisterPicker
+            twisters={twisters}
+            loading={catalogue.isLoading}
+            failed={catalogue.isError}
+            selected={slug}
+            counts={counts}
+            scenarioLabel={SCENARIO_COPY[scenario].label.toLowerCase()}
+            onPick={pick}
+            onNext={next ? () => pick(next) : null}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+          />
+          <RecorderStage
+            phase={phase}
+            scenario={scenario}
+            onScenario={(s) => {
+              setScenario(s)
+              setSavedId(null)
+            }}
+            swapDisabled={!!pron && !plan}
+            words={pron ? pron.words.map((w) => w.text) : null}
+            instruction={instruction}
+            blockers={blockers}
+            recorder={recording}
+            analysis={last?.analysis ?? null}
+            error={error}
+            savedId={savedId}
+            keepable={keepable}
+            onRecord={() => void begin()}
+            onStop={() => void finish()}
+            onKeep={keep}
+            onDiscard={discard}
+            onNext={next ? () => pick(next) : null}
+          />
         </div>
-      </div>
-    )
-  const a = analysis.assessment
-  return (
-    <div className="rounded-xl border border-border/60 p-3 text-sm">
-      <p className="font-semibold">
-        Score {a.score} · {analysis.inferenceMs} ms
-      </p>
-      <ul className="mt-2 grid grid-cols-2 gap-x-4 sm:grid-cols-4">
-        {a.words
-          .filter((w) => w.status !== 'extra')
-          .map((w) => (
-            <li key={w.index}>
-              {w.text}: <strong>{w.status}</strong>
-              {w.reason ? ` (${w.reason})` : ''}
-            </li>
-          ))}
-      </ul>
-      <div className="mt-3 flex gap-2">
-        <Button size="sm" onClick={onKeep}>
-          Keep clip
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onDiscard}>
-          Discard
-        </Button>
+
+        <aside className="space-y-4 lg:sticky lg:top-4">
+          <ClipsPanel
+            clips={clips}
+            onRemove={(id) => setClips((all) => all.filter((c) => c.id !== id))}
+            onClear={() => setClips([])}
+            onDownload={download}
+          />
+          <BenchmarkPanel
+            result={bench}
+            running={benching}
+            disabled={!ready || busy || phase === 'recording'}
+            onRun={() => void benchmark()}
+          />
+        </aside>
       </div>
     </div>
   )
