@@ -1,0 +1,145 @@
+{
+  "model": {
+    "file": "w2v-espeak-lv60-int8-r1.onnx",
+    "size_bytes": 355483325,
+    "size_mb": 355.48,
+    "sha256": "6853051785c473849573c0fc67172cc4761c08d00d70e6fe628f7ff121aaf62a"
+  },
+  "environment": {
+    "platform": "macOS-26.4.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "python": "3.9.6",
+    "cpu_count": 12,
+    "onnxruntime": "1.19.2"
+  },
+  "input": "input_values",
+  "peak_rss_mb": 1298.1,
+  "results": [
+    {
+      "threads": 1,
+      "load_ms": 348.7,
+      "rows": [
+        {
+          "seconds": 3.0,
+          "runs": 5,
+          "median_ms": 796.9,
+          "p95_ms": 813.7,
+          "worst_ms": 815.2,
+          "per_second_ms": 265.6,
+          "realtime_factor": 0.266
+        },
+        {
+          "seconds": 8.0,
+          "runs": 5,
+          "median_ms": 2252.5,
+          "p95_ms": 2343.8,
+          "worst_ms": 2349.0,
+          "per_second_ms": 281.6,
+          "realtime_factor": 0.282
+        },
+        {
+          "seconds": 15.0,
+          "runs": 5,
+          "median_ms": 4561.5,
+          "p95_ms": 4594.0,
+          "worst_ms": 4599.7,
+          "per_second_ms": 304.1,
+          "realtime_factor": 0.304
+        }
+      ],
+      "estimate_15s": {
+        "median_ms": 4561.5,
+        "worst_ms": 4599.7,
+        "measured": true
+      },
+      "gate": {
+        "median_ok": false,
+        "worst_ok": true
+      }
+    },
+    {
+      "threads": 2,
+      "load_ms": 339.3,
+      "rows": [
+        {
+          "seconds": 3.0,
+          "runs": 5,
+          "median_ms": 423.5,
+          "p95_ms": 426.5,
+          "worst_ms": 426.9,
+          "per_second_ms": 141.2,
+          "realtime_factor": 0.141
+        },
+        {
+          "seconds": 8.0,
+          "runs": 5,
+          "median_ms": 1259.9,
+          "p95_ms": 1421.9,
+          "worst_ms": 1460.0,
+          "per_second_ms": 157.5,
+          "realtime_factor": 0.157
+        },
+        {
+          "seconds": 15.0,
+          "runs": 5,
+          "median_ms": 2418.0,
+          "p95_ms": 2463.2,
+          "worst_ms": 2471.7,
+          "per_second_ms": 161.2,
+          "realtime_factor": 0.161
+        }
+      ],
+      "estimate_15s": {
+        "median_ms": 2418.0,
+        "worst_ms": 2471.7,
+        "measured": true
+      },
+      "gate": {
+        "median_ok": true,
+        "worst_ok": true
+      }
+    },
+    {
+      "threads": 4,
+      "load_ms": 354.3,
+      "rows": [
+        {
+          "seconds": 3.0,
+          "runs": 5,
+          "median_ms": 231.6,
+          "p95_ms": 243.0,
+          "worst_ms": 244.1,
+          "per_second_ms": 77.2,
+          "realtime_factor": 0.077
+        },
+        {
+          "seconds": 8.0,
+          "runs": 5,
+          "median_ms": 643.8,
+          "p95_ms": 717.9,
+          "worst_ms": 728.5,
+          "per_second_ms": 80.5,
+          "realtime_factor": 0.08
+        },
+        {
+          "seconds": 15.0,
+          "runs": 5,
+          "median_ms": 1280.8,
+          "p95_ms": 1295.2,
+          "worst_ms": 1295.6,
+          "per_second_ms": 85.4,
+          "realtime_factor": 0.085
+        }
+      ],
+      "estimate_15s": {
+        "median_ms": 1280.8,
+        "worst_ms": 1295.6,
+        "measured": true
+      },
+      "gate": {
+        "median_ok": true,
+        "worst_ok": true
+      }
+    }
+  ]
+}
