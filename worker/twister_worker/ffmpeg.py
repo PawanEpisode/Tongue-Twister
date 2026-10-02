@@ -137,6 +137,14 @@ def audio_argv(src: Path, dst: Path, *, max_s: int, threads: int) -> list[str]:
     ]  # fmt: skip
 
 
+def pcm_f32_argv(src: Path, dst: Path, *, max_s: int, threads: int) -> list[str]:
+    """Any audio/video container -> raw 16 kHz mono float32 little-endian (the scoring model's input)."""
+    return [
+        FFMPEG, *_QUIET, "-i", str(src), "-t", str(max_s), "-vn", "-ac", "1", "-ar", "16000",
+        "-c:a", "pcm_f32le", "-threads", str(threads), "-f", "f32le", str(dst),
+    ]  # fmt: skip
+
+
 @dataclass(frozen=True)
 class CommandResult:
     stdout: str

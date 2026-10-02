@@ -7,6 +7,7 @@ come from the code; if a name does not match, the code wins and the runbook is t
 |---|---|
 | [worker-deploy-fly.md](worker-deploy-fly.md) | Deploying, scaling, smoke-testing or rolling back the media worker on Fly.io (first deploy included) |
 | [worker-down.md](worker-down.md) | Recordings stay "processing"; the media worker is not claiming jobs |
+| [accurate-mode-rollout.md](accurate-mode-rollout.md) | Publishing the model, proving the exit gate, then turning on spot-checks, Accurate mode and record scoring, in order |
 | [model-rollback.md](model-rollback.md) | A scoring/acoustic model misbehaves, or before shipping one |
 | [storage-full.md](storage-full.md) | Uploads fail, the bucket or database is near its quota |
 | [abuse-wave.md](abuse-wave.md) | Reports spike, spam attempts, scraping, abusive share links |

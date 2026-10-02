@@ -1,4 +1,5 @@
 import { getAccessToken } from './supabase'
+import type { DeviceWordBody } from './speak/engine/runtime/attemptBody'
 
 const BASE =
   (import.meta.env.VITE_API_URL as string | undefined) ??
@@ -93,6 +94,8 @@ export type AttemptResult = {
   words?: AttemptWord[]
   low_confidence?: false
   warning?: string | null
+  /** Set when the server wants this attempt's audio re-scored (D34); null/absent otherwise. */
+  spot_check?: { requested: boolean; expires_at: string | null }
   achievements_unlocked: UnlockedAchievement[]
   profile: Profile
 }
@@ -115,6 +118,15 @@ export type SubmitAttemptBody = {
   long_pause_ms?: number
   stt?: { engine: 'text_layer'; confidence?: number | null }
   client_score?: { version: number; score: number }
+  /** Accurate mode (docs/features/10 section 5): word verdicts from the on-device engine. */
+  engine?: 'text_layer' | 'ondevice'
+  engine_version?: string
+  model_version?: string
+  scoring_profile?: string
+  nonce?: string
+  audio_sha256?: string
+  quality?: Record<string, number | boolean>
+  words?: DeviceWordBody[]
   /** Only set for attempts replayed from the offline queue. */
   occurred_at?: string
 }
@@ -487,7 +499,15 @@ export type RecordingWord = {
 }
 /** Cloud analysis of a saved take (`POST /recordings/{id}/analyse/`); a missing block means `none`. */
 export type AnalysisStatus = 'none' | 'queued' | 'running' | 'ready' | 'failed'
-export type Analysis = { status: AnalysisStatus; audio_ready: boolean }
+/** Server-side scoring of the take's audio into an attempt (A5). Missing on an older API = `none`. */
+export type ScoringStatus =
+  'none' | 'queued' | 'running' | 'scored' | 'unscorable' | 'failed'
+export type AnalysisScoring = { status: ScoringStatus; reason: string }
+export type Analysis = {
+  status: AnalysisStatus
+  audio_ready: boolean
+  scoring?: AnalysisScoring
+}
 /** `alignment` = the worker built the VTT from the attempt's word timings. */
 export type CaptionsSource = 'alignment'
 export type Playback = { url: string; expires_at: string; mime: string }
@@ -562,6 +582,44 @@ export type PlanInfo = {
     retention_days: number
     share_max_days: number
   }>
+}
+
+/** GET /engine/manifest/ (raw; parsed defensively by speak/engine/runtime/manifest.ts). */
+export type EngineManifestResponse = {
+  model: {
+    name: string
+    base_model: string
+    licence: string
+    quantization: string
+    size_bytes: number
+    sha256: string
+    url: string
+    label_map_version: string
+  } | null
+  scoring_profile: {
+    code: string
+    thresholds: Record<string, unknown>
+    accent_packs: string[]
+    confusion_map: unknown
+  } | null
+  lexicon_version: number
+  score_version: number
+}
+export type AccentLang = 'en-US' | 'en-GB' | 'en-IN' | 'en-AU'
+/** GET /twisters/{slug}/pronunciations/: what the on-device engine needs to score a read of this twister. */
+export type Pronunciations = {
+  slug: string
+  lang: AccentLang
+  scoring_profile: string | null
+  focus: string[]
+  difficulty: number
+  words: { text: string; variants: string[][] }[]
+}
+export type VoiceClipGrant = {
+  voice_asset_id: string
+  status: string
+  expires_at: string
+  upload: UploadInfo
 }
 
 /** Carries the API's error envelope; `message` stays "API <status>" for friendlyError(). */
@@ -805,6 +863,36 @@ export const api = {
     request<void>(`/public/r/${encodeURIComponent(token)}/report/`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  engineManifest: () => request<EngineManifestResponse>('/engine/manifest/'),
+  pronunciations: (slug: string, lang: AccentLang) =>
+    request<Pronunciations>(
+      `/twisters/${slug}/pronunciations/?${query({ lang })}`,
+    ),
+  /** Step 1 of sending the audio the server asked to verify (D34): a signed upload for a short voice clip. */
+  createSpotCheckClip: (body: {
+    attempt: number
+    size_bytes: number
+    duration_ms: number
+  }) =>
+    request<VoiceClipGrant>('/voice/', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...body,
+        mime_type: 'audio/wav',
+        purpose: 'spot_check',
+      }),
+    }),
+  completeVoiceClip: (id: string, checksum_sha256: string) =>
+    request<{ voice_asset_id: string; status: string }>(
+      `/voice/${id}/complete/`,
+      { method: 'POST', body: JSON.stringify({ checksum_sha256 }) },
+    ),
+  /** Step 3: attaching the finished clip is what queues the re-score. Idempotent. */
+  attachSpotCheck: (attemptId: number, voice_asset_id: string) =>
+    request<unknown>(`/attempts/${attemptId}/spot-check-audio/`, {
+      method: 'POST',
+      body: JSON.stringify({ voice_asset_id }),
     }),
   flags: () => request<{ flags: FeatureFlags }>('/flags/').then((r) => r.flags),
   syncGuest: (body: GuestSyncPayload) =>

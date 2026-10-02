@@ -6,7 +6,7 @@ import type { Analysis, RecordingStatus } from '#/lib/api'
 import { useAuth } from '#/lib/auth'
 import { useFlags } from '#/lib/flags'
 import { saveAccess } from '#/lib/record/cloudGate'
-import { analysisStatus } from '#/lib/record/review'
+import { analysisStatus, scoringMessage, scoringOf } from '#/lib/record/review'
 import {
   useAnalyse,
   useConsentMutation,
@@ -60,13 +60,36 @@ export default function AnalyseControl({
           : 'Analysing your take…'}
       </p>
     )
-  if (status === 'ready')
+  if (status === 'ready') {
+    const scoring = scoringOf({ analysis })
+    const note = scoringMessage(scoring)
+    const working = scoring.status === 'queued' || scoring.status === 'running'
+    const bad = scoring.status === 'unscorable' || scoring.status === 'failed'
     return (
-      <p role="status" className="flex items-center gap-1.5 text-sm text-lime">
-        <ScanSearch className="size-4" aria-hidden />
-        {analysis?.audio_ready ? 'Analysis ready' : 'Analysis finishing…'}
-      </p>
+      <div className="space-y-1 text-sm">
+        <p role="status" className="flex items-center gap-1.5 text-lime">
+          <ScanSearch className="size-4" aria-hidden />
+          {analysis?.audio_ready ? 'Analysis ready' : 'Analysis finishing…'}
+        </p>
+        {note && (
+          <p
+            role="status"
+            className={`flex items-center gap-1.5 ${bad ? 'text-pink' : 'text-muted-foreground'}`}
+          >
+            {working ? (
+              <Loader2
+                className="size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden
+              />
+            ) : bad ? (
+              <TriangleAlert className="size-4" aria-hidden />
+            ) : null}
+            {note}
+          </p>
+        )}
+      </div>
     )
+  }
   if (recordingStatus !== 'ready' && recordingStatus !== 'processing')
     return null
 

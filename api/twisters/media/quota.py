@@ -21,6 +21,7 @@ from ..models import (
     MediaAsset,
     Plan,
     Profile,
+    QuotaHit,
     Recording,
     RecordingStatus,
     StorageLedger,
@@ -155,3 +156,11 @@ LEDGER_KIND_BY_ASSET = {
     "image": LedgerKind.THUMB,
     "caption": LedgerKind.CAPTION,
 }
+
+
+def prune_hits(now) -> int:
+    """Delete cap-hit evidence older than `QUOTA_HIT_RETENTION_DAYS`. Returns the number of rows removed."""
+    from datetime import timedelta
+
+    cutoff = now - timedelta(days=settings.QUOTA_HIT_RETENTION_DAYS)
+    return QuotaHit.objects.filter(created_at__lt=cutoff).delete()[0]

@@ -30,6 +30,12 @@ class Settings:
     http_timeout_s: float = 30.0
     transfer_timeout_s: float = 120.0
     retry_attempts: int = 4
+    scoring_enabled: bool = False
+    model_dir: Path = Path(tempfile.gettempdir()) / "twister-models"
+    onnx_threads: int = 2
+    allowed_download_hosts: tuple[str, ...] = ()
+    max_model_bytes: int = 629_145_600
+    max_scoring_audio_bytes: int = 8_388_608
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> Settings:
@@ -55,6 +61,19 @@ class Settings:
             max_download_bytes=int(_number(env, "MAX_DOWNLOAD_BYTES", 209_715_200, minimum=1)),
             max_upload_bytes=int(_number(env, "MAX_UPLOAD_BYTES", 209_715_200, minimum=1)),
             shutdown_grace_s=_number(env, "SHUTDOWN_GRACE_S", 20.0, minimum=0),
+            scoring_enabled=env.get("SCORING_ENABLED", "").strip().lower()
+            in {"1", "true", "yes", "on"},
+            model_dir=Path(env.get("MODEL_DIR") or Path(tempfile.gettempdir()) / "twister-models"),
+            onnx_threads=int(_number(env, "ONNX_THREADS", 2, minimum=1)),
+            allowed_download_hosts=tuple(
+                h.strip().lower()
+                for h in env.get("ALLOWED_DOWNLOAD_HOSTS", "").split(",")
+                if h.strip()
+            ),
+            max_model_bytes=int(_number(env, "MAX_MODEL_BYTES", 629_145_600, minimum=1)),
+            max_scoring_audio_bytes=int(
+                _number(env, "MAX_SCORING_AUDIO_BYTES", 8_388_608, minimum=1)
+            ),
         )
 
 

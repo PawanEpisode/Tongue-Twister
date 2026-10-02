@@ -1,0 +1,969 @@
+{
+ "clips": {
+  "S01-peter-piper-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S01-peter-piper-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S01-peter-piper-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S01-peter-piper-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S01-sells-shells-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S01-sells-shells-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S01-sells-shells-slur": {
+   "score": 93,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     true
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S01-sells-shells-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-peter-piper-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-peter-piper-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-peter-piper-slur": {
+   "score": 93,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     true
+    ]
+   ]
+  },
+  "S02-peter-piper-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-sells-shells-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-sells-shells-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S02-sells-shells-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S02-sells-shells-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-peter-piper-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-peter-piper-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-peter-piper-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S03-peter-piper-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-sells-shells-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-sells-shells-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S03-sells-shells-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S03-sells-shells-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-peter-piper-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-peter-piper-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-peter-piper-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S04-peter-piper-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-sells-shells-clean": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-sells-shells-fast": {
+   "score": 100,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "correct",
+     "",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  },
+  "S04-sells-shells-slur": {
+   "score": 86,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "near",
+     "slurred",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "near",
+     "slurred",
+     false
+    ]
+   ]
+  },
+  "S04-sells-shells-swap": {
+   "score": 79,
+   "unscorable": null,
+   "words": [
+    [
+     0,
+     "wrong",
+     "focus_swap",
+     false
+    ],
+    [
+     1,
+     "correct",
+     "",
+     false
+    ],
+    [
+     2,
+     "correct",
+     "",
+     false
+    ],
+    [
+     3,
+     "correct",
+     "",
+     false
+    ]
+   ]
+  }
+ },
+ "summary": {
+  "accent_gap": 0.0,
+  "false_accusation_words": 0.0,
+  "swap_recall": 1.0
+ }
+}

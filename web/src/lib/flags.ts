@@ -23,6 +23,8 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   generate_twister: false,
   // Email reminders (spec 16, D27): off until the server flag is on.
   reminders: false,
+  // Accurate mode (docs/features/13): on-device speech engine; off until the server flag is on (A6).
+  accurate_mode: false,
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

@@ -385,6 +385,7 @@ def test_detail_analysis_is_none_until_one_is_requested(analysable):
     assert client.get(f"{API}/recordings/{rec.pk}/").data["analysis"] == {
         "status": "none",
         "audio_ready": False,
+        "scoring": {"status": "none", "reason": ""},
     }
 
 
@@ -392,7 +393,13 @@ def test_analyse_queues_a_job_and_is_idempotent(analysable):
     client, _, rec = analysable
     first = analyse(client, rec.pk)
     assert first.status_code == 202
-    assert first.data == {"analysis": {"status": "queued", "audio_ready": False}}
+    assert first.data == {
+        "analysis": {
+            "status": "queued",
+            "audio_ready": False,
+            "scoring": {"status": "none", "reason": ""},
+        }
+    }
     second = analyse(client, rec.pk)
     assert second.status_code == 200 and second.headers["Idempotent-Replay"] == "true"
     assert MediaJob.objects.filter(recording=rec, kind="analyse").count() == 1
@@ -449,7 +456,11 @@ def test_the_worker_extracts_audio_and_the_take_becomes_analysable(analysable, a
     )
     assert done.status_code == 200 and done.data["job_status"] == "done"
     detail = client.get(f"{API}/recordings/{rec.pk}/").data
-    assert detail["analysis"] == {"status": "ready", "audio_ready": True}
+    assert detail["analysis"] == {
+        "status": "ready",
+        "audio_ready": True,
+        "scoring": {"status": "none", "reason": ""},
+    }
     rec.refresh_from_db()
     assert rec.status == RecordingStatus.READY and rec.audio_asset.kind == "audio"
     assert rec.audio_asset.expires_at > timezone.now() + dt.timedelta(days=6)
@@ -496,6 +507,7 @@ def test_a_failed_analysis_reports_failed_and_can_be_requested_again(analysable,
     assert client.get(f"{API}/recordings/{rec.pk}/").data["analysis"] == {
         "status": "failed",
         "audio_ready": False,
+        "scoring": {"status": "none", "reason": ""},
     }
     assert Recording.objects.get(pk=rec.pk).status == RecordingStatus.READY  # take unaffected
     assert analyse(client, rec.pk).status_code == 202
@@ -525,6 +537,7 @@ def test_analysis_audio_follows_the_recording_to_the_grave_and_consent_withdrawa
     assert client.get(f"{API}/recordings/{rec.pk}/").data["analysis"] == {
         "status": "none",
         "audio_ready": False,
+        "scoring": {"status": "none", "reason": ""},
     }
 
 

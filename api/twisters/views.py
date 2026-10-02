@@ -1,29 +1,37 @@
 from django.db.models import Count, Max
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
+from . import errors
 from .account import views as account
 from .filters import TwisterFilter, TwisterSearchFilter
 from .models import (
+    AccentLang,
     Attempt,
     AttemptKind,
     Category,
     Favorite,
     Profile,
+    ScoringProfile,
     Twister,
     TwisterVisibility,
     public_twister_q,
 )
 from .progress import boards, browse, daily
 from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer, twister_context
+from .speak import jobs as speak_jobs
 from .speak.queries import best_scores
 from .speak.serializers import AttemptSerializer
 
-OWNER_ACTIONS = ("retrieve", "history")  # the actions that may address a private twister
+OWNER_ACTIONS = (
+    "retrieve",
+    "history",
+    "pronunciations",
+)  # the actions that may address a private twister
 ANON_FACET_CACHE = "public, max-age=60, stale-while-revalidate=300"
 
 
@@ -83,6 +91,39 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
         """Same twister for everyone each UTC day (bare twister; `GET /daily/` has the envelope)."""
         row = daily.daily_twister(daily.today_utc())
         return Response(self.get_serializer(row.twister).data)
+
+    @action(detail=True, methods=["get"])
+    def pronunciations(self, request, slug=None):
+        """Every accepted pronunciation of each word, with the active scoring profile's accent rules applied.
+        The on-device engine scores against exactly this (docs/features/13 section 3.6), so the browser never
+        ships a lexicon. Public for public twisters; a private twister is only visible to its owner."""
+        twister = self.get_object()
+        lang = request.query_params.get("lang", "")
+        if lang and lang not in AccentLang.values:
+            raise ValidationError({"lang": "Unknown accent."})
+        profile = ScoringProfile.objects.filter(active=True, model_version__active=True).first()
+        try:
+            words = speak_jobs.words_for(twister, lang, profile)
+        except ValueError as exc:
+            raise errors.ApiProblem(
+                status.HTTP_409_CONFLICT, "twister_unscorable", "This twister cannot be scored yet."
+            ) from exc
+        private = twister.visibility == TwisterVisibility.PRIVATE
+        return Response(
+            {
+                "slug": twister.slug,
+                "lang": lang,
+                "scoring_profile": profile.code if profile else None,
+                "focus": sorted(str(f).upper() for f in (twister.focus_sounds or [])),
+                "difficulty": twister.difficulty,
+                "words": words,
+            },
+            headers={
+                "Cache-Control": "private, no-store"
+                if private
+                else "public, max-age=300, stale-while-revalidate=600"
+            },
+        )
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, slug=None):

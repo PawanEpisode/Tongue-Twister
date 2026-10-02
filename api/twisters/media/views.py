@@ -439,7 +439,21 @@ class ShareViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.Gen
 def voice_create(request):
     ser = VoiceCreateSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
-    asset = uploads.create_voice(request.user, **ser.validated_data)
+    data = dict(ser.validated_data)
+    spot_check = data.pop("purpose") == "spot_check"
+    attempt_id = data.pop("attempt", None)
+    if spot_check:
+        from ..speak import jobs as scoring_jobs  # local import: speak depends on media
+
+        uploads.require_spot_check_upload(request.user)  # gates first, then the attempt lookup
+        attempt = Attempt.objects.filter(pk=attempt_id, profile=request.user).first()
+        if attempt is None:
+            raise NotFound()
+        if not scoring_jobs.request_open(attempt):
+            raise errors.ApiProblem(
+                409, "no_request", "Nothing is waiting for audio on this attempt (or it expired)."
+            )
+    asset = uploads.create_voice(request.user, spot_check=spot_check, **data)
     return Response(
         {
             "voice_asset_id": asset.pk,

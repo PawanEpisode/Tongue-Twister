@@ -29,6 +29,7 @@ SEEDED_FLAGS = {
     "generate_twister",
     "reminders",
     "score_cards",
+    "calibrate",
 }
 
 

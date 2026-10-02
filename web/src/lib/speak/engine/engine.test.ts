@@ -353,20 +353,44 @@ describe('assess vectors', () => {
 })
 
 describe('isolation', () => {
-  it('nothing outside the engine imports it (not wired into Speak mode)', () => {
+  const sources = () => {
     const src = root('../../../')
-    const hits: string[] = []
+    const out: { full: string; text: string }[] = []
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
         const full = `${dir}/${name}`
-        if (statSync(full).isDirectory()) {
-          if (!full.includes('/speak/engine')) walk(full)
-        } else if (/\.(ts|tsx)$/.test(name) && !name.endsWith('.test.ts')) {
-          if (/speak\/engine/.test(readFileSync(full, 'utf8'))) hits.push(full)
-        }
+        if (statSync(full).isDirectory()) walk(full)
+        else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name))
+          out.push({ full, text: readFileSync(full, 'utf8') })
       }
     }
     walk(src)
-    expect(hits).toEqual([])
+    return out
+  }
+
+  it('only the Accurate-mode entry points import the engine', () => {
+    const hits = sources()
+      .filter(
+        ({ full, text }) =>
+          !full.includes('/speak/engine/') && /speak\/engine/.test(text),
+      )
+      .map(({ full }) => full.replace(/\/+/g, '/').split('/src/')[1])
+      .sort()
+    expect(hits).toEqual([
+      'components/dev/CalibratePanel.tsx',
+      'components/practice/AccurateModePrompt.tsx',
+      'components/practice/SpeakAndScore.tsx',
+      'lib/api.ts',
+      'lib/calibrate/benchmark.ts',
+      'lib/calibrate/clip.ts',
+      'lib/calibrate/swapPlan.ts',
+    ])
+  })
+
+  it('onnxruntime-web is imported by the inference worker and nothing else', () => {
+    const hits = sources()
+      .filter(({ text }) => /from\s+['"]onnxruntime-web/.test(text))
+      .map(({ full }) => full.replace(/\/+/g, '/').split('/src/')[1])
+    expect(hits).toEqual(['lib/speak/engine/runtime/ort.worker.ts'])
   })
 })

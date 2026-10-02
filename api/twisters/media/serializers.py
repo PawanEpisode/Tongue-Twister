@@ -232,6 +232,17 @@ class VoiceCreateSerializer(serializers.Serializer):
     mime_type = serializers.CharField(max_length=120)
     size_bytes = serializers.IntegerField(min_value=1, max_value=2**40)
     duration_ms = serializers.IntegerField(min_value=1, max_value=600_000)
+    purpose = serializers.ChoiceField(choices=["save", "spot_check"], default="save")
+    attempt = serializers.IntegerField(
+        min_value=1,
+        required=False,
+        help_text="Required for purpose=spot_check: the attempt to verify",
+    )
+
+    def validate(self, attrs):
+        if attrs["purpose"] == "spot_check" and "attempt" not in attrs:
+            raise serializers.ValidationError({"attempt": "Required for a spot-check clip."})
+        return attrs
 
 
 class ShareCreateSerializer(serializers.Serializer):

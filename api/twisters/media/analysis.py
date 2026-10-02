@@ -1,8 +1,8 @@
 """Ask the worker to prepare a recording for analysis (spec 13 A2.3).
 
-All this slice does is queue an `analyse` job; the worker extracts a 16 kHz mono WAV and the API keeps
-it (`Recording.audio_asset`) for a few days. Turning that audio into an `Attempt(kind=record)` belongs
-to the doc-10 scoring worker and is not built here: the web app still creates the attempt client-side.
+Queues an `analyse` job; the worker extracts a 16 kHz mono WAV and the API keeps it
+(`Recording.audio_asset`) for a few days. When that audio lands, `speak.record_jobs` queues a `record`
+scoring job that turns it into `Attempt(kind=record)` (A5), unless the client already linked an attempt.
 """
 
 from __future__ import annotations
@@ -46,7 +46,9 @@ def block(recording: Recording) -> dict:
         status = "none"
     else:
         status = _CLIENT_STATUS[job.status]
-    return {"status": status, "audio_ready": ready}
+    from ..speak import record_jobs  # local: speak imports media
+
+    return {"status": status, "audio_ready": ready, "scoring": record_jobs.block(recording)}
 
 
 def request(profile: Profile, recording: Recording) -> tuple[dict, bool]:
@@ -68,4 +70,8 @@ def request(profile: Profile, recording: Recording) -> tuple[dict, bool]:
         created = False
         if not _audio_ready(fresh):
             _, created = jobs.enqueue(fresh, JobKind.ANALYSE, fresh.video_asset)
+        else:  # audio already there (e.g. scoring was switched on later): queue the scoring now
+            from ..speak import record_jobs
+
+            record_jobs.enqueue(fresh)
     return block(fresh), created

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { liveHits } from './scoring'
 import { useSpeech } from './speech'
-import type { SpeechResult } from './speech'
+import type { AudioParts, SpeechResult } from './speech'
 import { usePracticeLock } from './tabLock'
 import { useMediaPermissions } from './useMediaPermissions'
 
@@ -19,11 +19,13 @@ export function useTake(o: {
   /** Long passages wait longer before auto-stopping. */
   isLong?: boolean
   onFinish: (take: SpeechResult) => void
+  /** Optional PCM tap on the same mic stream (Accurate mode). */
+  audio?: { onAudio: (a: AudioParts) => void; onTeardown: () => void }
 }) {
   const { text, focusSounds = [], typed = '', isLong = false, onFinish } = o
   const mic = useMediaPermissions('microphone')
   const lock = usePracticeLock()
-  const speech = useSpeech({ onFinish })
+  const speech = useSpeech({ onFinish, ...o.audio })
   const [showGo, setShowGo] = useState(false)
 
   // Flash "GO!" the moment the mic is truly capturing, so users never start talking too early.

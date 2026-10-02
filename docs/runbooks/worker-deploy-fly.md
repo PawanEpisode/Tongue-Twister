@@ -181,3 +181,9 @@ Set `MEDIA_PROCESSING_ENABLED=0` on the API before a long pause.
 - Not verified here: the flyctl commands and flags were written from flyctl's documented behaviour without
   running them, and the image has never been built by Fly. If a flag is rejected, `fly <command> --help` wins and
   this runbook is the bug.
+
+## Enabling scoring on this worker
+Scoring is off by default (`SCORING_ENABLED = "0"` in `fly.toml`). Before turning it on: a Fly **volume** for the
+model cache (`MODEL_DIR`), at least 2 GB of memory, `ALLOWED_DOWNLOAD_HOSTS` set to the Supabase storage host, and a
+published model (`accurate-mode-rollout.md` §0-§2). The first scoring job downloads the model once (verified
+by sha-256, kept on the volume); later jobs reuse it. Rolling back is `SCORING_ENABLED=0` and a redeploy.

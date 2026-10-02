@@ -58,6 +58,8 @@ urlpatterns = [
     path("internal/media/jobs/<uuid:job_id>/heartbeat/", media.media_heartbeat),
     path("internal/media/<uuid:asset_id>/processed/", media.media_processed),
     path("engine/manifest/", speak.engine_manifest),
+    path("internal/scoring-jobs/claim/", speak.scoring_job_claim),
+    path("internal/scoring-jobs/<uuid:job_id>/heartbeat/", speak.scoring_job_heartbeat),
     path("internal/scoring-jobs/<uuid:job_id>/result/", speak.scoring_job_result),
     path("csp-report/", csp_report.csp_report, name="csp-report"),
     path("flags/", practice.feature_flags),

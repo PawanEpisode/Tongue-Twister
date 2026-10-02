@@ -30,6 +30,17 @@ on conflict (id) do update
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
+-- Acoustic models (tools/export_model, docs/features/13 section 3.1). The one PUBLIC bucket: model files are
+-- not personal data, are cached by sha-256 in browsers and workers, and are fetched straight from the CDN. Nobody
+-- but the service role (or you, in the dashboard) can write to it: there is no permissive policy for it below.
+-- Needs the Supabase Pro plan: the int8 model is ~300 MB, over the free plan's 50 MB object limit.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('models', 'models', true, 629145600, array['application/octet-stream', 'application/json'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
 -- Remove the owner-folder policies of the earlier design (they keyed on auth.uid()).
 drop policy if exists "own upload" on storage.objects;
 drop policy if exists "own read" on storage.objects;

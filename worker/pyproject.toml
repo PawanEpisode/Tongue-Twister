@@ -11,6 +11,8 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 100
+# Byte-identical copy of api/twisters/speak/engine (scripts/sync_engine.py); formatted by the API's rules.
+extend-exclude = ["twister_worker/engine"]
 target-version = "py312"
 
 [tool.ruff.lint]

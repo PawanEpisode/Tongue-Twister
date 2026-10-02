@@ -150,10 +150,39 @@ def _message(data) -> str:
     return str(data["detail"]) if isinstance(data, dict) and "detail" in data else "Request failed."
 
 
+def record_quota_hit(request, limit: str) -> None:
+    """Remember that this user ran into `limit` (evidence for the paid-plan decision). Best effort and never
+    visible to the caller: a failure here must not change the 402 they are about to get. By the time the
+    exception handler runs the request's transaction has unwound, so the row is not rolled back with it."""
+    from datetime import timedelta  # local: models import this module
+
+    from django.utils import timezone
+
+    from .models import Profile, QuotaHit
+
+    user = getattr(request, "user", None)
+    if not isinstance(user, Profile):
+        return
+    try:
+        recent = QuotaHit.objects.filter(
+            profile=user, limit=limit[:20], created_at__gt=timezone.now() - timedelta(minutes=10)
+        )
+        if not recent.exists():
+            QuotaHit.objects.create(
+                profile=user, limit=limit[:20], plan_code=str(user.plan_id or "")[:20]
+            )
+    except Exception:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).warning("quota_hit.record_failed", exc_info=True)
+
+
 def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
         return None  # unhandled → Django's 500 (never leak internals)
+    if isinstance(exc, ApiProblem) and exc.code == "quota_exceeded":
+        record_quota_hit(context.get("request"), str(exc.details.get("limit", "")))
     if isinstance(exc, ValidationError):
         code, message, details = "validation_error", "Some fields are invalid.", response.data
     else:

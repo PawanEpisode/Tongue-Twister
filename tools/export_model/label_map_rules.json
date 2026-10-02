@@ -1,0 +1,22 @@
+{
+  "_comment": "IPA label -> ARPAbet class rules for facebook/wav2vec2-lv-60-espeak-cv-ft (doc 10 section 4.1). Data, not code: review changes like any other. Labels are compared after label_map.normalise() (stress, length, tie bars, diacritics and modifier letters removed).",
+  "rules_version": 1,
+  "blank": "<pad>",
+  "classes": ["<b>", "AA", "AE", "AH", "AO", "AW", "AY", "B", "CH", "D", "DH", "DX", "EH", "ER", "EY", "F", "G", "HH", "IH", "IY", "JH", "K", "L", "M", "N", "NG", "OW", "OY", "P", "R", "S", "SH", "T", "TH", "UH", "UW", "V", "W", "Y", "Z", "ZH"],
+  "optional_classes": ["DX"],
+  "drop": ["|", " ", "<unk>", "<s>", "</s>", "<pad>", "ʔ", "ɪə", "ʊə", "eə", "ɛə", "ɔə", "ə̯"],
+  "map": {
+    "p": "P", "b": "B", "t": "T", "d": "D", "k": "K", "c": "K", "ɡ": "G", "g": "G", "q": "K",
+    "f": "F", "v": "V", "θ": "TH", "ð": "DH", "s": "S", "z": "Z", "ʃ": "SH", "ʒ": "ZH",
+    "h": "HH", "ɦ": "HH", "x": "HH", "ç": "HH", "χ": "HH",
+    "m": "M", "ɱ": "M", "n": "N", "ɲ": "N", "ɳ": "N", "ŋ": "NG",
+    "l": "L", "ɫ": "L", "ɭ": "L", "ʎ": "L", "ɬ": "L",
+    "ɹ": "R", "r": "R", "ɻ": "R", "ʁ": "R", "ɾ": "DX", "ɽ": "DX",
+    "j": "Y", "w": "W", "ʍ": "W", "β": "V", "ɣ": "G",
+    "tʃ": "CH", "dʒ": "JH", "ts": "S", "dz": "Z", "ɕ": "SH", "ʑ": "ZH", "ʂ": "SH", "ʐ": "ZH",
+    "i": "IY", "ɪ": "IH", "ɨ": "IH", "e": "EY", "ɛ": "EH", "æ": "AE", "a": "AE", "ɑ": "AA", "ɒ": "AA",
+    "ɔ": "AO", "o": "OW", "ʊ": "UH", "u": "UW", "ʉ": "UW", "ʌ": "AH", "ə": "AH", "ɐ": "AH", "ɘ": "AH",
+    "ɚ": "ER", "ɝ": "ER", "ɜ": "ER", "ɵ": "OW",
+    "aɪ": "AY", "aʊ": "AW", "eɪ": "EY", "oʊ": "OW", "əʊ": "OW", "ɔɪ": "OY", "ɑɪ": "AY", "ɐɪ": "AY", "ɛɪ": "EY", "ʌʊ": "OW"
+  }
+}

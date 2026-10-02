@@ -1,7 +1,7 @@
 import { usePracticeStarted } from '#/lib/observability/usePracticeStarted'
 import { track } from '#/lib/observability/analytics'
 import { scoreBand } from '#/lib/observability/events'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Lightbulb } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { AnimatePresence, m } from 'motion/react'
@@ -10,7 +10,7 @@ import ResultCard from '#/components/ResultCard'
 import ResultSkeleton from '#/components/results/ResultSkeleton'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
-import { api } from '#/lib/api'
+import { ApiError, api } from '#/lib/api'
 import type {
   AttemptResult,
   LowConfidenceResult,
@@ -25,6 +25,13 @@ import { useFlag } from '#/lib/flags'
 import { SCORE_VERSION, scoreLocally } from '#/lib/scoring'
 import { displayWords, problemRows, rowsFromApi } from '#/lib/speak/display'
 import { unscorableReason } from '#/lib/speak/score'
+import {
+  useAccent,
+  useAccurateEngine,
+  usePcmCapture,
+} from '#/lib/speak/accurate'
+import { runAccurate } from '#/lib/speak/accurateTake'
+import type { EncodedClip } from '#/lib/speak/engine/runtime/wav'
 import type { DisplayWord, WordRow } from '#/lib/speak/display'
 import type { SpeechResult } from '#/lib/speech'
 import { useTwisterNavigation } from '#/lib/browseContext'
@@ -35,6 +42,7 @@ import { guestQueue } from '#/lib/syncQueue'
 import { useAfter } from '#/lib/useAfter'
 import { useTake } from '#/lib/useTake'
 import { cn } from '#/lib/utils'
+import AccurateModePrompt from './AccurateModePrompt'
 import MicStage from './MicStage'
 import WordBreakdown from './WordBreakdown'
 
@@ -79,6 +87,23 @@ export default function SpeakAndScore({
 
   const showBreakdown = useFlag('speak_v2')
   const [unclear, setUnclear] = useState<string | null>(null)
+  // Accurate mode (docs/features/13): on-device scoring for signed-in users; every failure falls back to basic.
+  const accurateFlag = useFlag('accurate_mode')
+  const { engine, status } = useAccurateEngine(accurateFlag && !!session)
+  const [accent, setAccent] = useAccent()
+  const accurateReady = status.state === 'ready'
+  const pcm = usePcmCapture(accurateReady)
+  const pronunciations = useQuery({
+    queryKey: ['pronunciations', t.slug, accent],
+    queryFn: () => api.pronunciations(t.slug, accent),
+    enabled: accurateReady,
+    staleTime: 10 * 60_000,
+    retry: 1,
+  })
+  const [analysing, setAnalysing] = useState(false)
+  const [gateMessage, setGateMessage] = useState<string | null>(null)
+  /** The audio the server may ask for after this attempt (spot-check); held in memory only, dropped when done. */
+  const pendingClip = useRef<EncodedClip | null>(null)
   const display = useMemo(() => displayWords(t.text), [t.text])
 
   /**
@@ -143,6 +168,15 @@ export default function SpeakAndScore({
         notice: r.focus_gated ? GATED_NOTICE : undefined,
         breakdown: rows && { display, rows },
       })
+      const clip = pendingClip.current
+      pendingClip.current = null
+      if (clip && r.id && r.spot_check?.requested)
+        void import('#/lib/speak/engine/runtime/spotCheck').then((mod) =>
+          mod.sendSpotCheck(
+            { api, upload: mod.browserTusUpload },
+            { attemptId: r.id!, clip, expiresAt: r.spot_check?.expires_at },
+          ),
+        )
       announceAchievements(r.achievements_unlocked)
       void invalidateProgress(qc)
       void qc.invalidateQueries({ queryKey: ['history'] })
@@ -192,16 +226,52 @@ export default function SpeakAndScore({
         }).score,
       },
     }
-    submit.mutate(body, {
-      onError: (err) => {
-        // Unreachable or throttled: keep it and replay later (the server de-duplicates on the id).
-        if (isTransient(err)) {
-          // Only queue a take the server would have accepted (it rejects unclear ones anyway).
-          if (showLocal(spoken, timing, meta.confidence, unsavedReason(err)))
-            attemptQueue.add(session.user.id, body)
-        } else showLocal(spoken, timing, meta.confidence, UNSAVED_NOTICE)
-      },
-    })
+    // `body` is always the basic (text-layer) attempt: the fallback for anything that goes wrong on-device.
+    const send = (attempt: SubmitAttemptBody) =>
+      submit.mutate(attempt, {
+        onError: (err) => {
+          if (
+            attempt.engine === 'ondevice' &&
+            err instanceof ApiError &&
+            err.code === 'model_unsupported'
+          ) {
+            // Kill switch or retired model: basic scoring for the rest of this session.
+            engine?.markServerOff()
+            pendingClip.current = null
+            send(body)
+            return
+          }
+          pendingClip.current = null
+          // Unreachable or throttled: keep it and replay later (the server de-duplicates on the id).
+          if (isTransient(err)) {
+            // Only queue a take the server would have accepted (it rejects unclear ones anyway).
+            if (showLocal(spoken, timing, meta.confidence, unsavedReason(err)))
+              attemptQueue.add(session.user.id, body)
+          } else showLocal(spoken, timing, meta.confidence, UNSAVED_NOTICE)
+        },
+      })
+    const captured = pcm.take()
+    if (engine && accurateReady) {
+      setAnalysing(true)
+      void runAccurate({
+        engine,
+        captured,
+        pronunciations: pronunciations.data,
+        textBody: body,
+      })
+        .then((out) => {
+          setAnalysing(false)
+          if (out.kind === 'gate') return setGateMessage(out.message)
+          if (out.kind === 'device') pendingClip.current = out.clip
+          send(out.kind === 'device' ? out.body : body)
+        })
+        .catch(() => {
+          setAnalysing(false)
+          send(body)
+        })
+      return
+    }
+    send(body)
   }
 
   // A typed answer survives a sign-in round-trip (Google redirect) in this tab.
@@ -219,6 +289,7 @@ export default function SpeakAndScore({
     typed,
     isLong,
     onFinish: (r) => finish(r.transcript, r.durationMs, r),
+    audio: accurateReady ? pcm : undefined,
   })
   const { speech, hits, matched, currentIdx, arming, live } = take
   usePracticeStarted('speak_score', live)
@@ -235,6 +306,7 @@ export default function SpeakAndScore({
   const retry = () => {
     setResult(null)
     setUnclear(null)
+    setGateMessage(null)
     setTyped('')
     typedStart.current = 0
     speech.reset()
@@ -295,8 +367,18 @@ export default function SpeakAndScore({
               </p>
             )}
           </div>
-        ) : submit.isPending ? (
+        ) : submit.isPending || analysing ? (
           <ResultSkeleton key="s" slow={slowScore} />
+        ) : gateMessage ? (
+          <div key="g" role="alert" className="mx-auto max-w-md">
+            <h2 className="text-2xl font-bold">Let’s try that again</h2>
+            <p className="mt-2 text-muted-foreground">
+              {gateMessage} Nothing was scored or saved.
+            </p>
+            <Button className="mt-5 px-6 py-3" onClick={retry}>
+              Try again
+            </Button>
+          </div>
         ) : unclear ? (
           <div key="u" role="alert" className="mx-auto max-w-md">
             <h2 className="text-2xl font-bold">We couldn’t hear you clearly</h2>
@@ -365,6 +447,15 @@ export default function SpeakAndScore({
             )}
 
             <MicStage take={take} onReadAlong={onReadAlong} />
+
+            {!live && !arming && (
+              <AccurateModePrompt
+                engine={engine}
+                status={status}
+                accent={accent}
+                onAccent={setAccent}
+              />
+            )}
 
             {!speech.supported && (
               <form

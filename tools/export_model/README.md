@@ -82,6 +82,22 @@ pip install -r requirements.txt                           # torch, transformers,
 python export_model.py --backend fake --out /tmp/fake-out && python export_model.py --verify /tmp/fake-out/w2v-espeak-lv60-int8-r1
 ```
 
+## Benchmark the exported model
+
+```bash
+pip install onnxruntime numpy
+python3 tools/export_model/benchmark.py out/<name>/<model>.onnx --threads 1,2,4 --check
+python3 tools/export_model/benchmark.py out/<name>/<model>.onnx --json bench.json   # keep for the record
+```
+
+Prints size and sha-256, load time, latency per clip length and thread count (median, p95, worst, ms per second of
+audio, real-time factor), a 15 s estimate against the exit gate (median <= 3 s, worst <= 8 s) and peak memory.
+`--check` exits 1 if any thread count breaks the gate. This is the **native CPU** number: the browser runs the model
+through WebAssembly, normally single-threaded, typically 2-4x slower, so the per-device answer comes from the
+benchmark card at `/dev/calibrate`. The clips are synthetic (latency depends on length, not content); never read
+accuracy from this tool. Tests need no onnxruntime (fake session and clock); one test runs the real library
+against `web/e2e/fixtures/tiny-ctc.onnx` when it is installed.
+
 ## Tests
 
 ```bash

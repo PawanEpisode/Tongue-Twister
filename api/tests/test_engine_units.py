@@ -44,12 +44,15 @@ def test_verdict_constants_match_models():
 
 
 def test_engine_is_not_wired_into_speak_mode():
+    # Only the scoring-job payload builder (variants) and the scoring shim may import it (doc 13 §3.4).
     root = Path(__file__).parents[1] / "twisters"
     pattern = re.compile(r"speak\.engine\b|from \.engine|from \.\.speak\.engine\b|import engine\b")
     offenders = [
         str(p.relative_to(root))
         for p in root.rglob("*.py")
-        if "engine" not in p.parts and pattern.search(p.read_text())
+        if "engine" not in p.parts
+        and p.relative_to(root).as_posix() not in {"speak/jobs.py", "speak/scoring.py"}
+        and pattern.search(p.read_text())
     ]
     assert offenders == []
 
@@ -409,3 +412,46 @@ def test_bench_edits_change_the_realised_sounds():
         == len([i for i in plain if i.phone]) + 4
     )
     assert realise(PAIR, [Edit("skip_word", 0)])[0].phone == "SH"
+
+
+# --- vendoring guarantees (docs/features/13 D37) -----------------------------------------------------
+
+
+def test_score_constants_match_the_django_enums():
+    from twisters.speak.engine import score as s
+
+    assert set(s.STATUSES) == {x.value for x in WordStatus}
+    assert s.FOCUS_SWAP == WordReason.FOCUS_SWAP.value
+    assert {k: v for k, v in s.CREDIT.items()} == {
+        WordStatus.CORRECT.value: 1.0,
+        WordStatus.NEAR.value: 0.6,
+        WordStatus.WRONG.value: 0.0,
+        WordStatus.MISSED.value: 0.0,
+        WordStatus.EXTRA.value: -0.15,
+    }
+
+
+def test_the_engine_package_does_not_import_django():
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; import twisters.speak.engine, twisters.speak.engine.score;"
+        "sys.exit(1 if any(m == 'django' or m.startswith('django.') for m in sys.modules) else 0)"
+    )
+    root = Path(__file__).parents[1]
+    done = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+
+
+def test_a_long_read_is_scored_within_the_cpu_budget():
+    """Perf guard (docs/features/13 §3.1): the neighbourhood-local tests keep a 64-word read fast."""
+    import time
+
+    words = PHRASE * 16
+    vocab = sorted({p for w in words for v in w.variants for p in v})
+    post = synthesise(realise(words, [Edit("sub", 1, 0, "SH")]), vocab, noise=0.3)
+    started = time.perf_counter()
+    result = assess(post, words, focus={"S", "SH"})
+    assert time.perf_counter() - started < 2.0
+    assert not result.unscorable

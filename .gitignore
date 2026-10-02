@@ -3,3 +3,27 @@
 .vscode/
 node_modules/
 .husky/_
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Model exports and downloads (hundreds of MB; published to storage, never committed)
+tools/export_model/out/
+tools/export_model/.cache/
+*.onnx
+*.onnx_data
+!web/e2e/fixtures/*.onnx
+*.safetensors
+.hf-cache/
+.cache/huggingface/
+
+# Local env and secrets
+.env
+.env.local
+!.env.example

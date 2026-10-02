@@ -20,6 +20,7 @@ import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as DevCalibrateRouteImport } from './routes/dev.calibrate'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as TwistersIndexRouteImport } from './routes/twisters.index'
@@ -81,6 +82,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevCalibrateRoute = DevCalibrateRouteImport.update({
+  id: '/dev/calibrate',
+  path: '/dev/calibrate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
   '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
   '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
   '/s/$token': typeof STokenRoute
   '/twisters/$slug': typeof TwistersSlugRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
+    | '/dev/calibrate'
     | '/r/$token'
     | '/s/$token'
     | '/twisters/$slug'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
+    | '/dev/calibrate'
     | '/r/$token'
     | '/s/$token'
     | '/twisters/$slug'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
+    | '/dev/calibrate'
     | '/r/$token'
     | '/s/$token'
     | '/twisters/$slug'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  DevCalibrateRoute: typeof DevCalibrateRoute
   RTokenRoute: typeof RTokenRoute
   STokenRoute: typeof STokenRoute
   TwistersSlugRoute: typeof TwistersSlugRoute
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/calibrate': {
+      id: '/dev/calibrate'
+      path: '/dev/calibrate'
+      fullPath: '/dev/calibrate'
+      preLoaderRoute: typeof DevCalibrateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/r/$token': {
       id: '/r/$token'
       path: '/r/$token'
@@ -367,6 +387,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  DevCalibrateRoute: DevCalibrateRoute,
   RTokenRoute: RTokenRoute,
   STokenRoute: STokenRoute,
   TwistersSlugRoute: TwistersSlugRoute,

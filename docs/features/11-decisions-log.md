@@ -127,6 +127,33 @@ The user's topic is data: control and invisible characters are stripped, it is c
 ## D32 - Reminders are email only; web-push and NotificationChannel are dropped
 The 06d plan listed `NotificationChannel`, `PUT /me/notifications/` and web-push. They are dropped: D27's `ReminderPreference` plus a one-click unsubscribe covers the need with one channel, no service worker, no push subscriptions to store or expire, and no extra consent surface. Revisit only if e-mail open rates show reminders are not landing and users ask for push.
 
+## D33 - Engine tests run on a neighbourhood, not the whole clip
+Substitution and deletion tests use the tested word plus its placed neighbours (union of their windows) and a base probability computed once per neighbourhood. Measured on a 65-word, 15 s read: 19.3 s to 0.05 s with the same score. Python and TypeScript changed together and `engine_vectors.json` was regenerated (D31 still holds). Detail: `13` §3.1.
+
+## D34 - A spot-check asks for audio, the client supplies it
+The server picks the attempt (about 10 %, plus personal bests at or above 90), answers `spot_check.requested`, and the client uploads the clip (consent `voice_processing`, 13+) within 30 minutes and attaches it. No audio means no check: the attempt stays `device`. A job is only ever queued with audio attached. `13` §3.3.
+
+## D35 - Only inflation and false credit are tampering
+Flag when the device score exceeds the worker's by more than `SPOT_CHECK_MAX_DELTA`, or when a focus word the device credited is `wrong/focus_swap` on the worker. A device that was harsher than the worker is verified and logged for calibration. An unusable or mismatched clip is inconclusive, never a flag. `13` §3.4.
+
+## D36 - Scoring jobs use the media queue design
+Conditional-UPDATE claim with `SKIP LOCKED`, leases with heartbeats, `max_tries` 3, a partial unique index for one active job per attempt and kind, and a lease sweeper. Same operational model as `MediaJob`, so one runbook mental model covers both.
+
+## D37 - The engine is Django-free and vendored into the worker
+Score v2 lives in `engine/score.py` with plain string constants (a test pins them to the enums). The worker holds a copy produced by `worker/scripts/sync_engine.py`; a test fails if it drifts. No shared package, no build context change for Fly.
+
+## D38 - The worker verifies the audio it scores
+sha-256, size, duration within 10 % of the attempt and a maximum length (90 s) are checked before inference. Failures are `audio_mismatch` / `audio_too_long` and count as inconclusive.
+
+## D39 - A model is identified by its hash everywhere
+Manifest, browser cache, worker cache and every `Attempt.model_version` carry the file's sha-256; a mismatch is rejected before use. Rollback is deactivating the row; kill switches are ordered in `13` §6.
+
+## D40 - The flap has its own class
+`ɾ` maps to a heard-only class `DX`, not `R`. Accent packs decide what it may stand for (en-US: T or D between vowels, en-IN: R). The label-map tool fails on any vocabulary label that is neither mapped nor explicitly dropped.
+
+## D41 - Spot-check audio is deleted when the job settles
+Unless the user separately chose to keep the take (existing voice-clip rules), the clip is purged on `done`, `failed` or `expired`. Withdrawing `voice_processing` consent expires queued jobs. Under-13 accounts never reach this path.
+
 ---
 
 ## Still genuinely open (need real data, not more docs)

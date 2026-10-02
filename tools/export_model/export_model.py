@@ -10,6 +10,8 @@ onnxruntime lazily (see requirements.txt).
 Output layout (`--out`/<name>/):
     <name>.onnx        the model to publish (int8 when --quantize int8, else fp32)
     vocab.json         the model's label vocabulary (input to the label-map generator, doc 10 section 4.1)
+    label_map.json     raw IPA label -> ARPAbet class table the engine needs (label_map.py); published next to the
+                       model, so `jobs.label_map_url` = dirname(download_url) + /label_map.json
     manifest.json      see MANIFEST_SCHEMA below; `model` maps 1:1 to the AcousticModelVersion fields
     SHA256SUMS         `sha256sum -c` compatible
 """
@@ -27,9 +29,11 @@ import shutil
 import sys
 import tempfile
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
+
+import label_map
 
 TOOL_VERSION = "1.0.0"
 MANIFEST_SCHEMA = 1
@@ -96,6 +100,8 @@ class FakeBackend:
 
     "Models" are small files; inference returns deterministic frames so the sanity checks run for real.
     """
+
+    partial_vocab = True  # eight labels cannot cover the phone inventory: skip that check in label_map
 
     def __init__(self, vocab_size: int = 8, fp32_bytes: int = 4096, int8_ratio: float = 0.3) -> None:
         self.vocab_size = vocab_size
@@ -292,7 +298,7 @@ def check_inference(inf: Inference, n_samples: int, vocab: dict[str, int]) -> li
 
 def agreement(a: list[int], b: list[int]) -> float:
     n = min(len(a), len(b))
-    return sum(1 for x, y in zip(a[:n], b[:n], strict=True) if x == y) / n if n else 0.0
+    return sum(1 for x, y in zip(a[:n], b[:n]) if x == y) / n if n else 0.0
 
 
 def file_entry(path: Path, role: str, base: Path) -> dict[str, Any]:
@@ -331,10 +337,15 @@ def build_manifest(
         "download_url": url,
         "label_map_version": label_map_version,
     }
+    files = [model_entry] + [file_entry(p, role, out_dir) for p, role in other_files]
+    labels = next((f for f in files if f["role"] == "label_map"), None)
     return {
         "schema": MANIFEST_SCHEMA,
         "model": model,
-        "files": [model_entry] + [file_entry(p, role, out_dir) for p, role in other_files],
+        "label_map": (
+            {"version": label_map_version, "path": labels["path"], "sha256": labels["sha256"]} if labels else None
+        ),
+        "files": files,
         "input": {"name": "input_values", "shape": ["batch", "samples"], **info.preprocess},
         "output": {
             "name": "logits",
@@ -344,7 +355,7 @@ def build_manifest(
         },
         "export": {
             "tool_version": TOOL_VERSION,
-            "created_at": (now or datetime.now(UTC)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "created_at": (now or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source_revision": info.revision,
             "opset": opset,
             "host": f"{platform.system()} {platform.machine()}",
@@ -373,6 +384,13 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     if len(str(model.get("label_map_version", ""))) > LABEL_MAP_VERSION_MAX:
         problems.append("model.label_map_version too long")
     files = manifest.get("files") or []
+    declared = manifest.get("label_map")
+    if declared:
+        listed = next((f for f in files if f.get("role") == "label_map"), None)
+        if listed is None or listed.get("sha256") != declared.get("sha256"):
+            problems.append("label_map block and files[] disagree")
+        if declared.get("version") != model.get("label_map_version"):
+            problems.append("label_map.version differs from model.label_map_version")
     if not files or files[0].get("role") != "model":
         problems.append("files[0] must be the model")
     elif files[0].get("sha256") != model.get("sha256") or files[0].get("size_bytes") != model.get(
@@ -397,6 +415,14 @@ def verify_directory(directory: Path) -> list[str]:
             problems.append(f"{entry['path']} size differs from the manifest")
         elif sha256_file(path) != entry["sha256"]:
             problems.append(f"{entry['path']} checksum differs from the manifest")
+    vocab_file, map_file = directory / "vocab.json", directory / "label_map.json"
+    if vocab_file.is_file() and map_file.is_file():
+        try:
+            problems += label_map.check(
+                json.loads(map_file.read_text("utf-8")), json.loads(vocab_file.read_text("utf-8"))
+            )
+        except ValueError as exc:
+            problems.append(f"label_map.json / vocab.json unreadable: {exc}")
     return problems
 
 
@@ -427,6 +453,7 @@ class Options:
     keep_fp32: bool = False
     force: bool = False
     dry_run: bool = False
+    label_map_overrides: Path | None = None
 
     @property
     def quantization(self) -> str:
@@ -478,7 +505,8 @@ def plan(opts: Options) -> list[str]:
         f"size check: {opts.quantization} must be {lo:g}-{hi:g} MB"
         + (f", int8 < {MAX_INT8_TO_FP32_RATIO:.0%} of fp32" if opts.quantization == "int8" else ""),
         f"sanity inference on {SANITY_SECONDS:g} s synthetic audio (finite, ~{expected_frames(int(SANITY_SECONDS * SAMPLE_RATE))} frames, vocab matches)",
-        "write vocab.json, manifest.json, SHA256SUMS",
+        "generate label_map.json from the vocab (stops on any label without a rule, or any unreachable phone)",
+        "write vocab.json, label_map.json, manifest.json, SHA256SUMS",
     ]
     return steps
 
@@ -560,7 +588,25 @@ def run_export(opts: Options, backend: Backend, log=print) -> dict[str, Any]:
 
         vocab_path = stage / "vocab.json"
         vocab_path.write_text(json.dumps(info.vocab, ensure_ascii=False, indent=2, sort_keys=True) + "\n", "utf-8")
-        others: list[tuple[Path, str]] = [(vocab_path, "vocab")]
+        overrides = None
+        if opts.label_map_overrides:
+            try:
+                overrides = json.loads(opts.label_map_overrides.read_text("utf-8"))
+            except (OSError, ValueError) as exc:
+                raise ExportError(f"cannot read --label-map-overrides: {exc}") from exc
+        try:
+            built = label_map.build(
+                info.vocab,
+                version=opts.label_map_version,
+                overrides=overrides,
+                require_coverage=not getattr(backend, "partial_vocab", False),
+            )
+        except label_map.LabelMapError as exc:
+            raise ExportError(f"label map: {exc}") from exc
+        map_path = stage / "label_map.json"
+        map_path.write_text(json.dumps(built, ensure_ascii=False, indent=2) + "\n", "utf-8")
+        checks["label_map"] = {"mapped": len(built["map"]), "dropped": len(built["drop"])}
+        others: list[tuple[Path, str]] = [(vocab_path, "vocab"), (map_path, "label_map")]
         if opts.quantization == "int8" and opts.keep_fp32:
             others.append((fp32_path, "fp32-intermediate"))
         elif opts.quantization == "int8":
@@ -630,6 +676,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--licence", default="Apache-2.0", help="verify against the model card (doc 10 sec 1)")
     p.add_argument("--base-url", default="", help="https://.../ prefix where you will upload; fills download_url")
     p.add_argument("--label-map-version", default="lm1")
+    p.add_argument("--label-map-overrides", type=Path, default=None, help="JSON {map:{label:CLASS}, drop:[label]}")
     p.add_argument("--size-range-mb", type=parse_size_range, default=None, help="MIN,MAX override")
     p.add_argument("--keep-fp32", action="store_true", help="keep and list the fp32 file next to the int8 one")
     p.add_argument("--force", action="store_true", help="replace an existing output directory")
@@ -655,6 +702,7 @@ def options_from_args(a: argparse.Namespace) -> Options:
         keep_fp32=a.keep_fp32,
         force=a.force,
         dry_run=a.dry_run,
+        label_map_overrides=a.label_map_overrides,
     )
 
 

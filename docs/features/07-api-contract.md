@@ -425,3 +425,13 @@ The report-only CSP on JSON responses now ends with `report-uri /api/v1/csp-repo
 ### Export size guard
 
 `GET /me/export/` is limited by `EXPORT_MAX_ATTEMPTS` (now documented as an env setting, default 20000) **and** `EXPORT_MAX_BYTES` (new, default 4,000,000): Vercel Functions reject response bodies over 4.5 MB. `attempts` is written after every other section and takes the remaining byte budget, newest first; when a row would not fit the array is closed and `truncated: true`. `truncated` is now the last key of the document (it is only known at the end); JSON consumers are unaffected. `schema_version` stays 1.
+
+## 14. Speech engine endpoints as built (A1-A5)
+
+* `GET /engine/manifest/` — `{model|null, scoring_profile|null, lexicon_version, score_version}`; `null` model while `accurate_mode` is off or none is published.
+* `GET /twisters/{slug}/pronunciations/?lang=en-US|en-GB|en-IN|en-AU` — the twister's words with every accepted pronunciation, accent rules applied (what the browser engine scores against).
+* `POST /attempts/` — device fields `engine:"ondevice"`, `engine_version`, `model_version`, `scoring_profile`, `nonce`, `audio_sha256`, `quality` (≤ 12 scalar keys), `words[{i,target,status,reason?,start_ms,end_ms,phonemes[{t,verdict,heard?,delta,lpp,lpr,start_ms,end_ms}]}]`. `422 model_unsupported` tells the client to resend as basic scoring. The response may carry `spot_check:{requested, expires_at}`.
+* Spot-check clip: `POST /voice/ {purpose:"spot_check", attempt:<numeric id>, …}` → `{voice_asset_id (UUID), status, expires_at, upload, quota}` → tus upload → `POST /voice/{uuid}/complete/ {checksum_sha256}` → `POST /attempts/{id}/spot-check-audio/ {voice_asset_id}` (202 job summary; 409 `no_request`/`expired`/`model_retired`).
+* `GET /recordings/{id}/` — `analysis` is now `{status, audio_ready, scoring:{status, reason}}` (doc 13 §14).
+* Internal (HMAC): `POST /internal/scoring-jobs/claim/`, `…/{id}/heartbeat/`, `…/{id}/result/`. `kind` is `spot_check` or `record`; a `record` result carries full `words[]` with phonemes and `duration_ms`, a `spot_check` result carries `{i,status,reason}` only.
+* Errors with a stable `code`: `model_unsupported` (422), `no_request` / `expired` / `model_retired` (409), `lease_lost` (409), `nonce_invalid`, `audio_hash_duplicate` (409), `quota_exceeded` (402, `details.limit`).

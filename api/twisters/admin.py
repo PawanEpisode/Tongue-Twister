@@ -90,9 +90,9 @@ class AcousticModelVersionAdmin(admin.ModelAdmin):
 
 @admin.register(ScoringJob)
 class ScoringJobAdmin(admin.ModelAdmin):
-    list_display = ["created_at", "kind", "status", "tries", "attempt"]
+    list_display = ["created_at", "kind", "status", "tries", "attempt", "recording"]
     list_filter = ["kind", "status"]
-    raw_id_fields = ["attempt"]
+    raw_id_fields = ["attempt", "recording"]
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):

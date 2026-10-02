@@ -8,6 +8,8 @@ PERMANENT_CODES = frozenset(
         "job_invalid",
         "output_too_large",
         "output_empty",
+        "label_map_invalid",
+        "model_mismatch",
     }
 )
 

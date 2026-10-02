@@ -134,4 +134,18 @@ jobs:
       - run: uv pip install -r requirements-dev.txt
       - run: uv run ruff check
       - run: uv run ruff format --check
+      - run: uv run python scripts/sync_engine.py --check
       - run: uv run python -m pytest
+
+  # Offline model tooling: the ONNX export helpers and the gold-set calibration/fairness report. Standard
+  # library plus pytest only (no torch, no weights), so this is fast and needs no secrets.
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest
+      - run: python -m pytest tools/export_model/tests
+      - run: python -m pytest tools/calibrate/tests

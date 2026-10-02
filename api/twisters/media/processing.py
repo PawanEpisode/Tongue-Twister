@@ -324,8 +324,21 @@ def _finish_ready(
             return unused, False
         recording.audio_asset = asset
         recording.save(update_fields=["audio_asset"])
+        _queue_record_scoring(recording)
     jobs.mark_done(job)
     return unused, False
+
+
+def _queue_record_scoring(recording: Recording) -> None:
+    """A5: the analysis audio is ready, so ask for it to be scored. Best effort inside the caller's transaction
+    (its own savepoint): a scoring problem must never fail the analysis job."""
+    from ..speak import record_jobs
+
+    try:
+        with transaction.atomic():
+            record_jobs.enqueue(recording)
+    except Exception:  # noqa: BLE001
+        log.exception("record_scoring.enqueue_failed recording=%s", recording.pk)
 
 
 def apply_processed(asset: MediaAsset, body: dict) -> tuple[MediaJob, bool]:

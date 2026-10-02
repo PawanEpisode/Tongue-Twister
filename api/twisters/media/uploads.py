@@ -393,11 +393,33 @@ def finalize_upload(
 # --- voice clips --------------------------------------------------------------------------------
 
 
+SPOT_CHECK_FLAG = "spot_checks"
+
+
+def require_spot_check_upload(profile: Profile) -> None:
+    """Gates for the short-lived clip a spot-check needs (docs/features/13 §3.3): the spot-check kill
+    switch, age (D6) and `voice_processing` consent. Deliberately not the `record_cloud` / `voice_storage`
+    gates: this clip is deleted when the check settles (D41) and is never offered for playback."""
+    if not flags.enabled(SPOT_CHECK_FLAG, profile):
+        raise errors.feature_disabled("Verification is not available right now.")
+    consent.require_adult(profile)
+    consent.require(profile, ConsentType.VOICE_PROCESSING)
+
+
 def create_voice(
-    profile: Profile, *, mime_type: str, size_bytes: int, duration_ms: int
+    profile: Profile,
+    *,
+    mime_type: str,
+    size_bytes: int,
+    duration_ms: int,
+    spot_check: bool = False,
 ) -> MediaAsset:
-    """Reserve an opt-in cloud copy of a Speak & score clip (auto-expires; ERD 06c)."""
-    require_cloud(profile, ConsentType.VOICE_STORAGE)
+    """Reserve an opt-in cloud copy of a Speak & score clip (auto-expires; ERD 06c), or, with
+    ``spot_check``, the temporary clip a worker re-scores (expires in `SPOT_CHECK_AUDIO_TTL_H`)."""
+    if spot_check:
+        require_spot_check_upload(profile)
+    else:
+        require_cloud(profile, ConsentType.VOICE_STORAGE)
     with transaction.atomic():
         locked = quota.lock_profile(profile)
         limits = quota.limits_for(locked)
@@ -412,7 +434,12 @@ def create_voice(
             size_bytes=size_bytes,
             max_bytes=limits.voice_clip_bytes_max,
             duration_ms=duration_ms,
-            expires_at=timezone.now() + dt.timedelta(days=settings.VOICE_RETENTION_DAYS),
+            expires_at=timezone.now()
+            + (
+                dt.timedelta(hours=settings.SPOT_CHECK_AUDIO_TTL_H)
+                if spot_check
+                else dt.timedelta(days=settings.VOICE_RETENTION_DAYS)
+            ),
         )
 
 

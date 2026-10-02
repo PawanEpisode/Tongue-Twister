@@ -27,6 +27,14 @@ export type ScoringProfile = {
   extraMinPhones: number
   blankRatioMax: number
   longPauseMs: number
+  // Quality gates (docs/features/13 section 3.7; engine/quality.ts). Placeholders until A3 calibrates them.
+  gateMinLoudDbfs: number
+  gateMinSnrDb: number
+  gateMaxClipShare: number
+  gateMinSampleRate: number
+  gateMinSpeechShare: number
+  gateMaxEntropy: number
+  gateEntropyShare: number
 }
 
 export const DEFAULT_PROFILE: ScoringProfile = {
@@ -41,6 +49,41 @@ export const DEFAULT_PROFILE: ScoringProfile = {
   extraMinPhones: 3,
   blankRatioMax: 0.95,
   longPauseMs: 700,
+  gateMinLoudDbfs: -45,
+  gateMinSnrDb: 12,
+  gateMaxClipShare: 0.01,
+  gateMinSampleRate: 16000,
+  gateMinSpeechShare: 0.4,
+  gateMaxEntropy: 3,
+  gateEntropyShare: 0.5,
+}
+
+const INTEGER_KEYS = new Set([
+  'padFrames',
+  'peakRadius',
+  'extraMinPhones',
+  'longPauseMs',
+  'gateMinSampleRate',
+])
+const snakeToCamel = (k: string) =>
+  k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+
+/**
+ * A profile from the server's `thresholds` JSON (snake_case, the Python field names). Unknown keys, booleans
+ * and non-finite numbers are ignored, never trusted: the defaults fill every gap.
+ */
+export function profileFromThresholds(
+  thresholds: Record<string, unknown> | null | undefined,
+  name = DEFAULT_PROFILE.name,
+): ScoringProfile {
+  const out: Record<string, unknown> = { ...DEFAULT_PROFILE, name }
+  for (const [key, value] of Object.entries(thresholds ?? {})) {
+    const camel = snakeToCamel(key)
+    if (camel === 'name' || !(camel in DEFAULT_PROFILE)) continue
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
+    out[camel] = INTEGER_KEYS.has(camel) ? Math.trunc(value) : value
+  }
+  return out as ScoringProfile
 }
 
 export type PhonemeResult = {

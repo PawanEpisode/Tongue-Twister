@@ -6,53 +6,44 @@ from django.db import transaction
 from django.utils import timezone
 
 from twisters.models import Attempt, Profile, ScoringJob, Verification
-from twisters.speak import stats
-
-MAX_JOBS = 2  # the first dispatch plus one retry (ERD 06b "Pending retry")
+from twisters.speak import jobs, stats
 
 
 class Command(BaseCommand):
     help = (
-        "Attempts stuck in `pending` longer than PENDING_RETRY_AFTER_MIN get one more spot-check job; "
-        "after that they become `failed` and the device result stands."
+        "Scoring-queue housekeeping: lapsed leases are re-queued or failed, jobs that can never run are expired, "
+        "audio requests nobody answered are closed, and attempts left `pending` with no active job for "
+        "PENDING_RETRY_AFTER_MIN become `failed` (the device result stands)."
     )
 
     def handle(self, **_):
+        swept = jobs.sweep()
         cutoff = timezone.now() - dt.timedelta(minutes=settings.PENDING_RETRY_AFTER_MIN)
-        retried = gave_up = 0
+        gave_up = 0
         pending = Attempt.objects.filter(
             verification_status=Verification.PENDING, created_at__lt=cutoff
-        ).select_related("model_version")
-        for attempt in pending.iterator():
+        )
+        for attempt_id in list(pending.values_list("pk", flat=True)):
             with transaction.atomic():
-                jobs = list(attempt.scoring_jobs.select_for_update().order_by("created_at"))
-                open_jobs = [
-                    j
-                    for j in jobs
-                    if j.status in (ScoringJob.Status.QUEUED, ScoringJob.Status.RUNNING)
-                ]
-                if any(j.created_at >= cutoff for j in jobs):
-                    continue  # a job is still inside its window
-                for job in open_jobs:
-                    job.status = ScoringJob.Status.EXPIRED
-                    job.finished_at = timezone.now()
-                    job.save(update_fields=["status", "finished_at"])
-                model = jobs[-1].model_version if jobs else attempt.model_version
-                if len(jobs) < MAX_JOBS and model is not None:
-                    ScoringJob.objects.create(
-                        attempt=attempt,
-                        kind=ScoringJob.Kind.SPOT_CHECK,
-                        model_version=model,
-                        audio_asset_id=jobs[-1].audio_asset_id if jobs else None,
-                        tries=len(jobs),
-                    )
-                    retried += 1
-                else:
-                    attempt.verification_status = Verification.FAILED
-                    attempt.save(update_fields=["verification_status"])
-                    stats.rebuild_twister_stats(
-                        Profile.objects.select_for_update().get(pk=attempt.profile_id),
-                        attempt.twister,
-                    )
-                    gave_up += 1
-        self.stdout.write(self.style.SUCCESS(f"Retried {retried}, gave up on {gave_up}."))
+                attempt = (
+                    Attempt.objects.select_for_update(of=("self",))
+                    .select_related("twister")
+                    .get(pk=attempt_id)
+                )
+                if attempt.verification_status != Verification.PENDING:
+                    continue
+                if attempt.scoring_jobs.filter(status__in=ScoringJob.ACTIVE).exists():
+                    continue  # a job is still queued or running: the lease sweep owns it
+                attempt.verification_status = Verification.FAILED
+                attempt.save(update_fields=["verification_status"])
+                stats.rebuild_twister_stats(
+                    Profile.objects.select_for_update().get(pk=attempt.profile_id),
+                    attempt.twister,
+                )
+                gave_up += 1
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Re-queued {swept.requeued}, failed {swept.failed}, expired {swept.expired}, "
+                f"closed {swept.requests_closed} requests, gave up on {gave_up} attempts."
+            )
+        )

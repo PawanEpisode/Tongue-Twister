@@ -7,6 +7,7 @@ const PAIRS: [string, string][] = [
   ['B', 'G'], ['T', 'TH'], ['D', 'DH'], ['M', 'N'], ['N', 'NG'], ['M', 'NG'], ['R', 'L'],
   ['W', 'V'], ['R', 'W'], ['IY', 'IH'], ['EH', 'IH'], ['EH', 'AE'], ['AA', 'AO'], ['UW', 'UH'],
   ['AH', 'AA'], ['AO', 'OW'], ['AH', 'UH'],
+  ['T', 'DX'], ['D', 'DX'], ['R', 'DX'], // D40: the American flap is heard-only
 ] // prettier-ignore
 
 const NEIGHBOURS = new Map<string, Set<string>>()

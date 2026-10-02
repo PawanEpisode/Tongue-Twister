@@ -52,6 +52,26 @@ class ApiClient:
     def report(self, asset_id: str, payload: dict[str, Any]) -> None:
         self._post(f"/internal/media/{asset_id}/processed/", payload)
 
+    # -- scoring jobs (docs/features/13 §3.4) ---------------------------------------------------
+    def claim_scoring(self, cancel: threading.Event | None = None) -> dict[str, Any] | None:
+        data = self._post(
+            "/internal/scoring-jobs/claim/", {"worker_id": self._settings.worker_id}, cancel
+        )
+        job = data.get("job")
+        return job if isinstance(job, dict) else None
+
+    def heartbeat_scoring(self, job_id: str) -> bool:
+        try:
+            self._post(f"/internal/scoring-jobs/{job_id}/heartbeat/", {}, attempts=2)
+        except ApiError as exc:
+            return exc.status not in (404, 409, 410)
+        except (TransientError, httpx.TransportError):
+            return True
+        return True
+
+    def report_scoring(self, job_id: str, payload: dict[str, Any]) -> None:
+        self._post(f"/internal/scoring-jobs/{job_id}/result/", payload)
+
     def _post(
         self,
         path: str,

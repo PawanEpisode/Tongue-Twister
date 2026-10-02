@@ -27,7 +27,7 @@ from ..models import (
 )
 from ..practice import flags
 from ..progress.serializers import unlocked_payload
-from . import device, service
+from . import device, jobs, service
 from .normalise import tokenise
 
 log = logging.getLogger(__name__)
@@ -413,6 +413,16 @@ def profile_summary(profile: Profile) -> dict:
     }
 
 
+def spot_check_block(attempt: Attempt) -> dict:
+    """Tells the client whether the server wants this attempt's audio for verification (D34)."""
+    if jobs.request_open(attempt):
+        return {
+            "requested": True,
+            "expires_at": attempt.spot_check_requested_at + jobs.audio_window(),
+        }
+    return {"requested": False, "expires_at": None}
+
+
 def result_body(result: service.Result, profile: Profile, *, include_words: bool = True) -> dict:
     """The POST /attempts/ response for a saved attempt (201, or 200 on an idempotent replay)."""
     attempt = result.attempt
@@ -427,6 +437,7 @@ def result_body(result: service.Result, profile: Profile, *, include_words: bool
         "low_confidence": False,
         "warning": result.warning,
         "profile": profile_summary(profile),
+        "spot_check": spot_check_block(attempt),
     }
     if include_words:
         words = attempt.words.all().prefetch_related("phonemes")
@@ -447,6 +458,10 @@ def low_confidence_body(reason: str) -> dict:
         "xp_awarded": 0,
         "words": [],
     }
+
+
+class SpotCheckAudioSerializer(serializers.Serializer):
+    voice_asset_id = serializers.UUIDField()
 
 
 class FeedbackSerializer(serializers.ModelSerializer):

@@ -145,6 +145,7 @@ REST_FRAMEWORK = {
         # Media (API contract 07 §1): recordings create 10/h, share resolve 60/min/IP.
         "recordings": "10/h",
         "voice_uploads": "30/h",
+        "spot_check_audio": "60/h",
         "share_resolve": "60/min",
         "share_create": "30/h",
         "share_report": "10/h",
@@ -207,6 +208,20 @@ DEVICE_DISTRUST_AFTER = int(
     env("DEVICE_DISTRUST_AFTER", "3")
 )  # disagreements before device results stop counting
 PENDING_RETRY_AFTER_MIN = int(env("PENDING_RETRY_AFTER_MIN", "10"))
+# Scoring worker queue and spot-check audio (docs/features/13 §3.3). Same lease model as the media queue.
+SCORING_JOB_LEASE_S = int(env("SCORING_JOB_LEASE_S", "120"))
+SCORING_JOB_MAX_TRIES = int(env("SCORING_JOB_MAX_TRIES", "3"))
+SCORING_MAX_AUDIO_S = int(env("SCORING_MAX_AUDIO_S", "90"))
+SCORING_AUDIO_URL_TTL_S = int(env("SCORING_AUDIO_URL_TTL_S", "900"))
+# Score a recording's analysis audio into Attempt(kind=record) (docs/features/13 A5). Off until A6.
+RECORD_SCORING_ENABLED = env("RECORD_SCORING_ENABLED", "0") == "1"
+SPOT_CHECK_AUDIO_WINDOW_MIN = int(
+    env("SPOT_CHECK_AUDIO_WINDOW_MIN", "30")
+)  # time to supply the clip
+SPOT_CHECK_AUDIO_TTL_H = int(
+    env("SPOT_CHECK_AUDIO_TTL_H", "24")
+)  # safety expiry of a spot-check clip
+SPOT_CHECK_DURATION_TOLERANCE = float(env("SPOT_CHECK_DURATION_TOLERANCE", "0.10"))
 WORKER_SHARED_SECRET = env(
     "WORKER_SHARED_SECRET", ""
 )  # HMAC key for /internal/scoring-jobs/ callbacks
@@ -406,3 +421,4 @@ GENERATE_DAILY_LIMIT = int(env("GENERATE_DAILY_LIMIT", "5"))
 GENERATE_MAX_STORED = int(env("GENERATE_MAX_STORED", "50"))
 # Daily usage rows older than this are deleted by `manage.py prune_generation_usage` (round 4).
 GENERATE_USAGE_RETENTION_DAYS = int(env("GENERATE_USAGE_RETENTION_DAYS", "90"))
+QUOTA_HIT_RETENTION_DAYS = int(env("QUOTA_HIT_RETENTION_DAYS", "90"))

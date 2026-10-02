@@ -173,6 +173,35 @@ export function assess(
     }
   })
 
+  // Tests run on the tested word plus its placed neighbours (doc 13 §3.1): the union of their windows.
+  const neighbourhoods = new Map<
+    number,
+    { lo: number; hi: number; start: number; end: number; base: number }
+  >()
+  const neighbourhood = (w: number) => {
+    let found = neighbourhoods.get(w)
+    if (!found) {
+      const placed: number[] = []
+      for (let x = Math.max(0, w - 1); x < Math.min(words.length, w + 2); x++)
+        if (chosen[x] !== null) placed.push(x)
+      const first = placed[0]
+      const last = placed[placed.length - 1]
+      const lo = windows[first]![0]
+      const hi = windows[last]![1]
+      const start = offsets.get(first)!
+      const end = offsets.get(last)! + chosen[last]![1].length
+      found = {
+        lo,
+        hi,
+        start,
+        end,
+        base: ctcLogProb(logp.slice(lo, hi), sequence.slice(start, end)),
+      }
+      neighbourhoods.set(w, found)
+    }
+    return found
+  }
+
   const results: WordResult[] = words.map((word, w) => {
     const pick = chosen[w]
     const window = windows[w]
@@ -202,12 +231,14 @@ export function assess(
         const cands = confusables(name, focus, post.vocab).map((q) =>
           index.get(q)!,
         )
+        const near = neighbourhood(w)
         const tests = substitutionTests(
-          logp,
-          sequence,
-          offsets.get(w)! + k,
+          logp.slice(near.lo, near.hi),
+          sequence.slice(near.start, near.end),
+          offsets.get(w)! + k - near.start,
           cands,
           0,
+          near.base,
         )
         subDelta = tests.subDelta
         subLabel = tests.subLabel

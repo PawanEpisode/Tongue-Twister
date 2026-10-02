@@ -365,7 +365,16 @@ class Attempt(models.Model):
     audio_sha256 = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001
     quality = models.JSONField(default=dict, blank=True, help_text="snr, clipping, blank_ratio")
     spot_checked = models.BooleanField(default=False)
-    spot_check_delta = models.FloatField(null=True, blank=True)
+    spot_check_delta = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Signed: device score minus worker score (positive = generous)",
+    )
+    spot_check_requested_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the server asked the client for the audio (docs/features/13 §3.3)",
+    )
     lang = models.CharField(max_length=5, choices=AccentLang.choices, blank=True)
     verification_status = models.CharField(
         max_length=8, choices=Verification.choices, default=Verification.NONE
@@ -985,6 +994,7 @@ class ScoringJob(models.Model):
         SPOT_CHECK = "spot_check", "Spot check"
         VERIFY = "verify", "Verify"
         DEVICE_UNSUPPORTED = "device_unsupported", "Device unsupported"
+        RECORD = "record", "Record"  # scores a recording's analysis audio into an Attempt (A5)
 
     class Status(models.TextChoices):
         QUEUED = "queued", "Queued"
@@ -994,7 +1004,17 @@ class ScoringJob(models.Model):
         EXPIRED = "expired", "Expired"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="scoring_jobs")
+    attempt = models.ForeignKey(
+        Attempt, null=True, blank=True, on_delete=models.CASCADE, related_name="scoring_jobs"
+    )
+    recording = models.ForeignKey(
+        "Recording",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="scoring_jobs",
+        help_text="Set for kind=record: the recording whose analysis audio is scored",
+    )
     audio_asset = models.ForeignKey(
         "MediaAsset",
         null=True,
@@ -1006,6 +1026,14 @@ class ScoringJob(models.Model):
     kind = models.CharField(max_length=20, choices=Kind.choices)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.QUEUED)
     tries = models.PositiveSmallIntegerField(default=0)
+    max_tries = models.PositiveSmallIntegerField(default=3)
+    locked_until = models.DateTimeField(
+        null=True, blank=True, help_text="Lease; a running job past it is re-queued"
+    )
+    worker_id = models.CharField(max_length=80, blank=True)
+    result = models.JSONField(
+        default=dict, blank=True, help_text="Worker summary: no audio, no transcript"
+    )
     latency_ms = models.PositiveIntegerField(null=True, blank=True)
     error_code = models.CharField(max_length=40, blank=True)
     model_version = models.ForeignKey(
@@ -1018,9 +1046,42 @@ class ScoringJob(models.Model):
     class Meta:
         ordering = ["created_at"]
         indexes = [models.Index(fields=["status", "created_at"]), models.Index(fields=["attempt"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "kind"],
+                condition=Q(status__in=["queued", "running"]),
+                name="uniq_active_scoring_job",
+            ),
+            models.UniqueConstraint(
+                fields=["recording", "kind"],
+                condition=Q(status__in=["queued", "running"]),
+                name="uniq_active_record_scoring_job",
+            ),
+            models.CheckConstraint(
+                condition=Q(tries__lte=models.F("max_tries")), name="scoring_job_tries_le_max"
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        attempt__isnull=False,
+                        recording__isnull=True,
+                        kind__in=["spot_check", "verify", "device_unsupported"],
+                    )
+                )
+                | Q(attempt__isnull=True, recording__isnull=False, kind="record"),
+                name="scoring_job_one_subject",
+            ),
+        ]
+
+    ACTIVE = ("queued", "running")
 
     def __str__(self):
         return f"{self.kind} {self.status}"
+
+    @property
+    def owner(self) -> "Profile":
+        """Whose audio this is (spot-checks hang off an attempt, record jobs off a recording)."""
+        return (self.recording or self.attempt).profile
 
 
 class AttemptFeedback(models.Model):
@@ -1402,6 +1463,27 @@ class MediaJob(StateMachine, models.Model):
 
     def __str__(self):
         return f"{self.kind} {self.status}"
+
+
+class QuotaHit(models.Model):
+    """One "your plan's limit is reached" (HTTP 402) answer. Evidence for the paid-plan decision
+    (`manage.py plan_demand_report`, docs/features/13 D): written best-effort by the error handler, at most
+    one row per user and limit per 10 minutes, and pruned after `QUOTA_HIT_RETENTION_DAYS`. No content, no
+    request data: just who (a profile that is deleted with the account), which limit, which plan, when."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="quota_hits")
+    limit = models.CharField(max_length=20, help_text="recordings, recording_ms or storage_bytes")
+    plan_code = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["profile", "limit", "-created_at"], name="quotahit_dedupe_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.limit} {self.created_at:%Y-%m-%d}"
 
 
 class LedgerKind(models.TextChoices):

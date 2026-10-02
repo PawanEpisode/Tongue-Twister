@@ -51,15 +51,22 @@ export type Tests = {
   delDelta: number | null
 }
 
-/** delta(q) = log P(y|X) − log P(y[i→q]|X); strongly negative means the audio fits q better than y. */
+/**
+ * delta(q) = log P(y|X) − log P(y[i→q]|X); strongly negative means the audio fits q better than y.
+ * `logp` / `sequence` are a neighbourhood (the tested word and its placed neighbours, doc 13 §3.1), and `base` is
+ * the unchanged sequence's log-probability when the caller already has it. A base of −∞ yields no verdict.
+ */
 export function substitutionTests(
   logp: readonly (readonly number[])[],
   sequence: readonly number[],
   position: number,
   candidates: readonly number[],
   blank: number,
+  knownBase?: number,
 ): Tests {
-  const base = ctcLogProb(logp, sequence, blank)
+  const base = knownBase ?? ctcLogProb(logp, sequence, blank)
+  if (base === NEG_INF)
+    return { base, subDelta: null, subLabel: null, delDelta: null }
   let best: number | null = null
   let bestLabel: number | null = null
   for (const q of candidates) {
@@ -69,6 +76,7 @@ export function substitutionTests(
       ...sequence.slice(position + 1),
     ]
     const delta = base - ctcLogProb(logp, swapped, blank)
+    if (Number.isNaN(delta)) continue
     if (best === null || delta < best) {
       best = delta
       bestLabel = q

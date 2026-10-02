@@ -77,6 +77,7 @@ def test_full_fake_export_int8(tmp_path):
     out = o.out_dir
     assert sorted(p.name for p in out.iterdir()) == [
         "SHA256SUMS",
+        "label_map.json",
         "manifest.json",
         "vocab.json",
         "w2v-espeak-lv60-int8-r1.onnx",
@@ -100,7 +101,7 @@ def test_fp32_only_and_keep_fp32(tmp_path):
     assert m["model"]["quantization"] == "fp32" and m["model"]["name"].endswith("fp32-r1")
     o = opts(tmp_path, keep_fp32=True, release=2)
     m = em.run_export(o, em.FakeBackend(), log=lambda *_: None)
-    assert [f["role"] for f in m["files"]] == ["model", "vocab", "fp32-intermediate"]
+    assert [f["role"] for f in m["files"]] == ["model", "vocab", "label_map", "fp32-intermediate"]
     assert (o.out_dir / "w2v-espeak-lv60-fp32-r2.onnx").exists()
 
 

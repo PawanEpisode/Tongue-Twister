@@ -1,6 +1,7 @@
 /** Pure rules for a saved recording that is still being prepared or analysed. */
 import type {
   Analysis,
+  AnalysisScoring,
   AnalysisStatus,
   CaptionsSource,
   Playback,
@@ -18,12 +19,51 @@ export const POLL_FIRST_MS = 2000
 export const POLL_MAX_MS = 15_000
 export const POLL_MAX_COUNT = 60
 
-/** True while the server is still working on the video or the analysis. */
+export const scoringOf = (r: { analysis?: Analysis }): AnalysisScoring =>
+  r.analysis?.scoring ?? { status: 'none', reason: '' }
+
+/** True while the server is still working on the video, the analysis or scoring the analysed audio. */
 export const isBusy = (r: Pollable): boolean =>
   r.status === 'uploaded' ||
   r.status === 'processing' ||
   analysisStatus(r) === 'queued' ||
-  analysisStatus(r) === 'running'
+  analysisStatus(r) === 'running' ||
+  scoringOf(r).status === 'queued' ||
+  scoringOf(r).status === 'running'
+
+const UNSCORABLE_COPY: Record<string, string> = {
+  no_speech: 'We couldn’t hear a read of the twister in this take.',
+  low_quality:
+    'The audio was too quiet or noisy to score. A closer mic in a quieter room helps.',
+  could_not_follow:
+    'We couldn’t follow the twister in this take, so it wasn’t scored.',
+  audio_mismatch:
+    'This take’s audio didn’t match the recording, so it wasn’t scored.',
+  audio_too_long: 'This take is too long to score.',
+  too_long: 'This take is too long to score.',
+  attempt_exists: '',
+}
+
+/** What to tell the person about scoring; empty when there is nothing worth saying. */
+export function scoringMessage(s: AnalysisScoring): string {
+  switch (s.status) {
+    case 'queued':
+      return 'Waiting to score your take…'
+    case 'running':
+      return 'Scoring your take…'
+    case 'scored':
+      return 'Your take was scored. It’s in your history.'
+    case 'unscorable':
+      return (
+        UNSCORABLE_COPY[s.reason] ??
+        'This take couldn’t be scored. Your video is unaffected.'
+      )
+    case 'failed':
+      return 'Scoring didn’t finish. Your video is unaffected.'
+    default:
+      return s.reason === 'too_long' ? UNSCORABLE_COPY.too_long : ''
+  }
+}
 
 /**
  * Milliseconds until the next refetch, or `false` to stop. Backs off 2 s → 15 s (×1.6 per poll) and gives

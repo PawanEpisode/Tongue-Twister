@@ -1,10 +1,8 @@
 """Device engine results, trust levels, spot-checks and the worker callback."""
 
-import json
 import uuid
 
 import pytest
-from django.core.management import call_command
 from django.utils import timezone
 
 from twisters.models import (
@@ -12,15 +10,12 @@ from twisters.models import (
     Attempt,
     AttemptPhoneme,
     FeatureFlag,
-    ScoringJob,
     ScoringProfile,
     UserPhonemeStat,
-    UserTwisterStats,
     Verification,
 )
 
-from .speak_helpers import SLUG, submit
-from .worker_signing_helpers import signed_headers
+from .speak_helpers import submit
 
 SECRET = "worker-secret"
 
@@ -224,161 +219,3 @@ def test_repeated_disagreement_switches_device_results_off(user, model, settings
 def test_low_acoustic_quality_report_stops_the_score(user, model):
     r = submit(user[0], **device_body(quality={"ok": False}))
     assert r.data["low_confidence"] is True and r.data["reason"] == "quality_gate"
-
-
-# --- spot-checks -------------------------------------------------------------------------------------
-
-
-@pytest.fixture
-def spot_checks(model, settings):
-    FeatureFlag.objects.update_or_create(code="spot_checks", defaults={"enabled": True})
-    settings.SPOT_CHECK_RATE = 1.0
-    settings.WORKER_SHARED_SECRET = SECRET
-
-
-def post_result(client, job, body, secret=SECRET, sign=True):
-    raw = json.dumps(body).encode()
-    headers = {}
-    if sign:
-        headers.update(signed_headers(secret, raw))
-    return client.post(
-        f"/api/v1/internal/scoring-jobs/{job.pk}/result/",
-        raw,
-        content_type="application/json",
-        **headers,
-    )
-
-
-def spot_checked_attempt(user_client):
-    r = submit(user_client, **device_body(words=[{"i": 0, "target": "she", "status": "correct"}]))
-    attempt = Attempt.objects.get(pk=r.data["id"])
-    return attempt, attempt.scoring_jobs.get()
-
-
-def test_device_tests_are_queued_for_a_worker_spot_check(user, spot_checks):
-    attempt, job = spot_checked_attempt(user[0])
-    assert attempt.verification_status == Verification.PENDING
-    assert job.kind == ScoringJob.Kind.SPOT_CHECK and job.status == ScoringJob.Status.QUEUED
-
-
-def test_no_spot_check_without_the_flag_a_model_or_a_test(user, model, settings):
-    c, _ = user
-    settings.SPOT_CHECK_RATE = 1.0
-    a = Attempt.objects.get(pk=submit(c, **device_body()).data["id"])
-    assert a.verification_status == Verification.DEVICE and not a.scoring_jobs.exists()  # flag off
-    FeatureFlag.objects.update_or_create(code="spot_checks", defaults={"enabled": True})
-    train = Attempt.objects.get(pk=submit(c, kind="train", **device_body()).data["id"])
-    assert not train.scoring_jobs.exists()
-    AcousticModelVersion.objects.filter(pk=model.pk).update(
-        active=False
-    )  # attempt.model_version still set
-    text = Attempt.objects.get(pk=submit(c).data["id"])
-    assert not text.scoring_jobs.exists()  # text-layer attempts are not spot-checked
-
-
-def test_every_would_be_personal_best_is_checked_even_at_zero_rate(user, model, settings):
-    c, _ = user
-    FeatureFlag.objects.update_or_create(code="spot_checks", defaults={"enabled": True})
-    settings.SPOT_CHECK_RATE = 0.0
-    body = device_body(words=[{"i": 0, "target": "she", "status": "correct"}])
-    first = Attempt.objects.get(pk=submit(c, **body).data["id"])
-    assert first.score >= 90 and first.scoring_jobs.count() == 1
-    second = Attempt.objects.get(pk=submit(c, **device_body(words=body["words"])).data["id"])
-    assert not second.is_personal_best and second.scoring_jobs.count() == 0
-
-
-def test_worker_agreement_verifies_the_attempt(user, spot_checks, client):
-    c, profile = user
-    attempt, job = spot_checked_attempt(c)
-    r = post_result(client, job, {"status": "done", "score": attempt.score - 3, "latency_ms": 2400})
-    assert r.status_code == 200 and r.json()["status"] == "done"
-    attempt.refresh_from_db()
-    assert attempt.verification_status == Verification.VERIFIED and attempt.verified_at
-    assert attempt.spot_checked and attempt.spot_check_delta == 3 and not attempt.flagged
-    job.refresh_from_db()
-    assert job.latency_ms == 2400 and job.tries == 1 and job.finished_at
-    assert (
-        UserTwisterStats.objects.get(profile=profile).best_score == attempt.score
-    )  # now a verified best
-
-
-def test_worker_disagreement_flags_and_removes_the_attempt_from_stats(user, spot_checks, client):
-    c, profile = user
-    attempt, job = spot_checked_attempt(c)
-    assert post_result(client, job, {"status": "done", "score": 20}).status_code == 200
-    attempt.refresh_from_db()
-    assert (
-        attempt.flagged
-        and attempt.verification_status == Verification.FAILED
-        and attempt.spot_check_delta > 15
-    )
-    stats = UserTwisterStats.objects.get(profile=profile)
-    assert stats.best_test_score is None and stats.mastery_days_hit == 0
-    assert c.get(f"/api/v1/twisters/{SLUG}/leaderboard/").data == []
-
-
-def test_callback_is_idempotent_and_authenticated(user, spot_checks, client):
-    attempt, job = spot_checked_attempt(user[0])
-    assert post_result(client, job, {"status": "done", "score": 90}, sign=False).status_code == 403
-    assert (
-        post_result(client, job, {"status": "done", "score": 90}, secret="wrong").status_code == 403
-    )
-    assert post_result(client, job, {"status": "done", "score": 90}).status_code == 200
-    replay = post_result(client, job, {"status": "done", "score": 1})
-    assert replay.status_code == 200 and replay["Idempotent-Replay"] == "true"
-    attempt.refresh_from_db()
-    assert not attempt.flagged  # the replay's score was ignored
-
-
-@pytest.mark.parametrize(
-    "body",
-    [
-        {},
-        {"status": "done"},
-        {"status": "done", "score": 101},
-        {"status": "maybe"},
-        {"status": "done", "score": "x"},
-    ],
-)
-def test_callback_validates_its_body(user, spot_checks, client, body):
-    _, job = spot_checked_attempt(user[0])
-    assert post_result(client, job, body).status_code == 400
-
-
-def test_callback_is_disabled_without_a_secret_and_404_for_unknown_jobs(
-    user, spot_checks, client, settings
-):
-    _, job = spot_checked_attempt(user[0])
-    ghost = ScoringJob(pk=uuid.uuid4())
-    assert post_result(client, ghost, {"status": "failed"}).status_code == 404
-    settings.WORKER_SHARED_SECRET = ""
-    assert post_result(client, job, {"status": "failed"}).status_code == 503
-
-
-def test_failed_job_leaves_the_attempt_pending_for_the_sweeper(user, spot_checks, client):
-    attempt, job = spot_checked_attempt(user[0])
-    assert post_result(client, job, {"status": "failed", "error_code": "oom"}).status_code == 200
-    job.refresh_from_db()
-    attempt.refresh_from_db()
-    assert job.status == "failed" and job.error_code == "oom"
-    assert attempt.verification_status == Verification.PENDING
-
-
-def test_sweeper_retries_once_then_lets_the_device_result_stand(user, spot_checks, settings):
-    c, profile = user
-    attempt, job = spot_checked_attempt(c)
-    old = timezone.now() - timezone.timedelta(minutes=settings.PENDING_RETRY_AFTER_MIN + 1)
-    ScoringJob.objects.update(created_at=old)
-    Attempt.objects.update(created_at=old)
-    call_command("sweep_pending_attempts")
-    assert attempt.scoring_jobs.count() == 2
-    job.refresh_from_db()
-    assert job.status == ScoringJob.Status.EXPIRED
-    call_command("sweep_pending_attempts")  # the retry is still inside its window
-    assert attempt.scoring_jobs.count() == 2
-    ScoringJob.objects.update(created_at=old)
-    call_command("sweep_pending_attempts")
-    attempt.refresh_from_db()
-    assert attempt.scoring_jobs.count() == 2 and attempt.verification_status == Verification.FAILED
-    assert not attempt.flagged  # an outage never punishes the user
-    assert UserTwisterStats.objects.get(profile=profile).best_test_score == attempt.score

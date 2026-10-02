@@ -78,6 +78,7 @@ export function PracticeSkeleton() {
   return (
     <div
       className="mx-auto max-w-3xl text-center"
+      role="status"
       aria-busy
       aria-label="Loading twister"
     >

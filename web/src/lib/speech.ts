@@ -26,7 +26,21 @@ function getCtor(): (new () => any) | null {
  * (and show GO!) when the browser reports that audio capture has really begun, and we hold the
  * mic open via getUserMedia so the hardware is already warm.
  */
-export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
+export type AudioParts = {
+  ctx: AudioContext
+  source: MediaStreamAudioSourceNode
+  track?: MediaStreamTrack
+}
+
+export function useSpeech(
+  opts: {
+    onFinish?: (r: SpeechResult) => void
+    /** The live mic stream is up: an optional tap (Accurate mode) attaches here. */
+    onAudio?: (a: AudioParts) => void
+    /** The mic is about to be released: the tap collects what it has (synchronously). */
+    onTeardown?: () => void
+  } = {},
+) {
   const [supported, setSupported] = useState(false)
   const [status, setStatus] = useState<SpeechStatus>('idle')
   const [transcript, setTranscript] = useState('')
@@ -36,6 +50,10 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
 
   const onFinishRef = useRef(opts.onFinish)
   onFinishRef.current = opts.onFinish
+  const onAudioRef = useRef(opts.onAudio)
+  onAudioRef.current = opts.onAudio
+  const onTeardownRef = useRef(opts.onTeardown)
+  onTeardownRef.current = opts.onTeardown
 
   const recRef = useRef<any>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -55,6 +73,7 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
   useEffect(() => setSupported(!!getCtor()), [])
 
   const teardownAudio = useCallback(() => {
+    onTeardownRef.current?.()
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     void ctxRef.current?.close().catch(() => undefined)
@@ -193,7 +212,13 @@ export function useSpeech(opts: { onFinish?: (r: SpeechResult) => void } = {}) {
       const node = ctx.createAnalyser()
       node.fftSize = 256
       node.smoothingTimeConstant = 0.7
-      ctx.createMediaStreamSource(stream).connect(node)
+      const source = ctx.createMediaStreamSource(stream)
+      source.connect(node)
+      onAudioRef.current?.({
+        ctx,
+        source,
+        track: stream.getAudioTracks()[0],
+      })
       setAnalyser(node)
     } catch (err: any) {
       if (

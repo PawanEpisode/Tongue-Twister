@@ -22,16 +22,20 @@ Tests at last count: API 1387, web 691, worker 107, export tool 28.
 
 ## 2. What is left
 
-### A. Speech engine (code). Flag `accurate_mode` stays off until the exit gate in A3 is met
+### A. Speech engine. Code is complete; what is left needs a Mac, real speakers and a production deploy
 
-| # | Item | Needs | Depends on |
-|---|---|---|---|
-| A1 | **E3-3 label map and model publish.** Generate `label_map.json` from the model's `vocab.json` (doc 10 §4.1), freeze it, export and upload the int8 model to our own storage, insert the `AcousticModelVersion` row | A Mac with ~2 GB of free disk for the one-time Hugging Face download; a `models` bucket | none |
-| A2 | **E3-4 device engine.** ONNX Runtime Web in a Web Worker, model cache by sha256, quality gate, device gating, "Accurate mode" opt-in UI, `AcousticModel` and `Pronouncer` implementations, wired into Speak mode | A1 | A1 |
-| A3 | **E3-5 calibration.** `/dev/calibrate` gold-set page, posterior fixtures, threshold tuning, fairness metrics. Replaces the placeholder thresholds (3.0 / 3.0 / 1.0 / -0.9) with a `ScoringProfile` row. **Exit gate to enable Accurate mode:** focus-swap recall ≥ 85 %, false accusation on clean reads ≤ 5 %, accent gap ≤ 8 points, median device latency ≤ 3 s per 15 s clip | A2, 6+ speakers incl. ≥ 3 en-IN | A2 |
-| A4 | **E3-6 scoring worker.** Claim/heartbeat endpoints for scoring jobs, Python scoring job in the existing Fly worker, spot-check flow, `verified` trust level | A1 (model), the engine code from round 3 | A1 (parallel to A2) |
-| A5 | **Record analysis becomes an attempt.** The worker scores the 16 kHz analysis WAV and the API creates `Attempt(kind=record)`; the web stops creating it client-side | A4 | A4 |
-| A6 | **Flip the switches** once A4 runs in production: `LEADERBOARD_REQUIRE_VERIFIED=1`, `MASTERY_ALLOW_PROVISIONAL=0`, enable the `*/10` `sweep_pending_attempts` cron, flags `accurate_mode`, `spot_checks`, then `weekly_boards`. Set `WORKER_ALLOW_LEGACY_SIGNATURE=0` | A4 | A4 |
+Flags `accurate_mode`, `spot_checks` and `record_cloud` stay **off** until the steps below are done in order. Nothing in A is switched on by code.
+
+| # | Item | State |
+|---|---|---|
+| A1 | Label map and model publish | **Code done** (`label_map.py`, rules, `publish_acoustic_model`, `models` bucket policy, 41 tests). **Left:** run `label_map.py` on the real `vocab.json` (it fails loudly on any unmapped label), export and upload the int8 model, insert the `AcousticModelVersion` row |
+| A2 | Device engine | **Code done** (ORT in a module Web Worker, sha-keyed cache, quality gates, device gate, opt-in UI, spot-check upload, TS engine pinned to the Python reference by shared vectors; CSP `wasm-unsafe-eval`). **Left:** real-device timing from `/dev/calibrate` |
+| A3 | Calibration | **Code done** (`/dev/calibrate` recorder + benchmark behind flag `calibrate`; `tools/calibrate/{gold,evaluate,fairness,report,tune_thresholds}.py`; 37 tests incl. a frozen synthetic regression). **Left:** record the real gold set (≥ 6 speakers, ≥ 3 en-IN, 12+ twisters each, four scenarios, ≥ 1 non-native), run `tune_thresholds.py` then `report.py --check`, insert the tuned `ScoringProfile` row. The synthetic clips only test the tooling and can never satisfy the gate |
+| A4 | Scoring worker | **Code done** (queue, claim/heartbeat/result, lease sweep, worker pipeline, `verified` trust). **Left:** deploy the worker with `SCORING_ENABLED=1` and `MODEL_DIR` on a volume; see `runbooks/accurate-mode-rollout.md` |
+| A5 | Record analysis becomes an attempt | **Code done** (doc 13 §14): `record` scoring jobs, server-created `Attempt(kind=record)`, one per recording, never alongside a client-linked attempt, web status line. Off until `RECORD_SCORING_ENABLED=1` |
+| A6 | Flip the switches | **Prepared, not flipped.** `*/10 sweep_pending_attempts` cron is enabled in `manage-command.yml` (a no-op until jobs exist); `plan_demand_report` is on the allow-list (`publish_acoustic_model` is not: it needs a manifest, so it is run from a shell, `runbooks/accurate-mode-rollout.md` §0). **Left (in this order, `runbooks/accurate-mode-rollout.md`):** exit gate met → `spot_checks` → `accurate_mode` → `RECORD_SCORING_ENABLED=1` → `LEADERBOARD_REQUIRE_VERIFIED=1`, `MASTERY_ALLOW_PROVISIONAL=0` → `weekly_boards` → `WORKER_ALLOW_LEGACY_SIGNATURE=0` |
+
+CI: a `tools` job runs the `tools/export_model` and `tools/calibrate` tests (no torch, no secrets). `web/e2e/accurate-csp.spec.ts` runs the built inference worker under the production CSP in the existing `web-e2e` job.
 
 ### B. Verification (no code). Nothing here has been done against real services
 
@@ -56,76 +60,16 @@ Tests at last count: API 1387, web 691, worker 107, export tool 28.
 | C5 | Login contrast 4.46:1 (needs 4.5:1), logged in `web/e2e/known-a11y.json` | Open |
 | C6 | Enforce the CSP (web is `Content-Security-Policy-Report-Only` in `web/vercel.json`, API in `middleware.py`) | After a week of clean reports |
 
-### D. Open questions that need data, not docs
-1. Does the phoneme model meet the accuracy gate on en-IN speakers? What is its size after int8 export?
-2. Is a paid Pro plan worth building? Decide after 60 days of cloud-recording cap-hit data.
+### D. Open questions that need data, not docs. The instruments exist; the data does not
+1. **Does the phoneme model meet the accuracy gate on en-IN speakers? What is its size after int8?** `tools/calibrate/report.py` (gold set) and `tools/export_model/benchmark.py` (size, load, latency, memory), plus the benchmark card at `/dev/calibrate` for in-browser numbers per device. The report refuses to call the gate met on insufficient evidence.
+2. **Is a paid Pro plan worth building?** `manage.py plan_demand_report` (also in the *Management command* workflow). Cap hits were not recorded anywhere before; `QuotaHit` starts collecting at deploy, so the 60-day clock starts then.
 
 ## 3. Files to implement now
 
 Paths are relative to the repo root. **New** = create, **Edit** = change an existing file. Every item also needs tests (listed) and a line removed from §2.
 
-### A1 · Label map and model publish
-| | File | What |
-|---|---|---|
-| New | `tools/export_model/label_map.py` | Reads `vocab.json`, writes `label_map.json` (many-to-one IPA → ARPAbet classes, unmapped → `OTHER`, explicit drop list) |
-| New | `tools/export_model/tests/test_label_map.py` | Every ARPAbet phone in CMUdict is reachable; every model label is mapped or explicitly dropped |
-| Edit | `tools/export_model/export_model.py` | Call the generator after export and list `label_map.json` in `manifest.json` `files[]` |
-| Edit | `api/twisters/media/storage_policies.sql` | Add the public read-only `models` bucket (the export README assumes `…/public/models`). Re-run in the Supabase SQL editor |
-| Data | `AcousticModelVersion` row via Django admin | From `manifest.json` `model`; the sha256 must equal the uploaded file's |
-
-### A2 · Device engine (E3-4)
-| | File | What |
-|---|---|---|
-| New | `web/src/lib/speak/engine/runtime/ort.worker.ts` | Web Worker running `onnxruntime-web` (WASM SIMD and threads by default, WebGPU only if a benchmark wins); implements `AcousticModel` |
-| New | `web/src/lib/speak/engine/runtime/modelCache.ts` | Fetch `GET /engine/manifest/`, cache the model in Cache Storage by sha256, version and evict |
-| New | `web/src/lib/speak/engine/runtime/labelMap.ts` | Class posteriors with log-sum-exp using `label_map.json` |
-| New | `web/src/lib/speak/engine/runtime/capture.ts` | 16 kHz mono capture (AudioWorklet and resample) |
-| New | `web/src/lib/speak/engine/runtime/quality.ts` | VAD, SNR, clipping, sample-rate gates (no score on failure) |
-| New | `web/src/lib/speak/engine/runtime/deviceGate.ts` | Memory ≥ 4 GB and feature detection; stay on Tier 0 otherwise |
-| New | `web/src/lib/speak/engine/runtime/pronouncer.ts` and `web/src/lib/speak/pronunciations.json` | A `Pronouncer` over the generated lexicon. The web has no pronunciation data yet (only `equivalents.json`), so generate it from `build_pronunciations` |
-| New | `web/src/lib/speak/useAccurateEngine.ts` | Hook: opt-in, download progress, run `assess`, build the same body `POST /attempts/` already accepts (`engine=ondevice`) |
-| New | `web/src/components/practice/AccurateModePrompt.tsx` | Opt-in UI: size, download, privacy note, remove model |
-| Edit | `web/src/components/practice/SpeakAndScore.tsx`, `MicStage.tsx` | Use the engine when `accurate_mode` is on and the device qualifies; otherwise unchanged |
-| Edit | `web/src/lib/speak/engine/index.ts` | Export the runtime; drop the "not wired" note |
-| Edit | `web/src/lib/flags.ts` | Nothing new: `accurate_mode` already exists (keep `DEFAULT_FLAGS` off) |
-| Edit | `web/package.json`, `web/vercel.json`, `web/bundle-budget.json` | Add `onnxruntime-web` (lazy chunk only, first-load budgets must not grow); CSP `connect-src` and `worker-src` for the model host |
-| Test | `web/src/lib/speak/engine/runtime/*.test.ts`, `web/e2e/accurate.spec.ts` | Fake `AcousticModel`; no network in unit tests |
-
-### A3 · Calibration (E3-5)
-| | File | What |
-|---|---|---|
-| New | `web/src/routes/dev.calibrate.tsx` | Gold-set recorder behind a new flag `calibrate` (seed off). Scripted prompts: clean, fast, swap, slur |
-| New | `web/src/lib/calibrate/{goldSet,capture,export}.ts` | Prompt list, record, export posterior matrices (float16) with labels |
-| New | `api/twisters/migrations/0019_calibrate_flag.py` | Seed the `calibrate` flag off |
-| New | `tools/calibrate/tune_thresholds.py` | Read posterior fixtures, search thresholds against the exit gate, write a `ScoringProfile` row |
-| New | `tools/calibrate/fairness.py` | False-accusation and abstention rates by accent, age band, device class; alert at 1.5× the overall rate |
-| New | `api/tests/fixtures/gold/` and `api/tests/test_gold_regression.py` | Gold posterior fixtures run in CI without the model |
-| Edit | `api/twisters/speak/engine/types.py` and `web/src/lib/speak/engine/types.ts` | Replace the placeholder `DEFAULT_PROFILE` only after the exit gate passes, in both languages, then regenerate `api/tests/fixtures/engine_vectors.json` |
-
-### A4 · Scoring worker (E3-6)
-| | File | What |
-|---|---|---|
-| Edit | `api/twisters/models.py` and new `api/twisters/migrations/0020_scoring_job_leases.py` | Lease and heartbeat columns on `ScoringJob`, mirroring `MediaJob` |
-| New | `api/twisters/speak/jobs.py` | Claim (`SKIP LOCKED` on Postgres, conditional UPDATE fallback), heartbeat, expiry, signed audio URL for the job's asset |
-| Edit | `api/twisters/speak/views.py`, `api/twisters/urls.py` | `POST /internal/scoring-jobs/claim/`, `POST …/{id}/heartbeat/`, next to the existing `…/{id}/result/`; same HMAC and timestamp check (`twisters/security.py`) |
-| Edit | `api/twisters/speak/trust.py` | Schedule spot-checks as designed (about 10 % of device Test attempts, plus personal bests ≥ 90 and leaderboard entries) and apply the `verified` level on agreement |
-| New | `worker/twister_worker/jobs/score.py` | Download the audio and model, run `assess`, post the result |
-| New | `worker/twister_worker/engine/` | onnxruntime CPU `AcousticModel` plus the scoring engine. Decide how to share `api/twisters/speak/engine` (vendor copy checked by a parity test, or a shared package); do not fork it by hand |
-| Edit | `worker/twister_worker/{runner,api_client,models,config}.py`, `requirements.txt`, `Dockerfile`, `fly.toml` | Claim scoring jobs too; `MODEL_STORAGE_URL`; add `onnxruntime` and `numpy`; raise VM memory for the model |
-| Edit | `.github/workflows/manage-command.yml` | Uncomment the `*/10` `sweep_pending_attempts` cron |
-| Edit | `docs/runbooks/worker-deploy-fly.md`, `worker-down.md`, `secrets-and-rotation.md` | New secrets and the scoring path (a test fails if a settings variable is missing from `secrets-and-rotation.md`) |
-| Test | `api/tests/test_scoring_jobs.py`, `worker/tests/test_score_job.py` | Claim races, lease expiry, replay, result validation, disagreement → `flagged` |
-
-### A5 · Record analysis → attempt
-| | File | What |
-|---|---|---|
-| Edit | `api/twisters/media/analysis.py`, `processing.py` | When the analysis WAV is ready, enqueue a scoring job for the recording's twister |
-| Edit | `api/twisters/speak/service.py` | Create `Attempt(kind=record)` server-side from the job result and link it to the recording |
-| Edit | `web/src/lib/record/*` and the review components under `web/src/components/practice/record/` | Prefer the server attempt when analysis is `ready`; keep the client-side attempt as the fallback |
-| Test | `api/tests/test_record_analysis_attempt.py` | Idempotent per recording; no XP double count with the client-side attempt |
-
-### A6 · Switches (config only)
-`api/config/settings.py` (flip the two defaults after the worker is live), GitHub `production` environment variables, Django admin flags, Fly secrets.
+### A1-A6 · Implemented
+The file-by-file plan for A1-A6 has been built and tested. The as-built map is the table in doc 13 §9, with §14 (record analysis) and §15 (evidence tools). What is left of A is operational and listed in §2A.
 
 ### C1 · CSV export
 | | File | What |
@@ -164,7 +108,7 @@ Paths are relative to the repo root. **New** = create, **Edit** = change an exis
 1. **Now, no dependencies:** B (verification) in parallel with C4, C5, C1, C3. A1 needs your Mac for the model download.
 2. **After A1:** A2 and A4 in parallel (they share only the model and the engine code).
 3. **After A2:** A3. The exit gate decides whether Accurate mode ever turns on.
-4. **After A4:** A5, then A6, then `weekly_boards`.
+4. **After the exit gate (§2A):** the switches in `runbooks/accurate-mode-rollout.md`, in that order, ending with `weekly_boards`.
 5. **Last:** C2, C6, and the staged rollout.
 
 ## 5. Reference: deviations, decisions and operations worth remembering
@@ -235,7 +179,7 @@ Kept from the earlier status doc so nothing learned during the build is lost. He
 - Web tests run in CI (`npm test`); the shared vectors are read straight from `api/tests/fixtures`, so both suites must be changed together.
 
 #### Running management commands (`.github/workflows/manage-command.yml`)
-Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`, `sync_achievements`, `build_leaderboard`, `purge_deleted_accounts`, `send_reminders`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) `orphan_sweeper` daily at 04:41 and `build_leaderboard` hourly at :37 (harmless while the `weekly_boards` flag is off) and `send_reminders` hourly at :07 (does nothing while the `reminders` flag is off; needs `API_PUBLIC_URL` and `WEB_BASE_URL` too). Run `sync_achievements` after editing `progress/catalogue.py`. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. Enable the `*/10` cron for `sweep_pending_attempts` when the scoring worker ships.
+Actions → **Management command** → *Run workflow*: pick a command from the allow-list (`reconcile_speak_stats`, `sweep_pending_attempts`, `build_pronunciations`, `seed_twisters`, `expire_recordings`, `orphan_sweeper`, `sync_achievements`, `build_leaderboard`, `purge_deleted_accounts`, `send_reminders`, `prune_generation_usage`, `plan_demand_report`) and optional arguments (e.g. `--check`). It runs against the production database using the `production` environment's secrets (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_URL`). `reconcile_speak_stats` also runs nightly at 03:17 UTC, `expire_recordings` hourly at :23 (retention, hard delete, consent revocations, T-3 d reminder e-mails) `orphan_sweeper` daily at 04:41 and `build_leaderboard` hourly at :37 (harmless while the `weekly_boards` flag is off) and `send_reminders` hourly at :07 (does nothing while the `reminders` flag is off; needs `API_PUBLIC_URL` and `WEB_BASE_URL` too). Run `sync_achievements` after editing `progress/catalogue.py`. The media jobs also need the `SUPABASE_SERVICE_ROLE_KEY` and `MEDIA_PATH_SECRET` (required by production settings; same value as the API) secrets, plus `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` for the reminder e-mails, in the `production` environment. To add a command, append it to `ALLOWED` in the "Resolve command" step; to schedule it add a cron entry and a matching `case` line. `sweep_pending_attempts` runs every 10 minutes (enabled; harmless while no scoring jobs exist).
 
 #### 06c A2 deviations / operations notes
 - `expiry_reminded_at` was **renamed** (not added alongside) to `reminder_sent_at`; the claim-then-send pattern means a failed delivery releases the flag and the next hourly run retries.
@@ -253,3 +197,12 @@ Actions → **Management command** → *Run workflow*: pick a command from the a
 - Verdict per phoneme: `substituted` (delta ≤ -tau_sub), `deleted` (≤ -tau_del), `uncertain` (≤ -tau_uncertain), `weak` (peak_lp < tau_weak), else `ok`. Defaults 3.0 / 3.0 / 1.0 / -0.9 are **placeholders until A3**. Word: a focus phoneme substituted or deleted → `wrong` + `focus_swap`; two or more other errors → `wrong`; one → `near`; weak only → `near` + `slurred`. The text layer can downgrade an uncertain `correct` but can never upgrade an acoustic error. Score v2 arithmetic is unchanged.
 - Plugging a real model in (A2/A4): implement `AcousticModel` (ONNX Runtime Web on the device, onnxruntime CPU in the worker), map labels with the generated `label_map.json`, supply a real `Pronouncer` (CMUdict plus overrides through `twisters.speak.lexicon`), then call `assess`. Unknown words block with `UnpronounceableWords`.
 - Nothing imports the engine yet (a test on each side enforces that), so Speak mode behaves exactly as before.
+
+### Decisions taken while building A3-A5 and D
+* **A record attempt is created server-side only when the recording has none.** The browser's live attempt remains the primary path; the worker covers takes that have no attempt, so no XP is ever awarded twice (`attempt.client_attempt_id = uuid5(recording)` makes the creation idempotent).
+* **A record job does not purge its audio** (it belongs to the recording and expires with it); a spot-check clip is purged on settle (D41).
+* **Both runtimes score the trimmed read** and report its length as `duration_ms`; the spot-check WAV is exactly the scored bytes (doc 13 §3.7).
+* **The synthetic gold set only tests the tooling.** `report.py` counts synthetic clips as no evidence at all, and `tune_thresholds.py` refuses them without `--allow-synthetic`.
+* **Cap hits are now recorded** (`QuotaHit`, 10-minute de-duplication per user and limit, 90-day retention) because nothing else could answer the paid-plan question.
+* **The `calibrate` flag is seeded off and never re-disabled by a migration** (`get_or_create`), so staff can allow-list themselves without it being reset on deploy.
+* **`tools/export_model/make_tiny_model.py`** regenerates the 6.7 KB test model in `web/e2e/fixtures/` (needs `onnx` and `onnxruntime`); the committed files are what CI uses.

@@ -7,6 +7,8 @@ import {
   analysisStatus,
   chooseCaptions,
   isBusy,
+  scoringMessage,
+  scoringOf,
   pickPlayback,
   pollDelay,
 } from './review'
@@ -136,5 +138,54 @@ describe('pickPlayback', () => {
     expect(
       pickPlayback(null, { status: 'ready', playback: null }, now),
     ).toBeNull()
+  })
+})
+
+describe('scoring (A5)', () => {
+  const ready = (scoring?: { status: string; reason: string }) =>
+    ({
+      status: 'ready' as const,
+      analysis: { status: 'ready' as const, audio_ready: true, scoring },
+    }) as Parameters<typeof isBusy>[0]
+
+  it('an older API without a scoring block is simply not scoring', () => {
+    expect(
+      scoringOf({ analysis: { status: 'ready', audio_ready: true } }),
+    ).toEqual({
+      status: 'none',
+      reason: '',
+    })
+    expect(isBusy(ready())).toBe(false)
+  })
+
+  it('keeps polling while the take is queued or being scored, then stops', () => {
+    expect(isBusy(ready({ status: 'queued', reason: '' }))).toBe(true)
+    expect(isBusy(ready({ status: 'running', reason: '' }))).toBe(true)
+    for (const status of ['scored', 'unscorable', 'failed', 'none'])
+      expect(isBusy(ready({ status, reason: '' }))).toBe(false)
+  })
+
+  it('explains every outcome in plain words', () => {
+    expect(scoringMessage({ status: 'queued', reason: '' })).toMatch(/waiting/i)
+    expect(scoringMessage({ status: 'scored', reason: '' })).toMatch(/scored/i)
+    expect(
+      scoringMessage({ status: 'unscorable', reason: 'low_quality' }),
+    ).toMatch(/quiet or noisy/)
+    expect(
+      scoringMessage({ status: 'unscorable', reason: 'never_heard_of_it' }),
+    ).toMatch(/couldn’t be scored/)
+    expect(scoringMessage({ status: 'failed', reason: 'boom' })).toMatch(
+      /didn’t finish/,
+    )
+    expect(scoringMessage({ status: 'none', reason: '' })).toBe('')
+    expect(scoringMessage({ status: 'none', reason: 'too_long' })).toMatch(
+      /too long/,
+    )
+  })
+
+  it('says nothing when another attempt already covers the take', () => {
+    expect(
+      scoringMessage({ status: 'unscorable', reason: 'attempt_exists' }),
+    ).toBe('')
   })
 })

@@ -12,7 +12,6 @@ from ..models import (
     AttemptKind,
     Engine,
     Profile,
-    ScoringJob,
     Verification,
 )
 from ..practice import flags
@@ -91,15 +90,15 @@ def wants_spot_check(attempt: Attempt, *, is_personal_best: bool) -> bool:
     return _bucket(attempt) < settings.SPOT_CHECK_RATE
 
 
-def schedule_spot_check(attempt: Attempt, profile: Profile) -> ScoringJob | None:
-    """Queue a worker re-score. No-op when spot-checks are off or no acoustic model is published."""
+def request_spot_check(attempt: Attempt, profile: Profile) -> bool:
+    """Ask the client for the audio of this attempt (D34). No-op when spot-checks are off or no acoustic
+    model is published. The job itself is only queued once the clip is attached
+    (`POST /attempts/{id}/spot-check-audio/`), so a job never exists without audio."""
     if not flags.enabled(SPOT_CHECK_FLAG, profile):
-        return None
+        return False
     model = attempt.model_version or AcousticModelVersion.objects.filter(active=True).first()
-    if model is None:
-        return None
-    attempt.verification_status = Verification.PENDING
-    attempt.save(update_fields=["verification_status"])
-    return ScoringJob.objects.create(
-        attempt=attempt, kind=ScoringJob.Kind.SPOT_CHECK, model_version=model
-    )
+    if model is None or not model.active:
+        return False
+    attempt.spot_check_requested_at = timezone.now()
+    attempt.save(update_fields=["spot_check_requested_at"])
+    return True

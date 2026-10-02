@@ -5,12 +5,18 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import mixins, permissions, status, viewsets
-from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    action,
+    api_view,
+    authentication_classes,
+    permission_classes,
+    throttle_classes,
+)
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
 from .. import errors
-from ..media import consent
+from ..media import consent, uploads
 from ..media.views import create_score_card_link
 from ..models import (
     SCORE_VERSION_CURRENT,
@@ -25,7 +31,6 @@ from ..models import (
     ScoringProfile,
     Twister,
     UserPhonemeStat,
-    Verification,
 )
 from ..practice import flags
 from ..security import require_worker_signature
@@ -33,15 +38,19 @@ from ..throttles import (
     AttemptSyncThrottle,
     AttemptThrottle,
     ShareCreateThrottle,
+    SpotCheckAudioThrottle,
     WordFeedbackThrottle,
 )
-from . import queries, service, stats
+from . import jobs, queries, record_jobs, service, stats
+from .normalise import tokenise
 from .serializers import (
     ACCURATE_MODE_FLAG,
     AttemptDetailSerializer,
     AttemptSerializer,
     AttemptSubmitSerializer,
+    DeviceWordSerializer,
     FeedbackSerializer,
+    SpotCheckAudioSerializer,
     low_confidence_body,
     profile_summary,
     result_body,
@@ -236,6 +245,53 @@ class AttemptViewSet(
         """A public, media-free share link for this attempt's result (spec 13 §1)."""
         return create_score_card_link(request, self.get_object())
 
+    # -- POST /attempts/{id}/spot-check-audio/ -------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="spot-check-audio",
+        url_name="spot-check-audio",
+        throttle_classes=[SpotCheckAudioThrottle],
+    )
+    def spot_check_audio(self, request, pk=None):
+        """Attach the clip the server asked for; this is what queues the worker re-score (D34)."""
+        attempt = self.get_object()
+        ser = SpotCheckAudioSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        uploads.require_spot_check_upload(request.user)
+        with transaction.atomic():
+            profile = _locked(request.user)
+            attempt = (
+                Attempt.objects.select_for_update(of=("self",))
+                .select_related("model_version")
+                .get(pk=attempt.pk)
+            )
+            existing = attempt.scoring_jobs.filter(status__in=ScoringJob.ACTIVE).first()
+            if existing is not None:
+                return Response(
+                    _job_summary(existing, attempt), headers={"Idempotent-Replay": "true"}
+                )
+            if attempt.spot_check_requested_at is None:
+                raise errors.ApiProblem(
+                    409, "no_request", "Nothing is waiting for audio on this attempt."
+                )
+            if not jobs.request_open(attempt):
+                raise errors.ApiProblem(
+                    409, "expired", "The time to send audio for this attempt has passed."
+                )
+            asset = uploads.owned_audio_asset(profile, ser.validated_data["voice_asset_id"])
+            if asset is None:
+                raise ValidationError({"voice_asset_id": "Unknown or unfinished voice clip."})
+            _check_clip_matches(attempt, asset)
+            model = attempt.model_version
+            if model is None or not model.active:
+                raise errors.ApiProblem(
+                    409, "model_retired", "That scoring model is no longer in use."
+                )
+            job, _ = jobs.enqueue(attempt, asset, model)
+        return Response(_job_summary(job, attempt), status=status.HTTP_202_ACCEPTED)
+
     # -- POST /attempts/{id}/words/{i}/feedback/ ---------------------------------------------------
 
     @action(
@@ -371,27 +427,174 @@ def engine_manifest(request):
     )
 
 
-@api_view(["POST"])
-@authentication_classes([])
-@permission_classes([permissions.AllowAny])
-def scoring_job_result(request, job_id):
-    """Worker callback (HMAC-signed, idempotent): applies a spot-check verdict to the attempt."""
+def _signed_body(request) -> dict:
+    """Verify the worker signature and parse the raw body (empty = `{}`)."""
     require_worker_signature(request)
     try:
         body = json.loads(request.body or b"{}")
     except ValueError as exc:
         raise ValidationError({"body": "Invalid JSON."}) from exc
-    outcome = body.get("status")
-    score = body.get("score")
-    if outcome not in ("done", "failed") or (
-        outcome == "done" and not (isinstance(score, int | float) and 0 <= score <= 100)
-    ):
-        raise ValidationError({"status": "Send status 'done' with a 0-100 score, or 'failed'."})
+    if not isinstance(body, dict):
+        raise ValidationError({"body": "Send a JSON object."})
+    return body
 
+
+def _job_summary(job: ScoringJob, attempt: Attempt) -> dict:
+    return {
+        "job": {"id": job.pk, "status": job.status},
+        "attempt": {"id": attempt.pk, "verification_status": attempt.verification_status},
+    }
+
+
+def _check_clip_matches(attempt: Attempt, asset) -> None:
+    """The clip must be the one that was scored: same bytes (sha-256) and about the same length (D38)."""
+    if not attempt.audio_sha256:
+        raise ValidationError(
+            {"voice_asset_id": "This attempt has no audio hash to verify against."}
+        )
+    if (asset.checksum_sha256 or "").lower() != attempt.audio_sha256.lower():
+        raise ValidationError({"voice_asset_id": "The clip does not match the scored audio."})
+    if asset.duration_ms is None:
+        raise ValidationError({"voice_asset_id": "The clip has no duration."})
+    tolerance = settings.SPOT_CHECK_DURATION_TOLERANCE
+    if abs(asset.duration_ms - attempt.duration_ms) > tolerance * max(attempt.duration_ms, 1000):
+        raise ValidationError({"voice_asset_id": "The clip length does not match the attempt."})
+
+
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
+@throttle_classes([])
+def scoring_job_claim(request):
+    """Scoring worker: take the next job (lease + signed audio URL), or `{"job": null}` when idle."""
+    body = _signed_body(request)
+    worker_id = body.get("worker_id", "")
+    return Response({"job": jobs.claim_payload(worker_id if isinstance(worker_id, str) else "")})
+
+
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
+@throttle_classes([])
+def scoring_job_heartbeat(request, job_id):
+    """Scoring worker: extend the lease (409 `lease_lost` once the job is no longer running)."""
+    _signed_body(request)
+    job = jobs.heartbeat(job_id)
+    return Response(
+        {
+            "job_id": job.pk,
+            "lease_s": settings.SCORING_JOB_LEASE_S,
+            "locked_until": job.locked_until,
+        }
+    )
+
+
+def _validated_result(body: dict, job: ScoringJob) -> dict:
+    """Field-by-field validation of a worker result; anything odd is a 400 and changes nothing."""
+    outcome = body.get("status")
+    if outcome not in ("done", "failed"):
+        raise ValidationError({"status": "Send status 'done' or 'failed'."})
+    latency = body.get("latency_ms")
+    if latency is not None and (
+        not isinstance(latency, int) or isinstance(latency, bool) or not 0 <= latency <= 3_600_000
+    ):
+        raise ValidationError({"latency_ms": "Whole milliseconds."})
+    out: dict = {"outcome": outcome, "latency_ms": latency}
+    if outcome == "failed":
+        code = body.get("error_code", "worker_error")
+        if not isinstance(code, str) or not 0 < len(code) <= 40:
+            raise ValidationError({"error_code": "A short code."})
+        retryable = body.get("retryable", True)
+        if not isinstance(retryable, bool):
+            raise ValidationError({"retryable": "true or false."})
+        return out | {"error_code": code, "retryable": retryable}
+    score, unscorable = body.get("score"), body.get("unscorable")
+    if unscorable is not None:
+        if unscorable not in jobs.INCONCLUSIVE:
+            raise ValidationError({"unscorable": "Unknown reason."})
+        score = None
+    elif not (
+        isinstance(score, int | float)
+        and not isinstance(score, bool)
+        and score == score
+        and 0 <= score <= 100
+    ):
+        raise ValidationError({"status": "Send a 0-100 score, or an unscorable reason."})
+    if job.kind == ScoringJob.Kind.RECORD:
+        return out | _validated_record_fields(body, job, score, unscorable)
+    try:
+        words = jobs.validate_words(body.get("words"), len(tokenise(job.attempt.twister.text)))
+    except ValueError as exc:
+        raise ValidationError({"words": str(exc)}) from exc
+    sha = body.get("model_sha256")
+    if sha is not None and sha != job.model_version.sha256:
+        score, unscorable = None, "model_mismatch"  # a different model is not comparable
+    version = body.get("engine_version", "")
+    if not isinstance(version, str) or len(version) > 40:
+        raise ValidationError({"engine_version": "At most 40 characters."})
+    return out | {
+        "score": score,
+        "unscorable": unscorable,
+        "words": words,
+        "summary": {
+            "engine_version": version,
+            "model_sha256": sha if isinstance(sha, str) else None,
+            "quality": body.get("quality") if isinstance(body.get("quality"), dict) else {},
+        },
+    }
+
+
+def _validated_record_fields(body: dict, job: ScoringJob, score, unscorable) -> dict:
+    """A record job reports full device-style words (the API computes the score from them), the clip length
+    it actually scored, and the same summary a spot-check does."""
+    sha = body.get("model_sha256")
+    if sha is not None and sha != job.model_version.sha256:
+        unscorable = "model_mismatch"  # a different model is not comparable
+    version = body.get("engine_version", "")
+    if not isinstance(version, str) or len(version) > 40:
+        raise ValidationError({"engine_version": "At most 40 characters."})
+    words, duration = [], None
+    if not unscorable:
+        ser = DeviceWordSerializer(data=body.get("words"), many=True)
+        if not ser.is_valid():
+            raise ValidationError({"words": ser.errors})
+        if len(ser.validated_data) > 600:
+            raise ValidationError({"words": "At most 600 words."})
+        words = [AttemptSubmitSerializer._device_word(w) for w in ser.validated_data]
+        duration = body.get("duration_ms")
+        if (
+            not isinstance(duration, int)
+            or isinstance(duration, bool)
+            or not 300 <= duration <= settings.SCORING_MAX_AUDIO_S * 1000
+        ):
+            raise ValidationError({"duration_ms": "Whole milliseconds of scored audio."})
+    return {
+        "score": score,
+        "unscorable": unscorable,
+        "device_words": words,
+        "duration_ms": duration,
+        "summary": {
+            "engine_version": version,
+            "model_sha256": sha if isinstance(sha, str) else None,
+            "quality": body.get("quality") if isinstance(body.get("quality"), dict) else {},
+        },
+    }
+
+
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
+@throttle_classes([])
+def scoring_job_result(request, job_id):
+    """Worker callback (HMAC-signed, idempotent): settles a spot-check (docs/features/13 §3.4)."""
+    body = _signed_body(request)
+    purge = None
     with transaction.atomic():
         job = (
-            ScoringJob.objects.select_for_update()
-            .select_related("attempt")
+            ScoringJob.objects.select_for_update(of=("self",))
+            .select_related(
+                "attempt__twister", "recording__twister", "model_version", "audio_asset"
+            )
             .filter(pk=job_id)
             .first()
         )
@@ -403,42 +606,34 @@ def scoring_job_result(request, job_id):
             ScoringJob.Status.EXPIRED,
         ):
             return Response({"status": job.status}, headers={"Idempotent-Replay": "true"})
-        profile = _locked(Profile(pk=job.attempt.profile_id))
-        apply_job_result(job, profile, done=outcome == "done", score=score, body=body)
-    return Response({"status": job.status})
-
-
-def apply_job_result(job: ScoringJob, profile: Profile, *, done: bool, score, body: dict) -> None:
-    now = timezone.now()
-    attempt = job.attempt
-    job.tries += 1
-    job.finished_at = now
-    job.latency_ms = body.get("latency_ms") if isinstance(body.get("latency_ms"), int) else None
-    if not done:
-        job.status = ScoringJob.Status.FAILED
-        job.error_code = str(body.get("error_code", "worker_error"))[:40]
-        job.save()
-        return  # attempt stays pending; the sweeper retries once, then lets the device result stand
-    job.status = ScoringJob.Status.DONE
-    job.save()
-    delta = abs(float(score) - attempt.score)
-    attempt.spot_checked = True
-    attempt.spot_check_delta = round(delta, 2)
-    if delta > settings.SPOT_CHECK_MAX_DELTA:
-        attempt.flagged = True
-        attempt.verification_status = Verification.FAILED
-    else:
-        attempt.verification_status = Verification.VERIFIED
-        attempt.verified_at = now
-    attempt.save(
-        update_fields=[
-            "spot_checked",
-            "spot_check_delta",
-            "flagged",
-            "verification_status",
-            "verified_at",
-        ]
-    )
-    stats.rebuild_profile_stats(
-        profile
-    )  # trust changed: mastery, bests and weak-word tallies follow
+        result = _validated_result(body, job)
+        # A late result from a worker whose lease lapsed is still good work: accept while queued or running.
+        if result["outcome"] == "failed":
+            settled = jobs.fail(job, result["error_code"], retryable=result["retryable"])
+        elif job.kind == ScoringJob.Kind.RECORD:
+            profile = _locked(Profile(pk=job.recording.profile_id))
+            record_jobs.settle_done(
+                job,
+                profile,
+                unscorable=result["unscorable"],
+                words=result["device_words"],
+                duration_ms=result["duration_ms"],
+                summary=result["summary"],
+                latency_ms=result["latency_ms"],
+            )
+            settled = jobs.Settled(job, True)
+        else:
+            profile = _locked(Profile(pk=job.attempt.profile_id))
+            settled = jobs.settle_done(
+                job,
+                profile,
+                score=result["score"],
+                unscorable=result["unscorable"],
+                words=result["words"],
+                summary=result["summary"],
+                latency_ms=result["latency_ms"],
+            )
+        purge = settled.purge
+        status_now = job.status
+    jobs.purge_audio(purge)
+    return Response({"status": status_now})

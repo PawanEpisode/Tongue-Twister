@@ -50,3 +50,15 @@ Deploying or rolling back the worker: [worker-deploy-fly.md](worker-deploy-fly.m
 - Replay is **not prevented** inside the 300 s signature window (stateless API, no nonce cache); callbacks are
   idempotent, so a replayed `processed` call is harmless. See `secrets-and-rotation.md`.
 - If it was out-of-memory or timeouts, record the source size/duration and tune `MAX_JOB_S`, `FFMPEG_THREADS`.
+
+## Scoring jobs (when `SCORING_ENABLED=1`)
+The same worker claims scoring jobs (`POST /internal/scoring-jobs/claim/`), alternating with media jobs so neither
+starves. If spot-checks or record scoring stall: admin → **Scoring jobs** (`queued` with nothing `running`, or an old
+lease). A lapsed lease is re-queued at the next claim and by the `*/10` `sweep_pending_attempts` schedule, up to
+`SCORING_JOB_MAX_TRIES` (3); a job whose audio or model is gone is `expired`, and the attempt simply keeps its
+device result. Worker log codes: `model_corrupt` (the download failed its sha-256: re-publish the model, the cache is verified on
+load), `model_mismatch` / `model_output_invalid` (the model's output does not fit the label map),
+`label_map_mismatch` / `label_map_invalid` (the map and the model do not belong together), `onnx_unavailable`
+(the image lacks onnxruntime), `job_invalid` (a malformed claim; permanent). A URL outside
+`ALLOWED_DOWNLOAD_HOSTS` or over plain http is refused before any download. `audio_mismatch` / `no_speech` /
+`low_quality` are inconclusive results, not faults. Stopping scoring without touching media: `SCORING_ENABLED=0`.

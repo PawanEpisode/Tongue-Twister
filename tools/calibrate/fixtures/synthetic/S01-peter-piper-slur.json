@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "S01-peter-piper-slur",
+  "consent": true,
+  "synthetic": true,
+  "speaker": {
+    "id": "S01",
+    "accent": "en-IN",
+    "age_band": "25-34",
+    "native": true,
+    "device_class": "laptop"
+  },
+  "scenario": "slur",
+  "swap_word": null,
+  "twister": {
+    "slug": "peter-piper",
+    "focus": ["P"],
+    "difficulty": 2,
+    "words": [
+      { "text": "peter", "variants": [["P", "IY", "T", "ER"]] },
+      { "text": "piper", "variants": [["P", "AY", "P", "ER"]] },
+      { "text": "picked", "variants": [["P", "IH", "K", "T"]] },
+      { "text": "pecks", "variants": [["P", "EH", "K", "S"]] }
+    ]
+  },
+  "posteriors": {
+    "vocab": ["<b>", "AY", "B", "EH", "ER", "IH", "IY", "K", "P", "S", "T"],
+    "frames": 60,
+    "logp_f16": "AADvyu7K2srXyunK68rryuDK2srSygAA28rdyuXK4crKyuXK4srRyuTK28oAAArLA8vyyu/KAsv9yuvK+coCy/vKdMDxyt7K8srWytzK5srxyk2v6crnyt7A+Mr3yuDK+sryyvDK4crgrdvK+8oAAOLK6Mrvyt7K58rmyvPK3sreyvLK/rXlygHL78r1ygPLqLz0yvXK5sryygAA9MrhyvbK5sr9yuPK5srtyu3K58qxwOrK3sryyvHK3Mr0yvHK68rxynKu9cDyyvvK9crwyubK/8r/yt3K4cqbrQAA/MruyvjK4Mreyt3K+8rvyunK38r4wP3K+8r9ypWt6crgyuPK5sr8yvDKMMDgytbK1Mo0sNfKzcrdyt/KysrVygAA5srrytnK5crjyuXK8crgytzK98oAAOzK/8rsyvzK5soHy/jK5coEy/XKAADNytjKzsrMyu7K7MrsyvHK1srOyovA0srbytHK38rTytrK7Mr4ruTK0crMwO3K18rayuDK0srUytnKGa70yvbKAADvytbK4MreytXK1criytLK4Mr0yunAv63ryunK98oHy/nKAMvryuPKB8uuwHyu0srnyuvK6MrdyvTK2srTyvPKAADrygDL5MrzyuLK78r9yuLK7soAy6XA6srcytnK1crvytnK88qcruPKzcpvwMvKyMrWysnK28rkysXKY6/dysbKAADtyujK6srRyuPK1srvytPK1MrWypXA3srkyvPK1K7dytbK0MrwytLK6sqdwOrKCcsCy7euAMv8yvjK78r0ygrLAAADy+7K/soEy+jK6crnyurK+sr0ygAA6cr3yufK9crWyunK4srbyvfK5soAAOrK7MrwyuLK18rYyvDKzMrQyt/KMMDuys3K7MroytfK3crnyjaw3crmylnA4Mr2yvnK3Mr5yuTK7cq6r+PK1soAAOjK9srsyvfK8soCy+rK7srryuXKgsDryunK58royhuv9cr7yuXKAcvryofAz8ruytrK8soFr+LK7srWyu/K1coAANbK08rmyuXK78rgytfK5croytbK48ABy/fK6srtyuvK+srRrenK78rwynbA2srqyuTK98rZyvzKRa/1ytnK3soAAN/Kz8rNys7K0MrjysjK1crdys/Ks8D7yuHK48rlyvPK6sruyuTK/8prrmLA88r0yu/K18r9ytzK5criyuHKlq8AAOrK2MroytLK1MrjytTK7MrnytPKAADTytXK6crYysjKy8raytLK0MrpygAA1crKyuDK1crayszK38rcys7K48qHwPTK8sr1yuTK7srjyt7KB6/qyvXKlcDSyt7K5srmytHK38rUytOu1srMygAA0srgyu/K8crWyuvK6Mrcyu7K6MqDtePKBsvvvAjL7MoDywbL9crzygTLAADSyuHKz8rQytLK68rlyuXK6crryrbA48ryytnK7crryu7KYa7nyt/K9crWwAXLCcv5yuzK7coMy/qtB8sGy/vKAADnyvDK7srqytzK38rdytbK1srryrXA9soAywXLAsvtyvzK58r3ymOu+8o+wPPK6crvyuzK08rgyubK78oXsO/KAADiyvzK38r1yvjK5srdytnK8cruygAA4srWytLK28rryubK3srOyu/K58oAAOzK5MrVytDK5crfyu7K0srSys7KAADlytvK38rlyu7K68rRyufK8MruygAA7MrhytbKz8rrytHK6MrpytbK2soAAPfK+crzyufKAcvnygLLAcsCywnL"
+  },
+  "duration_ms": 1200
+}

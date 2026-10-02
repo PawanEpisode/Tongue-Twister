@@ -1,10 +1,18 @@
 /**
- * Pronunciation engine groundwork (docs/features/10, E3-2; spec 17 section A6): pure functions over a frame
- * posterior matrix. Not wired into Speak mode — nothing in the app imports this until `accurate_mode` (E3-4).
- * The Python reference is api/twisters/speak/engine; api/tests/fixtures/engine_vectors.json pins both.
+ * Pronunciation engine (docs/features/10, 13): pure functions over a frame posterior matrix. The Python
+ * reference is api/twisters/speak/engine; api/tests/fixtures/engine_vectors.json and quality_vectors.json pin both.
+ * The browser runtime that feeds it real audio lives in ./runtime.
  */
 export { assess, scoreStatuses } from './assess'
-export { DEFAULT_PROFILE } from './types'
+export {
+  GATE_MESSAGE,
+  expectedSpeechMs,
+  posteriorGate,
+  signalGate,
+  speechBounds,
+} from './quality'
+export type { Gate, Quality } from './quality'
+export { DEFAULT_PROFILE, profileFromThresholds } from './types'
 export type {
   Assessment,
   EngineStatus,

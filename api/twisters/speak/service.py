@@ -30,6 +30,7 @@ from ..models import (
     Twister,
     TwisterPronunciation,
     UserTwisterStats,
+    Verification,
     WordStatus,
 )
 from ..practice import services
@@ -80,6 +81,8 @@ class Submission:
         None  # offline/guest imports; live submissions use the server clock
     )
     earns_progress: bool = True  # guest imports earn neither XP nor streak (decision D12)
+    #: Set only by server-side callers that scored the audio themselves (the record worker); clients cannot.
+    verification: str | None = None
 
 
 @dataclass
@@ -304,7 +307,9 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
                 audio_sha256=submission.audio_sha256,
                 quality=submission.quality,
                 lang=submission.lang,
-                verification_status=trust.initial_verification(submission.engine, distrusted),
+                verification_status=submission.verification
+                or trust.initial_verification(submission.engine, distrusted),
+                verified_at=now if submission.verification == Verification.VERIFIED else None,
                 is_personal_best=is_best,
                 flagged=flagged,
                 breakdown={}
@@ -371,7 +376,7 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
         )  # before `level_up` is read: a badge's XP can itself level the user up
 
     if trust.wants_spot_check(attempt, is_personal_best=is_best):
-        trust.schedule_spot_check(attempt, profile)
+        trust.request_spot_check(attempt, profile)
 
     return Result(
         attempt=attempt,

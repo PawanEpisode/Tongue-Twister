@@ -45,6 +45,10 @@ class VoiceUploadThrottle(WindowedRateMixin, UserRateThrottle):
     scope = "voice_uploads"
 
 
+class SpotCheckAudioThrottle(WindowedRateMixin, UserRateThrottle):
+    scope = "spot_check_audio"
+
+
 class ShareCreateThrottle(WindowedRateMixin, UserRateThrottle):
     scope = "share_create"
 
