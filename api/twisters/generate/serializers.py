@@ -25,5 +25,11 @@ class GenerateRequestSerializer(serializers.Serializer):
 class OwnTwisterSerializer(TwisterSerializer):
     """A twister as its owner sees it: the catalogue shape plus the fields needed to manage it."""
 
+    attempts_count = serializers.SerializerMethodField()
+
     class Meta(TwisterSerializer.Meta):
-        fields = [*TwisterSerializer.Meta.fields, "id", "topic", "created_at"]
+        fields = [*TwisterSerializer.Meta.fields, "id", "topic", "created_at", "attempts_count"]
+
+    def get_attempts_count(self, obj) -> int:
+        """Tries on the stats row. No row means the owner has not tried this twister yet."""
+        return self.context.get("attempt_counts", {}).get(obj.id, 0)

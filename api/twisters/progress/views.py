@@ -7,7 +7,7 @@ from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from ..models import Favorite, Profile, Twister, public_twister_q
+from ..models import Favorite, Profile, Twister, visible_twister_q
 from ..serializers import TwisterSerializer, twister_context
 from . import achievements, boards, daily, insights, summary
 from .serializers import (
@@ -85,7 +85,9 @@ class FavoriteList(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            Favorite.objects.filter(public_twister_q("twister__"), profile=self.request.user)
+            Favorite.objects.filter(
+                visible_twister_q(self.request.user, "twister__"), profile=self.request.user
+            )
             .select_related("twister__category")
             .order_by("-created_at", "-id")
         )
@@ -101,8 +103,12 @@ class FavoriteList(generics.ListAPIView):
 @api_view(["PUT", "DELETE"])
 @permission_classes([permissions.IsAuthenticated])
 def me_favorite(request, slug):
-    """Set the favourite state explicitly, so a retry or a double click can never flip it back."""
-    twister = get_object_or_404(Twister.objects.public(), slug=slug)
+    """Set the favourite state explicitly, so a retry or a double click can never flip it back.
+
+    Public catalogue twisters, plus the caller's own private ones. Anyone else's private slug is
+    the same 404 as a slug that does not exist.
+    """
+    twister = get_object_or_404(Twister.objects.visible_to(request.user), slug=slug)
     if request.method == "PUT":
         Favorite.objects.get_or_create(profile=request.user, twister=twister)
     else:

@@ -27,7 +27,7 @@ from .generate_helpers import (
     unavailable,
 )
 from .media_helpers import saved_recording
-from .progress_helpers import error_code, make_attempt
+from .progress_helpers import error_code, make_attempt, make_stats
 from .speak_helpers import submit
 
 pytestmark = pytest.mark.django_db
@@ -358,6 +358,7 @@ def test_my_twisters_lists_only_my_own_newest_first_with_the_quota(user, auth_cl
         "is_favorite",
         "best_score",
         "mastery",
+        "attempts_count",
         "created_at",
     }
     assert row["visibility"] == "private"
@@ -393,9 +394,13 @@ def test_my_twisters_is_paginated(user):
 def test_my_twisters_shows_my_best_score_and_mastery(user):
     client, profile = user
     tw = private_twister(profile)
+    untouched = private_twister(profile)
     make_attempt(profile, tw, score=88)
-    row = client.get(f"{API}/me/twisters/").data["results"][0]
-    assert row["best_score"] == 88
+    make_stats(profile, tw, attempts_count=3, best_score=88)
+    rows = {row["id"]: row for row in client.get(f"{API}/me/twisters/").data["results"]}
+    assert rows[tw.id]["best_score"] == 88
+    assert rows[tw.id]["attempts_count"] == 3
+    assert rows[untouched.id]["attempts_count"] == 0
 
 
 # --- delete ----------------------------------------------------------------------------------------------------------
@@ -475,8 +480,12 @@ def test_the_owner_can_open_and_practise_their_twister(user):
     )
 
 
-def test_a_private_twister_cannot_be_added_to_favourites(user):
+def test_the_owner_can_favourite_their_private_twister(user):
+    """The catalogue toggle stays public-only. The explicit favourite endpoint accepts the owner."""
     client, profile = user
     tw = private_twister(profile)
-    assert client.put(f"{API}/me/favorites/{tw.slug}/").status_code == 404
     assert client.post(f"{API}/twisters/{tw.slug}/favorite/").status_code == 404
+    assert client.put(f"{API}/me/favorites/{tw.slug}/").data == {"is_favorite": True}
+    slugs = [row["slug"] for row in client.get(f"{API}/me/favorites/").data["results"]]
+    assert slugs == [tw.slug]
+    assert client.delete(f"{API}/me/favorites/{tw.slug}/").data == {"is_favorite": False}

@@ -196,11 +196,15 @@ def test_weekly_board_for_a_private_slug_is_404(owner, outsider):
     assert r.status_code == 404 and not leaks(r, secret)
 
 
-def test_favourites_cannot_hold_a_private_twister(owner, stranger):
+def test_only_the_owner_can_favourite_a_private_twister(owner, stranger):
     client, profile, secret = owner
     assert stranger.put(f"{API}/me/favorites/{secret.slug}/").status_code == 404
-    assert client.put(f"{API}/me/favorites/{secret.slug}/").status_code == 404
     assert stranger.post(f"{API}/twisters/{secret.slug}/favorite/").status_code == 404
+    assert stranger.get(f"{API}/me/favorites/").data["results"] == []
+    assert client.put(f"{API}/me/favorites/{secret.slug}/").data == {"is_favorite": True}
+    assert [row["slug"] for row in client.get(f"{API}/me/favorites/").data["results"]] == [
+        secret.slug
+    ]
     assert stranger.get(f"{API}/me/favorites/").data["results"] == []
 
 

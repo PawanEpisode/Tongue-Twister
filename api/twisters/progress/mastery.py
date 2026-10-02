@@ -58,12 +58,25 @@ def mastery_state(stats: UserTwisterStats | None) -> str:
     )
 
 
-def mastery_states_for(profile: Profile) -> dict[int, str]:
-    """twister_id -> state in one query. Twisters without a row are absent, which means ``new``."""
+def stats_rows(profile: Profile) -> list[dict]:
+    """One read of this caller's per-twister stats. Mastery and try counts both come from it."""
+    return list(UserTwisterStats.objects.filter(profile=profile).values(*STATS_FIELDS))
+
+
+def states_from_rows(rows) -> dict[int, str]:
     return {
         row["twister_id"]: state_from(**{k: v for k, v in row.items() if k != "twister_id"})
-        for row in UserTwisterStats.objects.filter(profile=profile).values(*STATS_FIELDS)
+        for row in rows
     }
+
+
+def attempt_counts_from_rows(rows) -> dict[int, int]:
+    return {row["twister_id"]: row["attempts_count"] for row in rows}
+
+
+def mastery_states_for(profile: Profile) -> dict[int, str]:
+    """twister_id -> state in one query. Twisters without a row are absent, which means ``new``."""
+    return states_from_rows(stats_rows(profile))
 
 
 def _mastered(profile: Profile):

@@ -151,9 +151,26 @@ class HFBackend:
         import onnxruntime
         import torch
         import transformers
-        from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
+        from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC, Wav2Vec2Config
 
-        model = Wav2Vec2ForCTC.from_pretrained(model_id, revision=revision)
+        config = Wav2Vec2Config.from_pretrained(model_id, revision=revision)
+        model = Wav2Vec2ForCTC(config)
+        bin_path = _hf_download(model_id, "pytorch_model.bin", revision)
+        state = torch.load(bin_path, map_location="cpu", weights_only=True)
+        fixed = {}
+        for key, value in state.items():
+            if key.endswith("pos_conv_embed.conv.weight_g"):
+                key = key[: -len("weight_g")] + "parametrizations.weight.original0"
+            elif key.endswith("pos_conv_embed.conv.weight_v"):
+                key = key[: -len("weight_v")] + "parametrizations.weight.original1"
+            fixed[key] = value
+        missing, unexpected = model.load_state_dict(fixed, strict=False)
+        pos_missing = [k for k in missing if "pos_conv_embed.conv.parametrizations" in k]
+        if pos_missing or unexpected:
+            raise ExportError(
+                "positional conv weights did not load: "
+                + ", ".join([*pos_missing, *unexpected])
+            )
         model.eval()
         extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_id, revision=revision)
         vocab_path = _hf_download(model_id, "vocab.json", revision)
@@ -206,7 +223,7 @@ class HFBackend:
     def quantize_int8(self, src: Path, dest: Path) -> None:
         from onnxruntime.quantization import QuantType, quantize_dynamic
 
-        quantize_dynamic(str(src), str(dest), weight_type=QuantType.QInt8)
+        quantize_dynamic(str(src), str(dest), weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"],)
 
     def infer(self, path: Path, samples: list[float]) -> Inference:
         import numpy as np

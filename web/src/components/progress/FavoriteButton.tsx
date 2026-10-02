@@ -11,9 +11,12 @@ const preview = (text: string) =>
 export function FavoriteButton({
   twister,
   className,
+  activeClassName = 'fill-pink text-pink',
 }: {
   twister: Pick<Twister, 'slug' | 'text' | 'is_favorite'>
   className?: string
+  /** Filled-star color. Browse stays pink; the library cards use gold. */
+  activeClassName?: string
 }) {
   const { starred, toggle, failed, localOnly } = useFavorite(
     twister.slug,
@@ -35,7 +38,7 @@ export function FavoriteButton({
         <Star
           className={cn(
             'size-5',
-            starred ? 'fill-pink text-pink' : 'text-muted-foreground',
+            starred ? activeClassName : 'text-muted-foreground',
           )}
           aria-hidden
         />

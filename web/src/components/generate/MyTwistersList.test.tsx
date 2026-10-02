@@ -8,7 +8,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import MyTwistersList from './MyTwistersList'
+import MyTwistersScreen from './MyTwistersScreen'
 
 vi.mock('#/lib/supabase', () => ({ getAccessToken: async () => null }))
 vi.mock('#/lib/auth', () => ({
@@ -30,7 +30,7 @@ function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={qc}>
-      <MyTwistersList />
+      <MyTwistersScreen />
     </QueryClientProvider>,
   )
 }
@@ -83,5 +83,76 @@ describe('MyTwistersList', () => {
         ),
       ).toBe(true),
     )
+  })
+
+  it('starts a new twister and offers practise once it has been tried', async () => {
+    fetchMock.mockResolvedValue(
+      reply(200, {
+        count: 2,
+        results: [
+          {
+            id: 1,
+            slug: 'fresh',
+            text: 'Alpha twister',
+            attempts_count: 0,
+            best_score: null,
+            word_count: 2,
+            focus_sounds: [],
+          },
+          {
+            id: 2,
+            slug: 'tried',
+            text: 'Beta twister',
+            attempts_count: 1,
+            best_score: 29,
+            word_count: 2,
+            focus_sounds: ['b'],
+          },
+        ],
+      }),
+    )
+    setup()
+    expect(await screen.findByRole('link', { name: 'Start' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Practise' })).toBeTruthy()
+    expect(screen.getByText('Not tried yet')).toBeTruthy()
+    expect(screen.getByText('29')).toBeTruthy()
+    expect(screen.getByText(/1 try/)).toBeTruthy()
+  })
+
+  it('highlights the trap words and filters by length', async () => {
+    fetchMock.mockResolvedValue(
+      reply(200, {
+        count: 2,
+        results: [
+          {
+            id: 1,
+            slug: 'bears',
+            text: 'Brisk brown bears bring blue bundles by the bay',
+            word_count: 9,
+            focus_sounds: ['b', 'br', 'bl'],
+            attempts_count: 0,
+          },
+          {
+            id: 2,
+            slug: 'long',
+            text: Array.from({ length: 50 }, () => 'word').join(' '),
+            word_count: 50,
+            focus_sounds: [],
+            attempts_count: 0,
+          },
+        ],
+      }),
+    )
+    setup()
+    expect(
+      await screen.findByRole('button', { name: /show the trap/i }),
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /show the trap/i }))
+    expect(screen.getByText('Brisk').className).toMatch(/text-cyan/)
+    expect(screen.getByText('by').className).not.toMatch(/text-cyan/)
+
+    fireEvent.click(screen.getByRole('button', { name: /^long/i }))
+    expect(screen.queryByText('Brisk')).toBeNull()
+    expect(screen.getByText(/50 words/)).toBeTruthy()
   })
 })

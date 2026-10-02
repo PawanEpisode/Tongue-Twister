@@ -5,7 +5,13 @@ import { useAuth } from '../auth'
 import { GUEST_FAVORITES_EVENT, guestQueue } from '../syncQueue'
 
 /** Lists that show a star; refetched after a change so they agree with the server. */
-const FAVORITE_KEYS = ['twisters', 'twister', 'favorites', 'summary'] as const
+const FAVORITE_KEYS = [
+  'twisters',
+  'twister',
+  'favorites',
+  'summary',
+  'my-twisters',
+] as const
 
 /** The on-device favourites, live: reacts to stars changed anywhere on the page. Empty on the server. */
 export function useGuestFavorites(): string[] {

@@ -54,6 +54,26 @@ describe('generate api', () => {
     fetchMock.mockResolvedValue(json(200, { count: 0, results: [] }))
     expect(await listMyTwisters()).toEqual([])
   })
+  it('follows next until every owned twister is loaded', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        json(200, {
+          count: 2,
+          next: 'http://localhost:8000/api/v1/me/twisters/?page=2',
+          results: [{ id: 1, slug: 'a', text: 'A' }],
+        }),
+      )
+      .mockResolvedValueOnce(
+        json(200, {
+          count: 2,
+          next: null,
+          results: [{ id: 2, slug: 'b', text: 'B' }],
+        }),
+      )
+    const items = await listMyTwisters()
+    expect(items.map((item) => item.slug)).toEqual(['a', 'b'])
+    expect(fetchMock.mock.calls[1]?.[0]).toMatch(/\/me\/twisters\/\?page=2$/)
+  })
   it('DELETEs and tolerates 204', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
     await deleteMyTwister(12)

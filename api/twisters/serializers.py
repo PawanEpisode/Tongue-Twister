@@ -16,14 +16,17 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 def twister_context(user) -> dict:
-    """Per-caller serializer context (favourites, best scores, mastery): three constant-size queries
-    whatever the page size. Empty for anonymous callers, whose twisters carry no personal fields."""
+    """Per-caller serializer context (favourites, best scores, mastery, try counts): three
+    constant-size queries whatever the page size. Empty for anonymous callers, whose twisters carry
+    no personal fields. ``attempt_counts`` is rendered only by the owned-twister serializer."""
     if not isinstance(user, Profile):
         return {}
+    rows = mastery.stats_rows(user)
     return {
         "favorite_ids": set(user.favorites.values_list("twister_id", flat=True)),
         "best_scores": best_scores(user.attempts.all()),
-        "mastery_states": mastery.mastery_states_for(user),
+        "mastery_states": mastery.states_from_rows(rows),
+        "attempt_counts": mastery.attempt_counts_from_rows(rows),
     }
 
 
