@@ -106,6 +106,12 @@ export class AccurateEngine {
     }
   }
 
+  /** Staff measuring a slow device (the calibration page): skip the speed ceiling so the real numbers can be taken. */
+  private skipSpeedGate = false
+  allowSlowDevice(on: boolean) {
+    this.skipSpeedGate = on
+  }
+
   // --- lifecycle -----------------------------------------------------------------------------------
   /** Work out what this device and server can do. Cheap; safe to call on every page that offers the mode. */
   async refresh(): Promise<void> {
@@ -134,7 +140,7 @@ export class AccurateEngine {
       threadsFor(env),
       this.deps.now?.(),
     )
-    if (bench && bench.estimateMs > MAX_LATENCY_MS)
+    if (!this.skipSpeedGate && bench && bench.estimateMs > MAX_LATENCY_MS)
       return this.set({ state: 'unavailable', reason: 'too_slow' })
     const cached = await isCached(manifest.model, this.deps.cache).catch(
       () => false,
@@ -213,8 +219,11 @@ export class AccurateEngine {
       if (estimateMs === undefined) {
         this.set({ state: 'starting', step: 'warming' })
         const perf = this.deps.perf ?? (() => performance.now())
+        const clip = benchClip()
+        // The first inference pays one-off costs (graph optimisation, buffer allocation); judge the device by the second.
+        await this.client.run(clip, signal)
         const t0 = perf()
-        await this.client.run(benchClip(), signal)
+        await this.client.run(clip, signal)
         estimateMs = estimateLatencyMs(perf() - t0)
         writeBench(this.deps.storage, {
           sha256: manifest.model.sha256,
@@ -223,7 +232,7 @@ export class AccurateEngine {
           at: this.deps.now?.() ?? Date.now(),
         })
       }
-      if (estimateMs > MAX_LATENCY_MS) {
+      if (!this.skipSpeedGate && estimateMs > MAX_LATENCY_MS) {
         this.teardown()
         this.setPref(false)
         return this.set({ state: 'unavailable', reason: 'too_slow' })

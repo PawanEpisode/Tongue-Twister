@@ -142,7 +142,7 @@ describe('AccurateEngine lifecycle', () => {
     expect(seen).toEqual(
       expect.arrayContaining(['idle', 'downloading', 'starting', 'ready']),
     )
-    expect(events).toEqual(['init', 'run'])
+    expect(events).toEqual(['init', 'run', 'run'])
     expect(store.get('twister.accurate.enabled.v1')).toBe('1')
     expect(engine.ready).toBe(true)
     expect(engine.modelVersion).toBe('m1')

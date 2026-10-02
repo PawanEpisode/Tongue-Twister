@@ -114,6 +114,12 @@ function notReadyReason(status: EngineStatus): string {
 
 export default function CalibratePanel() {
   const { engine, status } = useAccurateEngine(true)
+  // This page exists to measure devices, slow ones included: never hide the model behind the speed ceiling here.
+  useEffect(() => {
+    if (!engine) return
+    engine.allowSlowDevice(true)
+    void engine.refresh()
+  }, [engine])
   const [accent, setAccent] = useAccent()
   const [speaker, setSpeaker] = useState<Speaker>(() =>
     load<Speaker>(SPEAKER_KEY, {

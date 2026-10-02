@@ -21,6 +21,11 @@ exit gate, §14 record analysis). Rolling a bad model back: [model-rollback.md](
 
 ## 1. Prove accuracy (the exit gate). No flag changes yet
 
+0. **To record at `/dev/calibrate` the browser must be able to load the model**, and the manifest only serves an
+   *active* model to users the `accurate_mode` flag covers. So for this stage: set `accurate_mode` to
+   **allow-list only** (your profile, nobody else), then register and activate the model with
+   `--activate --bootstrap-profile sp-0` (untuned defaults; nobody outside the allow-list can reach it). After
+   step 4 below, publish again with the tuned profile and widen the flag only when the exit gate passes.
 1. Allow-list yourself on the `calibrate` flag (Django admin → Feature flags → `calibrate` → *Allow list* = your
    profile id; the migration seeds it **off** and never resets it).
 2. Record the gold set at `/dev/calibrate` on real phones and laptops: **≥ 6 speakers, ≥ 3 with en-IN, ≥ 12
