@@ -182,7 +182,7 @@ export function StatsView({
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageTitle>Your progress</PageTitle>
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row-reverse sm:items-center">
           <ScrollRow role="group" aria-label="Time range">
             {STATS_RANGES.map((r) => (
               <Chip
@@ -209,7 +209,7 @@ export function StatsView({
                 })
               }
             >
-              <SelectTrigger id={modeId} className="w-auto py-1.5">
+              <SelectTrigger id={modeId} className="w-auto py-1.5 whitespace-nowrap">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

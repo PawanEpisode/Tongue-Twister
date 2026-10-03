@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PracticeSkeleton } from '#/components/feedback'
 import NailedWordsPanel from '#/components/practice/words/NailedWordsPanel'
 import PracticeTabs from '#/components/practice/words/PracticeTabs'
+import SummaryHeader from '#/components/practice/words/SummaryHeader'
 import SoundsPanel from '#/components/practice/words/SoundsPanel'
 import WeakWordsPanel, {
   canDrill,
@@ -20,6 +21,7 @@ import { useAuth } from '#/lib/auth'
 import { usePreferences } from '#/lib/preferences'
 import { seo } from '#/lib/seo'
 import { PracticeLockProvider } from '#/lib/tabLock'
+import { useModelVoice } from '#/lib/useModelVoice'
 import {
   invalidateWordQueues,
   useNailedWords,
@@ -56,8 +58,12 @@ function PracticePage() {
   const [items, setItems] = useState<DrillItem[] | null>(null)
   const autoStarted = useRef(false)
 
-  const weak = useWeakWords(userId, dueOnly)
+  const allWeak = useWeakWords(userId, false)
+  const due = useWeakWords(userId, true)
+  const weak = dueOnly ? due : allWeak
   const nailed = useNailedWords(userId)
+  const voice = useModelVoice(prefs.accent_lang, prefs.tts_voice)
+  const onHear = voice.supported ? (w: string) => voice.say(w, 1) : undefined
   const drillable = weak.items.filter(canDrill)
 
   // Arrive from the results screen: start on the weakest words once, then drop the flag from the URL.
@@ -99,10 +105,17 @@ function PracticePage() {
     )
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-5xl">
       <h1 className="text-center font-display text-3xl font-extrabold">
         Your practice
       </h1>
+      {allWeak.query.isSuccess && nailed.query.isSuccess && (
+        <SummaryHeader
+          nailed={nailed.count}
+          weak={allWeak.count}
+          due={due.query.isSuccess ? due.count : 0}
+        />
+      )}
       <PracticeTabs
         tabs={[
           {
@@ -126,9 +139,10 @@ function PracticePage() {
           dueOnly={dueOnly}
           onDueOnly={setDueOnly}
           onDrill={setItems}
+          onHear={onHear}
         />
       )}
-      {tab === 'nailed' && <NailedWordsPanel queue={nailed} />}
+      {tab === 'nailed' && <NailedWordsPanel queue={nailed} onHear={onHear} />}
       {tab === 'sounds' && <SoundsPanel userId={userId} />}
     </div>
   )

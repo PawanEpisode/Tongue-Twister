@@ -13,13 +13,15 @@
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "typecheck": "tsc --noEmit",
-    "check": "prettier --check . && tsc --noEmit",
+    "check": "prettier --check . && tsc --noEmit && node scripts/sync-disposable-domains.mjs --check",
     "test": "vitest run",
     "build:e2e": "node scripts/build-e2e.mjs",
     "size": "node scripts/check-bundle-size.mjs",
     "test:e2e": "playwright test --project=e2e --project=csp",
     "test:a11y": "playwright test --project=a11y",
     "e2e:install": "playwright install --with-deps chromium",
+    "sync:disposable": "node scripts/sync-disposable-domains.mjs",
+    "check:disposable": "node scripts/sync-disposable-domains.mjs --check",
     "test:scripts": "node --test \"scripts/**/*.test.mjs\""
   },
   "dependencies": {

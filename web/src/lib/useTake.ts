@@ -19,13 +19,22 @@ export function useTake(o: {
   /** Long passages wait longer before auto-stopping. */
   isLong?: boolean
   onFinish: (take: SpeechResult) => void
+  /** Keep listening through pauses (default). A single word sets this to false for a faster result. */
+  continuous?: boolean
+  /** Transcripts to consider per utterance (a single word: several, since recognisers guess it badly). */
+  alternatives?: number
   /** Optional PCM tap on the same mic stream (Accurate mode). */
   audio?: { onAudio: (a: AudioParts) => void; onTeardown: () => void }
 }) {
   const { text, focusSounds = [], typed = '', isLong = false, onFinish } = o
   const mic = useMediaPermissions('microphone')
   const lock = usePracticeLock()
-  const speech = useSpeech({ onFinish, ...o.audio })
+  const speech = useSpeech({
+    onFinish,
+    continuous: o.continuous,
+    alternatives: o.alternatives,
+    ...o.audio,
+  })
   const [showGo, setShowGo] = useState(false)
 
   // Flash "GO!" the moment the mic is truly capturing, so users never start talking too early.
@@ -36,12 +45,22 @@ export function useTake(o: {
     return () => clearTimeout(id)
   }, [speech.status])
 
-  const spoken =
+  const heard =
     speech.status !== 'idle' ? speech.transcript : typed || speech.transcript
-  const hits = useMemo(
-    () => liveHits(text, spoken, focusSounds),
-    [text, focusSounds.join('|'), spoken],
-  )
+  // The recogniser's first guess is not always its best for us: when it offered alternatives, use the
+  // one that matches the target most ("seats" → "sees").
+  const { spoken, hits } = useMemo(() => {
+    let best = heard
+    let bestHits = liveHits(text, heard, focusSounds)
+    let bestN = bestHits.filter(Boolean).length
+    if (speech.status !== 'idle')
+      for (const alt of speech.alternatives.slice(1)) {
+        const h = liveHits(text, alt.text, focusSounds)
+        const n = h.filter(Boolean).length
+        if (n > bestN) [best, bestHits, bestN] = [alt.text, h, n]
+      }
+    return { spoken: best, hits: bestHits }
+  }, [text, focusSounds.join('|'), heard, speech.alternatives, speech.status])
   const matched = hits.filter(Boolean).length
   const currentIdx = hits.findIndex((h) => !h)
 

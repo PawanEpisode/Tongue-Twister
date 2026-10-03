@@ -6,19 +6,40 @@ import Lottie from '#/components/ClientLottie'
 import type { Take } from '#/lib/useTake'
 import PermissionNotice from './PermissionNotice'
 
+const STATUS: Record<string, string> = {
+  listening: 'Listening… say it now',
+  hearing: 'Hearing you…',
+  processing: 'Got it — working out the words…',
+}
+
 /** The mic button with its visualiser, GO! flash, status line and every notice around it. */
 export default function MicStage({
   take,
   onReadAlong,
   idleHint = 'Tap the mic, wait for GO!, then say it as fast as you can',
+  heardHint = 'Keep going — I’ll stop when you finish',
   unsupportedHint = 'Speech recognition isn’t supported in this browser — type it below',
 }: {
   take: Take
   onReadAlong?: () => void
   idleHint?: string
+  /** Status line once words are on screen. */
+  heardHint?: string
   unsupportedHint?: string
 }) {
-  const { speech, mic, lock, arming, live, showGo, startListening } = take
+  const {
+    speech,
+    mic,
+    lock,
+    arming,
+    live,
+    showGo,
+    startListening,
+    hits,
+    matched,
+    spoken,
+  } = take
+  const allMatched = hits.length > 0 && matched === hits.length
   return (
     <>
       <div className="relative mx-auto mt-8 h-64 w-64">
@@ -76,9 +97,9 @@ export default function MicStage({
         {arming
           ? 'Getting your mic ready… wait for GO!'
           : live
-            ? speech.transcript
-              ? 'Keep going — I’ll stop when you finish'
-              : 'Listening… say it now'
+            ? speech.phase === 'heard'
+              ? heardHint
+              : STATUS[speech.phase]
             : speech.supported
               ? idleHint
               : unsupportedHint}
@@ -95,10 +116,33 @@ export default function MicStage({
         </p>
       )}
       {speech.error && <p className="mt-2 text-sm text-pink">{speech.error}</p>}
-      {live && speech.transcript && (
-        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-          “{speech.transcript}”
-        </p>
+      {live && (
+        <div
+          className="mx-auto mt-3 grid min-h-[3.5rem] max-w-xl place-items-center"
+          aria-live="polite"
+        >
+          {speech.transcript ? (
+            <p
+              data-testid="heard"
+              className={`font-display text-2xl font-bold transition-colors ${allMatched ? 'text-lime' : 'text-foreground'} ${speech.interim ? 'opacity-80' : ''}`}
+            >
+              “{allMatched ? spoken : speech.transcript}”
+            </p>
+          ) : speech.phase === 'hearing' || speech.phase === 'processing' ? (
+            <span
+              aria-hidden
+              className="flex items-end gap-1.5 text-muted-foreground"
+            >
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="size-2 animate-bounce rounded-full bg-current motion-reduce:animate-none"
+                  style={{ animationDelay: `${i * 120}ms` }}
+                />
+              ))}
+            </span>
+          ) : null}
+        </div>
       )}
     </>
   )

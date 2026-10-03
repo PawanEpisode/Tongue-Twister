@@ -26,8 +26,11 @@ def auth_client(db):
     """Factory: ``auth_client()`` is a new user, ``auth_client(sub)`` a repeat login of the same user."""
 
     def make(sub: str | None = None) -> APIClient:
+        sub = sub or str(uuid.uuid4())
         token = jwt.encode(
-            {"sub": sub or str(uuid.uuid4()), "aud": "authenticated", "email": "a@b.co"},
+            # One inbox per account (the sign-up guard refuses a second account for the same inbox), so the
+            # email is unique per user; the local part keeps the old display name "a" prefix.
+            {"sub": sub, "aud": "authenticated", "email": f"a{sub[:8]}@b.co"},
             SECRET,
             algorithm="HS256",
         )

@@ -1,9 +1,8 @@
 import { Check, Turtle, Volume2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '#/components/ui/button'
 import type { DrillTarget, Preferences, WeakWord } from '#/lib/api'
-import { scoreLocally } from '#/lib/scoring'
-import { unscorableReason } from '#/lib/speak/score'
+import { judgeDrill } from '#/lib/speak/drill'
 import { useModelVoice } from '#/lib/useModelVoice'
 import { usePracticeSubmit } from '#/lib/usePracticeSubmit'
 import { useTake } from '#/lib/useTake'
@@ -13,12 +12,17 @@ import MicStage from './MicStage'
 /** A weak word that has somewhere to be drilled. */
 export type DrillItem = WeakWord & { drill: DrillTarget }
 
-/** The recogniser must be at least this sure (PRD 03 §4.4); a shaky "match" does not count. */
-export const DRILL_MIN_CONFIDENCE = 0.6
 /** After this many misses in a row the drill slows down and plays the word slowly. */
 export const MISSES_BEFORE_HELP = 3
 
-type Outcome = { kind: 'passed' | 'missed' | 'unclear'; heard?: string }
+type Outcome = {
+  kind: 'passed' | 'missed' | 'unclear'
+  heard?: string
+  /** How sure the recogniser was, for the developer hint on an unclear take. */
+  confidence?: number | null
+  /** Passed on a sound-alike ("cease" for "sees"), not an exact match. */
+  close?: boolean
+}
 
 /** Word drill: one weak word at a time with a model voice, a spelling hint and its sentence for context. */
 export default function WordDrill({
@@ -40,23 +44,24 @@ export default function WordDrill({
   const item = items[index] as DrillItem | undefined
   const take = useTake({
     text: item?.word ?? '',
+    // One word: let the browser end the take itself the moment the word is said.
+    continuous: false,
+    // Isolated words are what recognisers guess worst ("sees" → "seats"), so ask for several guesses.
+    alternatives: 5,
     onFinish: (r) => {
       if (!item) return
-      const local = scoreLocally({
-        text: item.word,
-        spoken: r.transcript,
-        durationMs: r.durationMs,
-        longPauseMs: r.longPauseMs,
-        difficulty: 2,
-      })
-      if (unscorableReason(local.evaluation, r.confidence)) {
-        setOutcome({ kind: 'unclear' })
+      const verdict = judgeDrill(item.word, r)
+      console.debug('[drill]', { word: item.word, r, verdict })
+      if (verdict.kind === 'unclear') {
+        setOutcome({ kind: 'unclear', confidence: verdict.confidence })
         return
       }
-      const status = local.rows.find((row) => row.targetIndex === 0)?.status
-      const sure = r.confidence == null || r.confidence >= DRILL_MIN_CONFIDENCE
-      const passed = (status === 'correct' || status === 'near') && sure
-      setOutcome({ kind: passed ? 'passed' : 'missed', heard: r.transcript })
+      const passed = verdict.kind === 'passed'
+      setOutcome({
+        kind: verdict.kind,
+        heard: r.transcript,
+        close: passed && verdict.close,
+      })
       if (passed) setNailed((n) => [...n, item.word])
       else {
         const total = misses + 1
@@ -67,14 +72,20 @@ export default function WordDrill({
         twister: item.drill.twister,
         kind: 'drill',
         segment: { start: item.drill.start, end: item.drill.end },
-        transcript: r.transcript,
+        transcript: verdict.transcript,
         durationMs: r.durationMs,
         longPauseMs: r.longPauseMs,
-        confidence: r.confidence,
+        confidence: verdict.confidence,
       })
     },
   })
   const { speech, live } = take
+
+  // A new take starts clean: last take's "couldn't hear you" must not linger beside the live mic.
+  useEffect(() => {
+    if (speech.status !== 'idle')
+      setOutcome((o) => (o?.kind === 'passed' ? o : null))
+  }, [speech.status])
 
   const tryAgain = () => {
     setOutcome(null)
@@ -166,17 +177,23 @@ export default function WordDrill({
       )}
 
       {outcome?.kind === 'passed' ? (
-        <p
-          role="status"
-          className="mt-8 flex items-center justify-center gap-2 text-xl font-semibold text-lime"
-        >
-          <Check className="size-5" aria-hidden />
-          That’s it!
-        </p>
+        <div role="status" className="mt-8">
+          <p className="flex items-center justify-center gap-2 text-xl font-semibold text-lime">
+            <Check className="size-5" aria-hidden />
+            That’s it!
+          </p>
+          {outcome.close && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              We heard “{outcome.heard}” — close enough to count. Check the
+              exact sounds with Listen.
+            </p>
+          )}
+        </div>
       ) : (
         <MicStage
           take={take}
           idleHint="Tap the mic, wait for GO!, then say the word"
+          heardHint="Got it — finishing up…"
           unsupportedHint="Word drill needs speech recognition, which this browser doesn’t support — try Chrome or Edge."
         />
       )}
@@ -191,6 +208,11 @@ export default function WordDrill({
       {outcome?.kind === 'unclear' && (
         <p role="alert" className="mt-2 text-pink">
           We couldn’t hear you clearly — try again a little closer to the mic.
+          {import.meta.env.DEV && outcome.confidence != null && (
+            <span className="ml-1 text-xs opacity-60">
+              (dev: confidence {outcome.confidence.toFixed(2)})
+            </span>
+          )}
         </p>
       )}
 

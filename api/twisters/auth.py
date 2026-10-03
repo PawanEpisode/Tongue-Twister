@@ -6,6 +6,7 @@ from jwt import PyJWKClient
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework.exceptions import AuthenticationFailed
 
+from . import signup_guard
 from .account import pending
 from .models import Profile
 
@@ -54,17 +55,21 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Malformed Authorization header")
         claims = decode_supabase_token(parts[1].decode())
         meta = claims.get("user_metadata") or {}
-        profile, _ = Profile.objects.get_or_create(
-            id=claims["sub"],
-            defaults={
-                "email": claims.get("email", ""),
-                "display_name": (
-                    meta.get("full_name")
-                    or meta.get("name")
-                    or claims.get("email", "").split("@")[0]
-                )[:40],
-            },
-        )
+        email = claims.get("email", "")
+        profile = Profile.objects.filter(pk=claims["sub"]).first()
+        if profile is None:
+            # A first-ever request: the only moment a new account comes into being on our side.
+            canonical = signup_guard.admit_new_account(claims["sub"], email)
+            profile, _ = Profile.objects.get_or_create(
+                id=claims["sub"],
+                defaults={
+                    "email": email,
+                    "canonical_email": canonical,
+                    "display_name": (
+                        meta.get("full_name") or meta.get("name") or email.split("@")[0]
+                    )[:40],
+                },
+            )
         if not self.accept(request, profile):
             return None
         return profile, claims

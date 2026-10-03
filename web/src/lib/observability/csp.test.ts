@@ -27,4 +27,9 @@ describe('CSP for observability hosts', () => {
       expect(connect).toContain(host)
     expect(directive('script-src')).not.toMatch(/posthog|sentry/)
   })
+
+  it('allows the Google DNS resolver the sign-up email check calls', () => {
+    expect(directive('connect-src')).toContain('https://dns.google')
+    expect(directive('script-src')).not.toContain('dns.google')
+  })
 })

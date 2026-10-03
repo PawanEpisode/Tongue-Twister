@@ -198,6 +198,13 @@ class Profile(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(blank=True)
+    canonical_email = models.CharField(
+        max_length=254,
+        blank=True,
+        db_index=True,
+        editable=False,
+        help_text="The inbox this address reaches (Gmail dots and +tags folded): one account per inbox",
+    )
     display_name = models.CharField(
         max_length=PUBLIC_NAME_MAX,
         blank=True,

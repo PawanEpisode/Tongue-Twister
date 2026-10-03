@@ -26,6 +26,9 @@ secrets apply on the next workflow run.
 | `VITE_SENTRY_DSN` | Vercel web (build time) | Public ingest DSN | Optional. Unset = Sentry never loads. Wrong DSN = crash reports silently dropped. Rotate by creating a new key in Sentry and rebuilding the web. |
 | `VITE_POSTHOG_KEY` | Vercel web (build time) | Public project key | Optional. Unset = analytics never loads. Rotate in PostHog, then rebuild the web. |
 | `VITE_POSTHOG_HOST` | Vercel web (build time) | Config, not secret | Optional ingest host (defaults to the US cloud). Must also be allowed in the CSP `connect-src` in `web/vercel.json`. |
+| `VITE_VALIDATE_EMAIL_DNS` | Vercel web (build time) | Config, not secret | Optional. Sign-up checks the email domain has a mail server (MX lookup via `https://dns.google`, allowed in the CSP `connect-src`). On by default; `false` turns it off for corporate or custom mail. A failed lookup never blocks sign-up. |
+| `VITE_OTP_LENGTH` | Vercel web (build time) | Config, not secret | Optional, default 6. Must equal Supabase → Authentication → Email → "Email OTP length" (6–10), or people cannot type the code they receive. |
+| `VITE_OTP_EXPIRY_SECONDS` | Vercel web (build time) | Config, not secret | Optional, default 3600. Mirror of Supabase "Email OTP expiration"; only drives the "valid for…" text and skips a doomed verify call. |
 
 ## Configuration (not secret; change freely, then redeploy)
 | Variable | Set in | Notes |

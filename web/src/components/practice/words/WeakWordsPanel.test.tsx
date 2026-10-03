@@ -78,6 +78,50 @@ describe('WeakWordsPanel', () => {
     render(<WeakWordsPanel {...props} queue={queue([weak('a', false)])} />)
     expect(screen.queryByRole('button', { name: 'Drill a' })).toBeNull()
   })
+  it('searches the loaded words', () => {
+    const words = ['sees', 'cheese', "sam's"].map((w) => weak(w))
+    render(<WeakWordsPanel {...props} queue={queue(words)} />)
+    fireEvent.change(screen.getByLabelText('Search your words'), {
+      target: { value: 'ees' },
+    })
+    expect(screen.getByText('sees')).toBeTruthy()
+    expect(screen.getByText('cheese')).toBeTruthy()
+    expect(screen.queryByText("sam's")).toBeNull()
+    fireEvent.change(screen.getByLabelText('Search your words'), {
+      target: { value: 'zzz' },
+    })
+    expect(screen.getByText(/No loaded words match/)).toBeTruthy()
+  })
+  it('sorts by most missed', () => {
+    const words = [
+      { ...weak('calm'), miss_rate: 0.25, weakness: 0.9 },
+      { ...weak('tough'), miss_rate: 1, weakness: 0.2 },
+    ]
+    render(<WeakWordsPanel {...props} queue={queue(words)} />)
+    const order = () =>
+      screen.getAllByRole('meter').map((m) => m.getAttribute('aria-valuenow'))
+    expect(order()).toEqual(['25', '100'])
+    fireEvent.change(screen.getByLabelText('Sort words'), {
+      target: { value: 'missed' },
+    })
+    expect(order()).toEqual(['100', '25'])
+  })
+  it('toggles due-only and plays a word', () => {
+    const onDueOnly = vi.fn()
+    const onHear = vi.fn()
+    render(
+      <WeakWordsPanel
+        {...props}
+        onDueOnly={onDueOnly}
+        onHear={onHear}
+        queue={queue([weak('sees')])}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Due for review only/ }))
+    expect(onDueOnly).toHaveBeenCalledWith(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Hear sees' }))
+    expect(onHear).toHaveBeenCalledWith('sees')
+  })
   it('explains an empty queue', () => {
     render(<WeakWordsPanel {...props} queue={queue<WeakWord>([])} />)
     expect(screen.getByText(/No trouble words yet/)).toBeTruthy()
@@ -95,6 +139,23 @@ describe('NailedWordsPanel', () => {
     render(<NailedWordsPanel queue={queue([w])} />)
     expect(screen.getByText("sam's")).toBeTruthy()
     expect(screen.getByText('Nailed today')).toBeTruthy()
+  })
+  it('groups words by day and celebrates the week', () => {
+    const at = (word: string, ago: number): NailedWord => ({
+      word,
+      respelling: '',
+      mastered_at: new Date(Date.now() - ago * 86_400_000).toISOString(),
+      seen: 3,
+    })
+    render(
+      <NailedWordsPanel
+        queue={queue([at('sleep', 0), at('sliding', 0), at('chips', 1)], 9)}
+      />,
+    )
+    expect(screen.getByRole('region', { name: 'Today' })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Yesterday' })).toBeTruthy()
+    expect(screen.getByText(/3\+ words nailed this week/)).toBeTruthy()
+    expect(screen.getByText('Nailed yesterday')).toBeTruthy()
   })
   it('says what will appear here when there are none', () => {
     render(<NailedWordsPanel queue={queue<NailedWord>([])} />)
