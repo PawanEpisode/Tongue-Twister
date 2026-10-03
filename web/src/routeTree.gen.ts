@@ -16,6 +16,7 @@ import { Route as GenerateRouteImport } from './routes/generate'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyTwistersRouteImport } from './routes/my-twisters'
 import { Route as PracticeRouteImport } from './routes/practice'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StatsRouteImport } from './routes/stats'
@@ -60,6 +61,11 @@ const MyTwistersRoute = MyTwistersRouteImport.update({
 const PracticeRoute = PracticeRouteImport.update({
   id: '/practice',
   path: '/practice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecordingsRoute = RecordingsRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/profile'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/profile'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/profile'
     | '/recordings'
     | '/sitemap.xml'
     | '/stats'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MyTwistersRoute: typeof MyTwistersRoute
   PracticeRoute: typeof PracticeRoute
+  ProfileRoute: typeof ProfileRoute
   RecordingsRoute: typeof RecordingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StatsRoute: typeof StatsRoute
@@ -300,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/practice'
       fullPath: '/practice'
       preLoaderRoute: typeof PracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recordings': {
@@ -383,6 +403,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MyTwistersRoute: MyTwistersRoute,
   PracticeRoute: PracticeRoute,
+  ProfileRoute: ProfileRoute,
   RecordingsRoute: RecordingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StatsRoute: StatsRoute,

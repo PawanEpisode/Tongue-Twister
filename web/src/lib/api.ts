@@ -29,11 +29,14 @@ export type Category = {
 }
 /** Set once by the user (13+ or under 13); cloud saving and sharing are only for '13plus' (PRD 04 §9). */
 export type AgeBand = 'unknown' | 'under13' | '13plus'
+/** Which avatar to show: the sign-in provider's photo, or the chosen emoji. */
+export type AvatarSource = 'photo' | 'emoji'
 export type Profile = {
   id: string
   email: string
   display_name: string
   avatar_emoji: string
+  avatar_source?: AvatarSource
   xp: number
   level: number
   current_streak: number
@@ -55,7 +58,16 @@ export type Profile = {
 }
 /** The writable part of `PATCH /me/` that the settings page touches. */
 export type ProfilePatch = Partial<
-  Pick<Profile, 'timezone' | 'hide_from_boards' | 'night_owl' | 'public_name'>
+  Pick<
+    Profile,
+    | 'timezone'
+    | 'hide_from_boards'
+    | 'night_owl'
+    | 'public_name'
+    | 'display_name'
+    | 'avatar_emoji'
+    | 'avatar_source'
+  >
 >
 /** `DELETE /me/` → 202: when the request was made and when the purge becomes due. */
 export type DeletionRequest = {
@@ -188,7 +200,12 @@ export type AttemptDetail = {
 }
 export type PracticeMode = 'read_along' | 'speak_score' | 'record'
 export type DisplayStyle = 'word' | 'line' | 'scroll'
+/** `''` = never chosen on any device, so the first device seeds it. */
+export type ThemeSetting = '' | 'system' | 'light' | 'dark' | 'reading'
 export type Preferences = {
+  theme: ThemeSetting
+  /** Celebrate good results with confetti. */
+  confetti: boolean
   default_mode: PracticeMode
   display_style: DisplayStyle
   accent_lang: 'en-US' | 'en-GB' | 'en-IN' | 'en-AU'
@@ -261,6 +278,18 @@ export type History = {
   }[]
 }
 /** A page of a list; `count` is the whole list, not just this page. */
+/** One row of `GET /attempts/` (the caller's history, newest first). */
+export type AttemptRow = {
+  id: number
+  twister: string
+  kind: AttemptKind
+  score: number
+  accuracy: number
+  wpm: number
+  xp_awarded: number
+  is_personal_best: boolean
+  created_at: string
+}
 export type Page<T> = { count: number; results: T[] }
 
 // ─── Progress, mastery, achievements, stats and discovery (docs/features/14-06d-build-spec.md §4) ───
@@ -712,6 +741,8 @@ export const api = {
   stats: (range: StatsRange, mode?: StatsMode) =>
     request<Stats>(`/me/stats/?${query({ range, mode })}`),
   activity: (weeks = 12) => request<Activity>(`/me/activity/?weeks=${weeks}`),
+  recentAttempts: (page = 1) =>
+    request<Page<AttemptRow>>(`/attempts/?page=${page}`),
   favorites: (page = 1) =>
     request<Page<Twister>>(`/me/favorites/?page=${page}`),
   /** Explicit target state, so a double tap or a retry can never flip it the wrong way. */

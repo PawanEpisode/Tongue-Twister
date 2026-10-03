@@ -95,6 +95,7 @@ erDiagram
         varchar email
         varchar display_name
         varchar avatar_emoji
+        varchar avatar_source "photo or emoji"
         int xp
         int current_streak
         int best_streak

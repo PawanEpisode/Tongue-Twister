@@ -9,6 +9,7 @@ const PROGRESS_KEYS = [
   'activity',
   'twisters', // best score / mastery on cards and lists
   'favorites',
+  'recent-attempts', // the profile's latest-attempts list
 ] as const
 
 export function invalidateProgress(qc: QueryClient): Promise<unknown> {

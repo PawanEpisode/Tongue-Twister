@@ -5,6 +5,7 @@ import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { DifficultyBadge } from '#/components/ui'
 import { Button } from '#/components/ui/button'
+import { useCelebrations } from '#/lib/preferences'
 import { readAccentColors } from '#/lib/theme'
 import type { GeneratedTwister } from '#/lib/generate/api'
 
@@ -36,13 +37,14 @@ export function GeneratedTwisterCard({
   twister: GeneratedTwister
 }) {
   const reduce = useReducedMotion()
+  const celebrations = useCelebrations()
   const card = useRef<HTMLElement>(null)
   const level = twister.difficulty
 
   useEffect(() => {
-    celebrate(reduce)
+    celebrate(reduce || !celebrations)
     card.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
-  }, [twister.slug, reduce])
+  }, [twister.slug, reduce, celebrations])
 
   return (
     <m.section

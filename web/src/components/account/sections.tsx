@@ -4,6 +4,8 @@ import PrivacySection from './PrivacySection'
 import ProfileSection from './ProfileSection'
 import RemindersSection from './RemindersSection'
 import StreakSection from './StreakSection'
+import PreferenceGroup from '#/components/settings/PreferenceGroup'
+import { SETTING_GROUPS } from '#/lib/settings/schema'
 import type { AccountSection } from './types'
 
 /**
@@ -12,6 +14,14 @@ import type { AccountSection } from './types'
  */
 export const ACCOUNT_SECTIONS: readonly AccountSection[] = [
   { id: 'profile', title: 'Profile', Component: ProfileSection },
+  // The preference groups come from the settings schema, one card each.
+  ...SETTING_GROUPS.map((group): AccountSection => ({
+    id: group.id,
+    title: group.title,
+    Component: ({ locked }) => (
+      <PreferenceGroup group={group} disabled={locked} />
+    ),
+  })),
   { id: 'streak', title: 'Streak', Component: StreakSection },
   {
     id: 'reminders',

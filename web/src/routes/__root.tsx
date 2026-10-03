@@ -14,7 +14,9 @@ import MotionProvider from '#/components/MotionProvider'
 import ObservabilityInit from '#/components/ObservabilityInit'
 import { AchievementToaster } from '#/components/progress/AchievementToaster'
 import TimezoneSync from '#/components/progress/TimezoneSync'
+import ThemeSync from '#/components/ThemeSync'
 import UploadSync from '#/components/UploadSync'
+import { PreferencesProvider } from '#/lib/preferences'
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, seo } from '#/lib/seo'
 import { ThemeProvider, THEME_COLORS, themeBootScript } from '#/lib/theme'
 import appCss from '../styles.css?url'
@@ -107,18 +109,21 @@ function RootLayout() {
     <QueryClientProvider client={qc}>
       <ThemeProvider>
         <AuthProvider>
-          <GuestSync />
-          <AttemptSync />
-          <UploadSync />
-          <TimezoneSync />
-          <ObservabilityInit />
-          <Header />
-          <MotionProvider>
-            <main className="mx-auto max-w-6xl px-4 pt-6 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-8">
-              <Outlet />
-            </main>
-            <AchievementToaster />
-          </MotionProvider>
+          <PreferencesProvider>
+            <GuestSync />
+            <AttemptSync />
+            <UploadSync />
+            <TimezoneSync />
+            <ThemeSync />
+            <ObservabilityInit />
+            <Header />
+            <MotionProvider>
+              <main className="mx-auto max-w-6xl px-4 pt-6 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-8">
+                <Outlet />
+              </main>
+              <AchievementToaster />
+            </MotionProvider>
+          </PreferencesProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

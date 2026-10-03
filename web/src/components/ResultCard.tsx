@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import ScoreBar from '#/components/results/ScoreBar'
 import ScoreCardShare from '#/components/ScoreCardShare'
+import { useCelebrations } from '#/lib/preferences'
 import { achievementIcon } from '#/components/progress/achievementIcons'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
@@ -66,8 +67,9 @@ export default function ResultCard({
     tally ?? { correct: 0, near: 0, wrong: 0, missed: 0, extra: 0 },
   )
   const perfect = Math.round(accuracy * 100) === 100
+  const celebrations = useCelebrations()
   useEffect(() => {
-    if (score < 80) return
+    if (score < 80 || !celebrations) return
     const end = Date.now() + 900
     const tick = () => {
       confetti({
@@ -87,7 +89,7 @@ export default function ResultCard({
       if (Date.now() < end) requestAnimationFrame(tick)
     }
     tick()
-  }, [score])
+  }, [score, celebrations])
 
   return (
     <m.div

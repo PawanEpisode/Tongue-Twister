@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BarChart3, LogOut, UserRound } from 'lucide-react'
+import { BarChart3, LogOut, Settings, UserRound } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,45 +7,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
+import Avatar from '#/components/profile/Avatar'
 import { useAuth } from '#/lib/auth'
+import { useIdentity } from '#/lib/profile/useIdentity'
 import { signOut } from '#/lib/supabase'
-
-function identityOf(
-  session: NonNullable<ReturnType<typeof useAuth>['session']>,
-) {
-  const meta = (session.user.user_metadata ?? {}) as {
-    full_name?: string
-    name?: string
-    avatar_url?: string
-  }
-  const name =
-    meta.full_name ?? meta.name ?? session.user.email?.split('@')[0] ?? 'You'
-  return { name, avatarUrl: meta.avatar_url, email: session.user.email }
-}
-
-function Avatar({ name, url }: { name: string; url?: string }) {
-  if (url) {
-    return (
-      <img
-        src={url}
-        alt=""
-        referrerPolicy="no-referrer"
-        className="size-full rounded-full object-cover"
-      />
-    )
-  }
-  return (
-    <span className="grid size-full place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-      {name[0]?.toUpperCase()}
-    </span>
-  )
-}
 
 /** Name, account, stats, and sign out — so the bar does not end in a stray button. */
 export function UserMenu() {
   const { session } = useAuth()
-  if (!session) return null
-  const { name, avatarUrl, email } = identityOf(session)
+  const identity = useIdentity()
+  if (!session || !identity) return null
+  const { name, avatar, email } = identity
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -54,7 +26,7 @@ export function UserMenu() {
           className="grid size-11 place-items-center overflow-hidden rounded-full outline-none hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label={`Account menu for ${name}`}
         >
-          <Avatar name={name} url={avatarUrl} />
+          <Avatar view={avatar} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
@@ -66,9 +38,15 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/account">
+          <Link to="/profile">
             <UserRound className="size-4" aria-hidden />
-            Account
+            Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/account">
+            <Settings className="size-4" aria-hidden />
+            Account &amp; settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

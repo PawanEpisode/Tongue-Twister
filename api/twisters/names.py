@@ -11,6 +11,7 @@ import unicodedata
 from django.core.exceptions import ValidationError
 
 PUBLIC_NAME_MAX = 40
+DISPLAY_NAME_MIN = 2
 
 # Minimal, obvious terms only; extend here. Matched as substrings of the folded name.
 BLOCKED_TERMS = (
@@ -59,6 +60,14 @@ def validate_public_name(value: str) -> None:
     folded = _fold(value)
     if any(term in folded for term in _FOLDED_TERMS):
         raise ValidationError("Please choose a different name.", code="blocked")
+
+
+def validate_display_name(value: str) -> None:
+    """The name a person calls themselves. Same safety rules as the public name, but it can never be
+    blank and needs a couple of characters, so the header and profile always have something to show."""
+    if len(clean_public_name(value)) < DISPLAY_NAME_MIN:
+        raise ValidationError(f"Use at least {DISPLAY_NAME_MIN} characters.", code="min_length")
+    validate_public_name(value)
 
 
 def has_blocked_word(text: str) -> bool:

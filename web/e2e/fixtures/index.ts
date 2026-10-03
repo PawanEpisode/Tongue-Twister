@@ -151,6 +151,8 @@ export const PREFERENCES = {
   tts_voice: '',
   tts_rate: 1,
   speed_ladder: {},
+  theme: '',
+  confetti: true,
 } satisfies Preferences
 
 /** What `GET /public/s/{token}/` returns for the token `SCORE_CARD_TOKEN`. */

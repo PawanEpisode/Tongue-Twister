@@ -6,6 +6,7 @@ import { Button } from '#/components/ui/button'
 import { useFlag } from '#/lib/flags'
 import { useAchievementToasts } from '#/lib/progress/useAchievementToasts'
 import type { UnlockedAchievement } from '#/lib/api'
+import { useCelebrations } from '#/lib/preferences'
 import { readAccentColors } from '#/lib/theme'
 import { achievementIcon } from './achievementIcons'
 import { TierBadge } from './AchievementTier'
@@ -96,13 +97,20 @@ export function AchievementToaster() {
   const enabled = useFlag('achievements')
   const reduce = useReducedMotion()
   const { current, waiting, close } = useAchievementToasts()
+  const celebrations = useCelebrations()
   const celebrated = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!current || reduce || celebrated.current === current.code) return
+    if (
+      !current ||
+      reduce ||
+      !celebrations ||
+      celebrated.current === current.code
+    )
+      return
     celebrated.current = current.code
     celebrate()
-  }, [current, reduce])
+  }, [current, reduce, celebrations])
 
   if (!enabled) return null
   return (

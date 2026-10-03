@@ -8,8 +8,9 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
+from .avatars import DEFAULT_AVATAR_EMOJI, validate_avatar_emoji
 from .levels import level_for
-from .names import PUBLIC_NAME_MAX, validate_public_name
+from .names import PUBLIC_NAME_MAX, validate_display_name, validate_public_name
 
 
 class Difficulty(models.IntegerChoices):
@@ -187,13 +188,31 @@ class ProfileQuerySet(models.QuerySet):
         return self.exclude(active_profile_q())
 
 
+class AvatarSource(models.TextChoices):
+    PHOTO = "photo", "Sign-in photo"
+    EMOJI = "emoji", "Emoji"
+
+
 class Profile(models.Model):
     """One row per Supabase auth user. `id` is the Supabase `sub` claim."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(blank=True)
-    display_name = models.CharField(max_length=40, blank=True)
-    avatar_emoji = models.CharField(max_length=8, default="🗣️")
+    display_name = models.CharField(
+        max_length=PUBLIC_NAME_MAX,
+        blank=True,
+        validators=[validate_display_name],
+        help_text="Starts as the sign-in name; the person can change it. Shown to them only",
+    )
+    avatar_emoji = models.CharField(
+        max_length=8, default=DEFAULT_AVATAR_EMOJI, validators=[validate_avatar_emoji]
+    )
+    avatar_source = models.CharField(
+        max_length=5,
+        choices=AvatarSource.choices,
+        default=AvatarSource.PHOTO,
+        help_text="Which avatar the person shows: their sign-in photo (when they have one) or the emoji",
+    )
     public_name = models.CharField(
         max_length=PUBLIC_NAME_MAX,
         blank=True,
@@ -461,6 +480,13 @@ class DisplayStyle(models.TextChoices):
     SCROLL = "scroll", "Continuous scroll"
 
 
+class ThemeChoice(models.TextChoices):
+    SYSTEM = "system", "System"
+    LIGHT = "light", "Light"
+    DARK = "dark", "Dark"
+    READING = "reading", "Reading"
+
+
 class RecordResolution(models.TextChoices):
     P720 = "720p", "720p"
     P1080 = "1080p", "1080p"
@@ -523,6 +549,14 @@ class UserPreference(models.Model):
     reduce_motion = models.BooleanField(default=False)
     dyslexia_font = models.BooleanField(default=False)
     high_contrast = models.BooleanField(default=False)
+    theme = models.CharField(
+        max_length=7,
+        choices=ThemeChoice.choices,
+        blank=True,
+        default="",
+        help_text="Blank = never chosen on any device: the first device that signs in seeds it",
+    )
+    confetti = models.BooleanField(default=True)
     save_voice_default = models.BooleanField(default=False)
     record_layout = models.SlugField(max_length=24, default="camera_text")
     record_resolution = models.CharField(

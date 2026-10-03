@@ -5,6 +5,7 @@ import { useDeletionState } from '#/lib/account/useDeletion'
 import { useFlags } from '#/lib/flags'
 import { useMe } from '#/lib/useMe'
 import { cn } from '#/lib/utils'
+import PreferenceSyncNote from '#/components/settings/PreferenceSyncNote'
 import { ACCOUNT_SECTIONS } from './sections'
 import { visibleSections } from './types'
 
@@ -26,7 +27,8 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl text-left">
-      <PageTitle>Account</PageTitle>
+      <PageTitle>Account &amp; settings</PageTitle>
+      <PreferenceSyncNote />
       {deletion.pending && (
         <p className="mt-2 text-sm text-muted-foreground">
           Settings are paused while your account is scheduled for deletion.

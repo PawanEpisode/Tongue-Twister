@@ -20,6 +20,9 @@ vi.mock('#/lib/account/useDeletion', () => ({
   useDeletionState: () =>
     pending ? { pending: true, scheduledFor: 'x' } : { pending: false },
 }))
+vi.mock('#/components/settings/PreferenceSyncNote', () => ({
+  default: () => null,
+}))
 vi.mock('./sections', () => ({
   ACCOUNT_SECTIONS: [
     {

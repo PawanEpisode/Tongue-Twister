@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import type { ReactNode } from 'react'
 import { api } from './api'
 import type { Preferences } from './api'
 import { useAuth } from './auth'
@@ -15,6 +24,8 @@ export const PREFERENCE_RANGES = {
 } as const
 
 export const DEFAULT_PREFERENCES: Preferences = {
+  theme: '',
+  confetti: true,
   default_mode: 'speak_score',
   display_style: 'word',
   accent_lang: 'en-US',
@@ -66,12 +77,14 @@ function writeStored(stored: Stored) {
  * PATCHed to the API (debounced); changes made as a guest or offline stay in `pending` and are
  * merged into the account on the next successful sync — the server value wins for anything untouched.
  */
-export function usePreferences() {
+function usePreferencesState() {
   const { session } = useAuth()
   const signedIn = !!session
   const [values, setValues] = useState<Preferences>(DEFAULT_PREFERENCES)
   const [sync, setSync] = useState<SyncState>('local')
   const [ready, setReady] = useState(false)
+  /** True once the account's settings have been fetched (always false for guests). */
+  const [loaded, setLoaded] = useState(false)
   const stored = useRef<Stored>({ values: {}, pending: {} })
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -109,7 +122,10 @@ export function usePreferences() {
 
   // On sign-in: adopt the account's settings, then push anything still pending (guest → account merge).
   useEffect(() => {
-    if (!signedIn) return setSync('local')
+    if (!signedIn) {
+      setLoaded(false)
+      return setSync('local')
+    }
     let cancelled = false
     api
       .preferences()
@@ -118,6 +134,7 @@ export function usePreferences() {
         const merged = { ...server, ...stored.current.pending }
         persist({ values: merged, pending: stored.current.pending })
         setValues({ ...DEFAULT_PREFERENCES, ...merged })
+        setLoaded(true)
         void flush()
       })
       .catch(() => !cancelled && setSync('error'))
@@ -142,5 +159,37 @@ export function usePreferences() {
     [persist, flush, signedIn],
   )
 
-  return { prefs: values, update, sync, ready }
+  /** Try again after a failed sync: re-fetch the account's settings (first load) or re-send pending edits. */
+  const retry = useCallback(() => {
+    setSync('local')
+    void flush()
+  }, [flush])
+
+  return { prefs: values, update, sync, ready, loaded, retry }
+}
+
+export type PreferencesValue = ReturnType<typeof usePreferencesState>
+
+const PreferencesContext = createContext<PreferencesValue | null>(null)
+
+/** One source of truth for settings, so every screen (practice, twister, settings hub) stays in step. */
+export function PreferencesProvider({ children }: { children: ReactNode }) {
+  const value = usePreferencesState()
+  return createElement(PreferencesContext.Provider, { value }, children)
+}
+
+export function usePreferences(): PreferencesValue {
+  const value = useContext(PreferencesContext)
+  if (!value)
+    throw new Error('usePreferences must be used within PreferencesProvider')
+  return value
+}
+
+/**
+ * Whether to fire confetti: the "Celebrations" setting, and never when the person asked for reduced motion.
+ * Safe outside the provider (isolated renders and tests) — celebrations are then simply on.
+ */
+export function useCelebrations(): boolean {
+  const value = useContext(PreferencesContext)
+  return value ? value.prefs.confetti && !value.prefs.reduce_motion : true
 }
