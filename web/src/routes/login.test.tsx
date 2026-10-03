@@ -15,6 +15,8 @@ const auth = {
   verifyOtp: vi.fn(),
   resend: vi.fn(),
   signInWithOAuth: vi.fn(),
+  signInWithOtp: vi.fn(),
+  resetPasswordForEmail: vi.fn(),
 }
 vi.mock('#/lib/supabase', () => ({
   supabaseConfigured: true,
@@ -207,5 +209,104 @@ describe('sign-up with an email code', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('forgot password', () => {
+  const open = () => {
+    render(<Login />)
+    fireEvent.click(screen.getByRole('button', { name: 'Forgot password?' }))
+  }
+  it('asks for a reset link and answers the same whether or not the account exists', async () => {
+    auth.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null })
+    open()
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: ' Me@Example.com ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }))
+    await waitFor(() =>
+      expect(auth.resetPasswordForEmail).toHaveBeenCalledWith(
+        'me@example.com',
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      ),
+    )
+    expect((await screen.findByRole('status')).textContent).toMatch(
+      /If there’s an account for me@example\.com/,
+    )
+  })
+  it('rejects a malformed address and shows rate limits', async () => {
+    open()
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'a@b' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }))
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /valid email/,
+    )
+    expect(auth.resetPasswordForEmail).not.toHaveBeenCalled()
+
+    auth.resetPasswordForEmail.mockResolvedValue({
+      data: null,
+      error: { message: 'x', status: 429 },
+    })
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'a@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }))
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /Too many attempts/,
+    )
+  })
+})
+
+describe('sign in with a code', () => {
+  const open = () => {
+    render(<Login />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Email me a sign-in code instead' }),
+    )
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'me@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }))
+  }
+  it('emails a code to an existing account only, then verifies it as an email code', async () => {
+    auth.signInWithOtp.mockResolvedValue({ data: {}, error: null })
+    auth.verifyOtp.mockResolvedValue({ data: {}, error: null })
+    open()
+    const box = await screen.findByPlaceholderText('000000')
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
+      email: 'me@example.com',
+      options: { shouldCreateUser: false },
+    })
+    fireEvent.change(box, { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: /Verify/ }))
+    await waitFor(() =>
+      expect(auth.verifyOtp).toHaveBeenCalledWith({
+        email: 'me@example.com',
+        token: '123456',
+        type: 'email',
+      }),
+    )
+  })
+  it('looks the same for an address with no account', async () => {
+    auth.signInWithOtp.mockResolvedValue({
+      data: null,
+      error: { message: 'Signups not allowed for otp', code: 'otp_disabled' },
+    })
+    open()
+    expect(await screen.findByPlaceholderText('000000')).toBeTruthy()
+    expect(document.body.textContent).toMatch(
+      /If there’s an account for me@example\.com/,
+    )
+  })
+  it('resends through the same flow and can go back', async () => {
+    auth.signInWithOtp.mockResolvedValue({ data: {}, error: null })
+    open()
+    await screen.findByPlaceholderText('000000')
+    fireEvent.click(screen.getByRole('button', { name: 'Change email' }))
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy()
   })
 })

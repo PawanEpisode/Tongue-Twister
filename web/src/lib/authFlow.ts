@@ -114,6 +114,9 @@ export function passwordProblem(password: string): string | null {
   return null
 }
 
+/** A message under a form: what went wrong (alert) or what happened (status). */
+export type Note = { kind: 'error' | 'info'; text: string }
+
 type AuthErr = { message?: string; code?: string; status?: number }
 
 export type AuthFailure = {
@@ -122,6 +125,8 @@ export type AuthFailure = {
   needsCode?: boolean
   /** Do not let the person hammer the button: start the resend cooldown. */
   cooldown?: boolean
+  /** A sensitive change needs a fresh code first (Supabase "secure password change"): ask for one. */
+  reauthNeeded?: boolean
 }
 
 /** Supabase's errors, in words a person can act on. Unknown errors keep their own message. */
@@ -132,6 +137,11 @@ export function describeAuthError(err: AuthErr): AuthFailure {
     return {
       text: 'Confirm your email first: we’ve sent you a code.',
       needsCode: true,
+    }
+  if (code === 'reauthentication_needed' || /reauthentication/i.test(msg))
+    return {
+      text: 'For your security, confirm it’s you with a code first.',
+      reauthNeeded: true,
     }
   if (code === 'otp_expired' || /expired|invalid.*(token|otp)/i.test(msg))
     return {
@@ -151,6 +161,19 @@ export function describeAuthError(err: AuthErr): AuthFailure {
     return { text: msg || 'Choose a stronger password.' }
   if (code === 'invalid_credentials' || /invalid login credentials/i.test(msg))
     return { text: 'Wrong email or password.' }
+  if (code === 'same_password' || /different from the old password/i.test(msg))
+    return { text: 'Choose a password you haven’t used on this account.' }
+  if (
+    code === 'email_exists' ||
+    code === 'email_conflict_identity_not_deletable'
+  )
+    return { text: 'That email is already used by another account.' }
+  if (
+    code === 'session_not_found' ||
+    code === 'session_expired' ||
+    /not authenticated|session missing/i.test(msg)
+  )
+    return { text: 'Your session has expired. Please sign in again.' }
   if (code === 'user_already_exists' || /already registered/i.test(msg))
     return { text: 'That email already has an account. Try signing in.' }
   return { text: msg || 'Something went wrong. Please try again.' }
@@ -165,5 +188,17 @@ export function signUpWasDuplicate(
 ): boolean {
   return (
     !!user && Array.isArray(user.identities) && user.identities.length === 0
+  )
+}
+
+/**
+ * Asking for a sign-in code for an address with no account is refused by Supabase ("signups not allowed for
+ * otp"). The screen must not reveal that, so the caller treats it as a success: the same "we sent a code".
+ */
+export function isUnknownAccountForCode(err: AuthErr): boolean {
+  return (
+    err.code === 'otp_disabled' ||
+    err.code === 'user_not_found' ||
+    /signups? not allowed for otp/i.test(err.message ?? '')
   )
 }

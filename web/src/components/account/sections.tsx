@@ -3,6 +3,7 @@ import DeleteSection from './DeleteSection'
 import PrivacySection from './PrivacySection'
 import ProfileSection from './ProfileSection'
 import RemindersSection from './RemindersSection'
+import SecuritySection from './SecuritySection'
 import StreakSection from './StreakSection'
 import PresetPicker from '#/components/settings/PresetPicker'
 import PreferenceGroup from '#/components/settings/PreferenceGroup'
@@ -15,6 +16,7 @@ import type { AccountSection } from './types'
  */
 export const ACCOUNT_SECTIONS: readonly AccountSection[] = [
   { id: 'profile', title: 'Profile', Component: ProfileSection },
+  { id: 'security', title: 'Sign-in & security', Component: SecuritySection },
   {
     id: 'presets',
     title: 'Quick setups',

@@ -3,6 +3,8 @@ import uuid
 
 import jwt
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from tests.conftest import SECRET
@@ -167,3 +169,38 @@ def test_accounts_without_an_email_never_collide(auth_admin):
 def test_disposable_list_is_lowercase_and_unique():
     raw = json.loads(emailpolicy._DATA.read_text())["domains"]
     assert raw == sorted(set(d.lower() for d in raw))
+
+
+# --- the person changed their email at Supabase ---------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_a_changed_email_is_recorded_with_its_canonical_form(auth_admin):
+    sub = str(uuid.uuid4())
+    client_for("old@gmail.com", sub).get("/api/v1/me/")
+    assert client_for("New.Name+x@gmail.com", sub).get("/api/v1/me/").status_code == 200
+    p = Profile.objects.get(pk=sub)
+    assert (p.email, p.canonical_email) == ("New.Name+x@gmail.com", "newname@gmail.com")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("new", ["x@mailinator.com", "taken+alias@gmail.com"])
+def test_a_refused_email_change_keeps_access_and_the_old_email(auth_admin, new):
+    other = str(uuid.uuid4())
+    client_for("taken@gmail.com", other).get("/api/v1/me/")
+    sub = str(uuid.uuid4())
+    client_for("mine@gmail.com", sub).get("/api/v1/me/")
+    assert client_for(new, sub).get("/api/v1/me/").status_code == 200  # not locked out
+    p = Profile.objects.get(pk=sub)
+    assert (p.email, p.canonical_email) == ("mine@gmail.com", "mine@gmail.com")
+    assert auth_admin.deleted == []
+
+
+@pytest.mark.django_db
+def test_an_unchanged_email_costs_no_write(auth_admin):
+    sub = str(uuid.uuid4())
+    c = client_for("same@gmail.com", sub)
+    c.get("/api/v1/me/")
+    with CaptureQueriesContext(connection) as ctx:
+        c.get("/api/v1/me/")
+    assert not [q for q in ctx.captured_queries if q["sql"].lstrip().upper().startswith("UPDATE")]

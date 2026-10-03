@@ -5,6 +5,7 @@ import {
   cleanCode,
   describeAuthError,
   isCompleteCode,
+  isUnknownAccountForCode,
   normaliseEmail,
   passwordProblem,
   secondsLeft,
@@ -130,5 +131,44 @@ describe('signUpWasDuplicate', () => {
     expect(signUpWasDuplicate({ identities: [{}] })).toBe(false)
     expect(signUpWasDuplicate({})).toBe(false)
     expect(signUpWasDuplicate(null)).toBe(false)
+  })
+})
+
+describe('describeAuthError: password and email changes', () => {
+  it('asks for a fresh code when Supabase wants reauthentication', () => {
+    expect(
+      describeAuthError({ code: 'reauthentication_needed' }),
+    ).toMatchObject({
+      reauthNeeded: true,
+    })
+    expect(
+      describeAuthError({
+        message: 'Password update requires reauthentication',
+      }),
+    ).toMatchObject({ reauthNeeded: true })
+  })
+  it('explains a reused password, a taken email and an expired session', () => {
+    expect(describeAuthError({ code: 'same_password' }).text).toMatch(
+      /haven’t used/,
+    )
+    expect(describeAuthError({ code: 'email_exists' }).text).toMatch(
+      /already used/,
+    )
+    expect(describeAuthError({ code: 'session_not_found' }).text).toMatch(
+      /sign in again/,
+    )
+  })
+})
+
+describe('isUnknownAccountForCode', () => {
+  it('recognises Supabase refusing a code for an address with no account', () => {
+    expect(isUnknownAccountForCode({ code: 'otp_disabled' })).toBe(true)
+    expect(
+      isUnknownAccountForCode({ message: 'Signups not allowed for otp' }),
+    ).toBe(true)
+    expect(
+      isUnknownAccountForCode({ code: 'over_email_send_rate_limit' }),
+    ).toBe(false)
+    expect(isUnknownAccountForCode({})).toBe(false)
   })
 })

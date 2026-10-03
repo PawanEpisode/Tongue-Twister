@@ -18,6 +18,7 @@ import { Route as MyTwistersRouteImport } from './routes/my-twisters'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecordingsRouteImport } from './routes/recordings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -71,6 +72,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const RecordingsRoute = RecordingsRouteImport.update({
   id: '/recordings',
   path: '/recordings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/practice'
     | '/profile'
     | '/recordings'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/practice'
     | '/profile'
     | '/recordings'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/practice'
     | '/profile'
     | '/recordings'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
     | '/auth/callback'
@@ -253,6 +265,7 @@ export interface RootRouteChildren {
   PracticeRoute: typeof PracticeRoute
   ProfileRoute: typeof ProfileRoute
   RecordingsRoute: typeof RecordingsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/recordings'
       fullPath: '/recordings'
       preLoaderRoute: typeof RecordingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -405,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   PracticeRoute: PracticeRoute,
   ProfileRoute: ProfileRoute,
   RecordingsRoute: RecordingsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,

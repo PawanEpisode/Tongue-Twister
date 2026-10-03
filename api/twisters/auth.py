@@ -70,6 +70,8 @@ class SupabaseJWTAuthentication(BaseAuthentication):
                     )[:40],
                 },
             )
+        else:
+            signup_guard.sync_email(profile, email)
         if not self.accept(request, profile):
             return None
         return profile, claims
