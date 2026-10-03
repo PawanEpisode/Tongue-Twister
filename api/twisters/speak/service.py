@@ -34,7 +34,7 @@ from ..models import (
     WordStatus,
 )
 from ..practice import services
-from ..progress import achievements
+from ..progress import achievements, timeline
 from . import device, pipeline, stats, trust
 from . import scoring as v2
 from .normalise import tokenise
@@ -378,12 +378,26 @@ def submit(profile: Profile, submission: Submission, now: dt.datetime | None = N
     if trust.wants_spot_check(attempt, is_personal_best=is_best):
         trust.request_spot_check(attempt, profile)
 
+    mastered_now = before is None and twister_stats.mastered_at is not None
+    if xp is not None:
+        timeline.record_attempt_moments(
+            profile,
+            twister_slug=twister.slug,
+            attempt_id=attempt.pk,
+            score=attempt.score,
+            when=when,
+            level_before=old_level,
+            personal_best=is_best,
+            mastered_now=mastered_now,
+            unlocked=unlocked,
+        )
+
     return Result(
         attempt=attempt,
         created=True,
         personal_best=is_best,
         level_up=profile.level > old_level,
-        mastered_now=before is None and twister_stats.mastered_at is not None,
+        mastered_now=mastered_now,
         warning=warning,
         achievements_unlocked=unlocked,
     )

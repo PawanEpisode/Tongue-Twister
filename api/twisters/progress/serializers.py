@@ -3,7 +3,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from ..models import Achievement, UserAchievement
+from ..models import Achievement, ProfileEvent, UserAchievement
 from . import achievements as engine
 
 SECRET_NAME = "Secret achievement"
@@ -81,3 +81,10 @@ class ActivityQuerySerializer(serializers.Serializer):
     weeks = serializers.IntegerField(
         min_value=1, max_value=MAX_ACTIVITY_WEEKS, default=DEFAULT_ACTIVITY_WEEKS
     )
+
+
+class ProfileEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileEvent
+        fields = ["id", "kind", "data", "created_at"]
+        read_only_fields = fields

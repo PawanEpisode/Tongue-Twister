@@ -134,6 +134,15 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
       },
       {
         type: 'range',
+        key: 'daily_goal_attempts',
+        label: 'Daily goal',
+        description: 'Attempts to aim for each day. Shown on your profile.',
+        step: 1,
+        unit: 'attempts',
+        zeroLabel: 'No goal',
+      },
+      {
+        type: 'range',
         key: 'countdown_s',
         label: 'Countdown',
         description: 'Seconds before recording starts.',
@@ -189,6 +198,14 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
       },
       {
         type: 'range',
+        key: 'threshold_pct',
+        label: 'Reading line position',
+        description: 'How far down the screen the current word sits.',
+        step: 5,
+        unit: '%',
+      },
+      {
+        type: 'range',
         key: 'tts_rate',
         label: 'Model voice speed',
         description: 'How fast the model reads.',
@@ -207,20 +224,6 @@ export const SETTING_GROUPS: readonly SettingGroup[] = [
         label: 'Metronome volume',
         description: 'Only used while the metronome is on.',
         step: 0.05,
-      },
-    ],
-  },
-  {
-    id: 'scoring',
-    title: 'Speak & Score',
-    fields: [
-      {
-        type: 'range',
-        key: 'threshold_pct',
-        label: 'Match strictness',
-        description: 'How close a word must sound to count as correct.',
-        step: 1,
-        unit: '%',
       },
     ],
   },

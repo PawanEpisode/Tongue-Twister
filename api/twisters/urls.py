@@ -22,6 +22,8 @@ urlpatterns = [
     path("me/", views.me, name="me"),
     path("me/deletion/", account.cancel_account_deletion, name="me-deletion"),
     path("me/export/", account.export_data),
+    path("me/export/attempts.csv", account.export_attempts_csv),
+    path("me/timeline/", progress.TimelineList.as_view()),
     path("me/twisters/", generate.MyTwisterList.as_view()),
     path("me/twisters/<int:twister_id>/", generate.delete_my_twister),
     path("generate/", generate.generate),

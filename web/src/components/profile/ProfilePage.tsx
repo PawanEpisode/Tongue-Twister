@@ -8,6 +8,7 @@ import { Button } from '#/components/ui/button'
 import { useDeletionState } from '#/lib/account/useDeletion'
 import { useMe } from '#/lib/useMe'
 import ProfileHeader from './ProfileHeader'
+import ProfileTimeline from './ProfileTimeline'
 import RecentAttempts from './RecentAttempts'
 import StarredPreview from './StarredPreview'
 
@@ -51,6 +52,7 @@ export default function ProfilePage() {
       <ProgressStrip />
       <ActivityCard />
       <AchievementsSection />
+      <ProfileTimeline />
       <StarredPreview />
       <RecentAttempts />
       <div className="flex justify-center">

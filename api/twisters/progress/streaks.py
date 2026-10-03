@@ -14,6 +14,7 @@ from django.conf import settings
 
 from ..localtime import local_date, local_hour
 from ..models import DailyActivity, Profile
+from . import timeline
 
 ONE_DAY = dt.timedelta(days=1)
 
@@ -95,3 +96,4 @@ def advance(profile: Profile, day: DailyActivity) -> None:
     profile.best_streak = max(profile.best_streak, profile.current_streak)
     profile.last_activity_date = day.local_date
     _earn_freeze(profile)
+    timeline.record_streak_milestone(profile, profile.current_streak)

@@ -5,6 +5,7 @@ import type { Profile } from '#/lib/api'
 import { useIdentity } from '#/lib/profile/useIdentity'
 import { useSummary } from '#/lib/progress/useSummary'
 import Avatar from './Avatar'
+import DailyGoalRing from './DailyGoalRing'
 import ProfileEditDialog from './ProfileEditDialog'
 
 /** Who you are and where you stand: avatar, name, level with XP progress, and streak. */
@@ -50,6 +51,7 @@ export default function ProfileHeader({
               <Flame className="size-4 text-pink" aria-hidden />
               {me.current_streak}-day streak
             </span>
+            {summary && <DailyGoalRing goal={summary.daily_goal} />}
           </div>
         </div>
         <ProfileEditDialog me={me} disabled={locked} />

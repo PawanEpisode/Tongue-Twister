@@ -9,6 +9,7 @@ const PROGRESS_KEYS = [
   'activity',
   'twisters', // best score / mastery on cards and lists
   'favorites',
+  'timeline', // the profile's journey
   'recent-attempts', // the profile's latest-attempts list
 ] as const
 

@@ -40,5 +40,9 @@ describe('formatRangeValue', () => {
     expect(formatRangeValue({ unit: 's', zeroLabel: 'Off' }, 3)).toBe('3s')
     expect(formatRangeValue({ unit: 'wpm' }, 120)).toBe('120 wpm')
     expect(formatRangeValue({}, 0.5)).toBe('50%')
+    const goal = { unit: 'attempts', zeroLabel: 'No goal' }
+    expect(formatRangeValue(goal, 0)).toBe('No goal')
+    expect(formatRangeValue(goal, 1)).toBe('1 attempt')
+    expect(formatRangeValue(goal, 5)).toBe('5 attempts')
   })
 })

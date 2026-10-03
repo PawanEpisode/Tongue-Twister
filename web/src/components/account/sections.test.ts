@@ -6,11 +6,11 @@ describe('ACCOUNT_SECTIONS', () => {
   it('has the sections the spec asks for, danger zone last', () => {
     expect(ACCOUNT_SECTIONS.map((s) => s.id)).toEqual([
       'profile',
+      'presets',
       'appearance',
       'accessibility',
       'practice',
       'read-along',
-      'scoring',
       'streak',
       'reminders',
       'privacy',

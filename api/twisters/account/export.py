@@ -15,7 +15,9 @@ bounded by the account's own rows.
 
 from __future__ import annotations
 
+import csv
 import datetime as dt
+import io
 import json
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
@@ -96,6 +98,7 @@ PREFERENCES: Spec = _same(
     "high_contrast",
     "theme",
     "confetti",
+    "daily_goal_attempts",
     "save_voice_default",
     "record_layout",
     "record_resolution",
@@ -124,6 +127,27 @@ ATTEMPT: Spec = (
         "is_personal_best",
         "breakdown",
         "created_at",
+    ),
+)
+
+EVENT: Spec = _same("kind", "ref", "data", "created_at")
+
+# The spreadsheet view of an attempt: flat columns only (no per-word verdicts, no free-form JSON).
+CSV_COLUMNS: Spec = (
+    ("date", "created_at"),
+    ("twister", "twister__slug"),
+    *_same(
+        "kind",
+        "score",
+        "accuracy",
+        "speed_score",
+        "fluency_score",
+        "completeness",
+        "wpm",
+        "duration_ms",
+        "xp_awarded",
+        "is_personal_best",
+        "transcript",
     ),
 )
 
@@ -318,6 +342,7 @@ def _sections(
     yield "stats", _stats(profile)
     unlocked = UserAchievement.objects.filter(revoked=False, **own).order_by("unlocked_at")
     yield "achievements", _array(_rows(unlocked, ACHIEVEMENT))
+    yield "timeline", _array(_rows(profile.events.order_by("created_at", "id"), EVENT))
     recordings = (
         Recording.objects.filter(**own)
         .exclude(status=RecordingStatus.DELETED)
@@ -379,3 +404,46 @@ def _fragments(profile: Profile, now: dt.datetime, budget: Budget) -> Iterator[s
 
 def filename(now: dt.datetime) -> str:
     return f"twister-export-{now:%Y%m%d}.json"
+
+
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_cell(value) -> str:
+    """One CSV cell. Text that a spreadsheet could run as a formula (spoken transcripts are
+    user-controlled) is prefixed with an apostrophe, so opening the file can never execute anything."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, dt.datetime):
+        return value.isoformat()
+    text = str(value)
+    return "'" + text if text.startswith(_FORMULA_PREFIXES) else text
+
+
+def attempts_csv(profile: Profile) -> Iterator[str]:
+    """The caller's attempts as CSV, newest first, capped at ``EXPORT_MAX_ATTEMPTS``."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\r\n")
+
+    def flush() -> str:
+        chunk = buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate()
+        return chunk
+
+    writer.writerow([key for key, _ in CSV_COLUMNS])
+    yield "\ufeff" + flush()  # BOM so Excel reads the accents in transcripts as UTF-8
+    rows = (
+        Attempt.objects.filter(profile=profile)
+        .order_by("-created_at", "-id")
+        .values_list(*[path for _, path in CSV_COLUMNS])[: settings.EXPORT_MAX_ATTEMPTS]
+    )
+    for row in rows.iterator(chunk_size=settings.EXPORT_CHUNK_SIZE):
+        writer.writerow([_csv_cell(v) for v in row])
+        yield flush()
+
+
+def csv_filename(now: dt.datetime) -> str:
+    return f"twister-attempts-{now:%Y-%m-%d}.csv"

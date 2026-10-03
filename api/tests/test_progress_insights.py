@@ -57,6 +57,7 @@ def test_summary_of_an_empty_account(user, clock):
         "deletion_scheduled_for": None,
         "today": "2026-09-10",
         "unseen_achievements": [],
+        "daily_goal": {"target": 0, "done": 0, "met": False},
     }
     assert r.headers["Cache-Control"] == "private, no-store"
 

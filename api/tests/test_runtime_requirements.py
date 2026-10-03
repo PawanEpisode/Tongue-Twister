@@ -18,4 +18,6 @@ def names(path: Path) -> set[str]:
 
 def test_request_time_dependencies_are_in_the_production_requirements():
     missing = sorted(set(RUNTIME_IMPORTS) - names(API / "requirements.txt"))
-    assert missing == [], f"add to api/requirements.txt: {[(m, RUNTIME_IMPORTS[m]) for m in missing]}"
+    assert missing == [], (
+        f"add to api/requirements.txt: {[(m, RUNTIME_IMPORTS[m]) for m in missing]}"
+    )

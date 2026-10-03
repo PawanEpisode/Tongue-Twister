@@ -9,6 +9,8 @@ export function formatRangeValue(
   const rounded = Number.isInteger(value)
     ? String(value)
     : String(+value.toFixed(2))
+  if (field.unit === 'attempts')
+    return `${rounded} ${value === 1 ? 'attempt' : 'attempts'}`
   if (!field.unit) return `${Math.round(value * 100)}%`
   return field.unit === '×' || field.unit === '%'
     ? `${rounded}${field.unit}`

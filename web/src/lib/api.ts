@@ -206,6 +206,8 @@ export type Preferences = {
   theme: ThemeSetting
   /** Celebrate good results with confetti. */
   confetti: boolean
+  /** Attempts to aim for each day; 0 = no goal. */
+  daily_goal_attempts: number
   default_mode: PracticeMode
   display_style: DisplayStyle
   accent_lang: 'en-US' | 'en-GB' | 'en-IN' | 'en-AU'
@@ -332,6 +334,22 @@ export type Summary = {
   /** The caller's local date, `YYYY-MM-DD`. */
   today: string
   unseen_achievements: (UnlockedAchievement & { unlocked_at: string })[]
+  /** Absent from an API that predates the goal. */
+  daily_goal?: DailyGoal
+}
+/** Today's progress towards the optional attempts goal; `target` 0 means no goal is set. */
+export type DailyGoal = { target: number; done: number; met: boolean }
+export type TimelineKind =
+  | 'level_up'
+  | 'achievement'
+  | 'streak_milestone'
+  | 'twister_mastered'
+  | 'personal_best'
+export type TimelineEvent = {
+  id: number
+  kind: TimelineKind
+  data: Record<string, unknown>
+  created_at: string
 }
 export type AchievementsPayload = {
   unlocked: number
@@ -741,6 +759,8 @@ export const api = {
   stats: (range: StatsRange, mode?: StatsMode) =>
     request<Stats>(`/me/stats/?${query({ range, mode })}`),
   activity: (weeks = 12) => request<Activity>(`/me/activity/?weeks=${weeks}`),
+  timeline: (page = 1) =>
+    request<Page<TimelineEvent>>(`/me/timeline/?page=${page}`),
   recentAttempts: (page = 1) =>
     request<Page<AttemptRow>>(`/attempts/?page=${page}`),
   favorites: (page = 1) =>
@@ -817,6 +837,7 @@ export const api = {
     }),
   cancelDeletion: () => request<void>('/me/deletion/', { method: 'DELETE' }),
   exportData: () => download('/me/export/'),
+  exportAttemptsCsv: () => download('/me/export/attempts.csv'),
   entitlements: () => request<{ plan: PlanInfo }>('/me/entitlements/'),
   consents: () =>
     request<{ results: ConsentRecord[] }>('/me/consents/').then(

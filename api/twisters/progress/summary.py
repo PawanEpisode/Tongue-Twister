@@ -4,9 +4,26 @@ import datetime as dt
 
 from ..levels import level_progress
 from ..localtime import local_date
-from ..models import Profile, Twister
+from ..models import DailyActivity, Profile, Twister, UserPreference
 from . import achievements, mastery, streaks
 from .serializers import UnseenAchievementSerializer
+
+
+def daily_goal(profile: Profile, today: dt.date) -> dict:
+    """Today's progress towards the optional attempts goal (``target`` 0 = no goal set)."""
+    target = (
+        UserPreference.objects.filter(profile=profile)
+        .values_list("daily_goal_attempts", flat=True)
+        .first()
+        or 0
+    )
+    done = (
+        DailyActivity.objects.filter(profile=profile, local_date=today)
+        .values_list("attempts", flat=True)
+        .first()
+        or 0
+    )
+    return {"target": target, "done": done, "met": bool(target) and done >= target}
 
 
 def build(profile: Profile, now: dt.datetime) -> dict:
@@ -31,6 +48,7 @@ def build(profile: Profile, now: dt.datetime) -> dict:
         "timezone": profile.timezone,
         "night_owl": profile.night_owl,
         "deletion_scheduled_for": profile.deletion_scheduled_for,
+        "daily_goal": daily_goal(profile, today),
         "today": today.isoformat(),
         "unseen_achievements": UnseenAchievementSerializer(
             achievements.unseen(profile), many=True

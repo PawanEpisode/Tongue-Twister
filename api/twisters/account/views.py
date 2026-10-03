@@ -42,3 +42,18 @@ def export_data(request):
     response["Content-Disposition"] = f'attachment; filename="{export.filename(now)}"'
     response["Cache-Control"] = "private, no-store"
     return response
+
+
+@extend_schema(responses=OpenApiTypes.STR)
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+@throttle_classes([ExportThrottle])
+def export_attempts_csv(request):
+    """`GET /me/export/attempts.csv`: the caller's attempts as a spreadsheet-friendly file."""
+    now = timezone.now()
+    response = StreamingHttpResponse(
+        export.attempts_csv(request.user), content_type="text/csv; charset=utf-8"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{export.csv_filename(now)}"'
+    response["Cache-Control"] = "private, no-store"
+    return response

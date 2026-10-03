@@ -502,6 +502,7 @@ PREFERENCE_RANGES: dict[str, tuple[float, float]] = {
     "countdown_s": (0, 5),
     "tts_rate": (0.5, 1.5),
     "metronome_volume": (0.0, 1.0),
+    "daily_goal_attempts": (0, 50),  # 0 = no goal
 }
 
 
@@ -557,6 +558,11 @@ class UserPreference(models.Model):
         help_text="Blank = never chosen on any device: the first device that signs in seeds it",
     )
     confetti = models.BooleanField(default=True)
+    daily_goal_attempts = models.PositiveSmallIntegerField(
+        default=0,
+        validators=_bounded("daily_goal_attempts"),
+        help_text="Attempts to aim for each local day; 0 = no goal",
+    )
     save_voice_default = models.BooleanField(default=False)
     record_layout = models.SlugField(max_length=24, default="camera_text")
     record_resolution = models.CharField(
@@ -577,6 +583,37 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"prefs<{self.profile_id}>"
+
+
+class ProfileEventKind(models.TextChoices):
+    LEVEL_UP = "level_up", "Level up"
+    ACHIEVEMENT = "achievement", "Achievement"
+    STREAK_MILESTONE = "streak_milestone", "Streak milestone"
+    TWISTER_MASTERED = "twister_mastered", "Twister mastered"
+    PERSONAL_BEST = "personal_best", "Personal best"
+
+
+class ProfileEvent(models.Model):
+    """One moment on a person's profile timeline. Append-only; `ref` makes recording idempotent, so a
+    replayed request or a retried job can never add the same moment twice."""
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="events")
+    kind = models.CharField(max_length=20, choices=ProfileEventKind.choices)
+    ref = models.CharField(
+        max_length=80, help_text="Natural key, e.g. 'level:5' or 'ach:first-steps'"
+    )
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "ref"], name="uniq_profile_event_ref")
+        ]
+        indexes = [models.Index(fields=["profile", "-created_at"], name="profile_event_recent")]
+
+    def __str__(self):
+        return f"{self.profile_id} {self.ref}"
 
 
 class ReminderPreference(models.Model):

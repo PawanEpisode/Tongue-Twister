@@ -7,12 +7,13 @@ from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from ..models import Favorite, Profile, Twister, visible_twister_q
+from ..models import Favorite, Profile, ProfileEvent, Twister, visible_twister_q
 from ..serializers import TwisterSerializer, twister_context
 from . import achievements, boards, daily, insights, summary
 from .serializers import (
     AchievementViewSerializer,
     ActivityQuerySerializer,
+    ProfileEventSerializer,
     SeenSerializer,
     StatsQuerySerializer,
 )
@@ -75,6 +76,17 @@ def me_activity(request):
         insights.activity(request.user, query.validated_data["weeks"], timezone.now()),
         headers=NO_STORE,
     )
+
+
+class TimelineList(generics.ListAPIView):
+    """`GET /me/timeline/`: the caller's moments, newest first (paginated like every list)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProfileEventSerializer
+    filter_backends = []
+
+    def get_queryset(self):
+        return ProfileEvent.objects.filter(profile=self.request.user)
 
 
 class FavoriteList(generics.ListAPIView):

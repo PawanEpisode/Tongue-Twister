@@ -153,6 +153,7 @@ export const PREFERENCES = {
   speed_ladder: {},
   theme: '',
   confetti: true,
+  daily_goal_attempts: 0,
 } satisfies Preferences
 
 /** What `GET /public/s/{token}/` returns for the token `SCORE_CARD_TOKEN`. */

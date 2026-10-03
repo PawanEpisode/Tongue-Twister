@@ -38,6 +38,7 @@ SECTIONS = [
     "generated_twisters",
     "stats",
     "achievements",
+    "timeline",
     "recordings",
     "consents",
     "attempts",  # last: they take what the byte budget has left

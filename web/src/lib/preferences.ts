@@ -21,11 +21,13 @@ export const PREFERENCE_RANGES = {
   countdown_s: [0, 5],
   tts_rate: [0.5, 1.5],
   metronome_volume: [0, 1],
+  daily_goal_attempts: [0, 50],
 } as const
 
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: '',
   confetti: true,
+  daily_goal_attempts: 0,
   default_mode: 'speak_score',
   display_style: 'word',
   accent_lang: 'en-US',
