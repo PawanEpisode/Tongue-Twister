@@ -86,6 +86,12 @@ class UnsubscribeThrottle(IpRateThrottle):
     scope = "unsubscribe"
 
 
+class PublicTwisterThrottle(IpRateThrottle):
+    """Signed-out reads of one twister: bounds slug crawling (the pages stay public for search engines)."""
+
+    scope = "public_twister"
+
+
 class ShareReportThrottle(IpRateThrottle):
     scope = "share_report"
 
@@ -97,6 +103,7 @@ class CspReportThrottle(IpRateThrottle):
 
 
 __all__ = [
+    "PublicTwisterThrottle",
     "CspReportThrottle",
     "ExportThrottle",
     "GenerateThrottle",

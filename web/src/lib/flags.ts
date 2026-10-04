@@ -25,6 +25,11 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   reminders: false,
   // Accurate mode (docs/features/13): on-device speech engine; off until the server flag is on (A6).
   accurate_mode: false,
+  // Public site (docs/PRD-public-site.md): the signed-out landing page, demo and teaser. Ships on; the
+  // server flag `public_site` is the kill switch that restores the old signed-out experience.
+  public_site: true,
+  landing_demo: true,
+  newsletter: false,
 }
 const STORAGE_KEY = 'twister.flags.v1'
 const REFRESH_MS = 60_000

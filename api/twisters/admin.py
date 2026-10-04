@@ -22,11 +22,13 @@ from .models import (
     Plan,
     PracticeSession,
     Profile,
+    PublicStatSnapshot,
     Recording,
     ReportStatus,
     ScoringJob,
     ScoringProfile,
     ShareLink,
+    SignupAttribution,
     StorageLedger,
     SyncBatch,
     Twister,
@@ -42,7 +44,16 @@ from .models import (
 
 @admin.register(Twister)
 class TwisterAdmin(admin.ModelAdmin):
-    list_display = ["text", "difficulty", "origin", "category", "is_published", "visibility"]
+    list_display = [
+        "text",
+        "difficulty",
+        "origin",
+        "category",
+        "is_published",
+        "visibility",
+        "teaser_position",
+    ]
+    list_editable = ["teaser_position"]
     list_filter = ["difficulty", "origin", "category", "is_published", "visibility"]
     search_fields = ["text"]
     raw_id_fields = ["owner"]
@@ -348,3 +359,20 @@ class LeaderboardEntryAdmin(ReadOnlyAdmin):
     list_display = ["week_start", "twister", "rank", "best_score", "profile", "built_at"]
     list_filter = ["week_start"]
     raw_id_fields = ["profile", "twister", "best_attempt"]
+
+
+@admin.register(SignupAttribution)
+class SignupAttributionAdmin(admin.ModelAdmin):
+    list_display = ["profile", "intent", "first_path", "utm_source", "demo_claimed", "created_at"]
+    list_filter = ["intent", "demo_claimed"]
+    raw_id_fields = ["profile"]
+    readonly_fields = ["created_at"]
+
+
+@admin.register(PublicStatSnapshot)
+class PublicStatSnapshotAdmin(admin.ModelAdmin):
+    list_display = ["key", "value", "computed_at"]
+    readonly_fields = ["key", "value", "computed_at"]
+
+    def has_add_permission(self, request):
+        return False

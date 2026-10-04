@@ -10,17 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as GenerateRouteImport } from './routes/generate'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyTwistersRouteImport } from './routes/my-twisters'
 import { Route as PracticeRouteImport } from './routes/practice'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as DevCalibrateRouteImport } from './routes/dev.calibrate'
 import { Route as RTokenRouteImport } from './routes/r.$token'
@@ -32,6 +35,11 @@ import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe.$toke
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -64,6 +72,11 @@ const PracticeRoute = PracticeRouteImport.update({
   path: '/practice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -87,6 +100,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -127,17 +145,20 @@ const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
   '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
@@ -148,17 +169,20 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
   '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
@@ -170,17 +194,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/favorites': typeof FavoritesRoute
   '/generate': typeof GenerateRoute
   '/login': typeof LoginRoute
   '/my-twisters': typeof MyTwistersRoute
   '/practice': typeof PracticeRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/recordings': typeof RecordingsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/calibrate': typeof DevCalibrateRoute
   '/r/$token': typeof RTokenRoute
@@ -193,17 +220,20 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/account'
     | '/favorites'
     | '/generate'
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/privacy'
     | '/profile'
     | '/recordings'
     | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
+    | '/terms'
     | '/auth/callback'
     | '/dev/calibrate'
     | '/r/$token'
@@ -214,17 +244,20 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/account'
     | '/favorites'
     | '/generate'
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/privacy'
     | '/profile'
     | '/recordings'
     | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
+    | '/terms'
     | '/auth/callback'
     | '/dev/calibrate'
     | '/r/$token'
@@ -235,17 +268,20 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/account'
     | '/favorites'
     | '/generate'
     | '/login'
     | '/my-twisters'
     | '/practice'
+    | '/privacy'
     | '/profile'
     | '/recordings'
     | '/reset-password'
     | '/sitemap.xml'
     | '/stats'
+    | '/terms'
     | '/auth/callback'
     | '/dev/calibrate'
     | '/r/$token'
@@ -257,17 +293,20 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
   FavoritesRoute: typeof FavoritesRoute
   GenerateRoute: typeof GenerateRoute
   LoginRoute: typeof LoginRoute
   MyTwistersRoute: typeof MyTwistersRoute
   PracticeRoute: typeof PracticeRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   RecordingsRoute: typeof RecordingsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StatsRoute: typeof StatsRoute
+  TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   DevCalibrateRoute: typeof DevCalibrateRoute
   RTokenRoute: typeof RTokenRoute
@@ -284,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -328,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PracticeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -361,6 +414,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -417,17 +477,20 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
   FavoritesRoute: FavoritesRoute,
   GenerateRoute: GenerateRoute,
   LoginRoute: LoginRoute,
   MyTwistersRoute: MyTwistersRoute,
   PracticeRoute: PracticeRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   RecordingsRoute: RecordingsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StatsRoute: StatsRoute,
+  TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   DevCalibrateRoute: DevCalibrateRoute,
   RTokenRoute: RTokenRoute,

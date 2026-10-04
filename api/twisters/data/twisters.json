@@ -55,7 +55,8 @@
         "s",
         "sh"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 4
     },
     {
       "slug": "six-sick-sheiks",
@@ -69,7 +70,8 @@
         "sh",
         "th"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 10
     },
     {
       "slug": "sam-sam-sheep",
@@ -82,7 +84,8 @@
         "s",
         "sh"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 1
     },
     {
       "slug": "snake-slithers",
@@ -95,7 +98,8 @@
         "s",
         "sl"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 5
     },
     {
       "slug": "chester-cheetah",
@@ -143,7 +147,8 @@
       "focus_sounds": [
         "b"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 3
     },
     {
       "slug": "toy-boat",
@@ -183,7 +188,8 @@
         "cl",
         "cr"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 7
     },
     {
       "slug": "data-dot",
@@ -209,7 +215,8 @@
         "k",
         "d"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 11
     },
     {
       "slug": "red-lorry-yellow-lorry",
@@ -222,7 +229,8 @@
         "r",
         "l"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 8
     },
     {
       "slug": "truly-rural",
@@ -235,7 +243,8 @@
         "r",
         "l"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 9
     },
     {
       "slug": "rory-raw",
@@ -340,7 +349,8 @@
         "n",
         "k"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 6
     },
     {
       "slug": "are-our-oars",
@@ -393,7 +403,8 @@
         "s",
         "ch"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 12
     },
     {
       "slug": "flash-message",
@@ -571,7 +582,8 @@
         "f",
         "fr"
       ],
-      "is_published": true
+      "is_published": true,
+      "teaser_position": 2
     },
     {
       "slug": "double-bubble-gum",

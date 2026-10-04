@@ -37,3 +37,24 @@ describe('event allow-list', () => {
     ])
   })
 })
+
+describe('public site events', () => {
+  it('only lets closed values through', () => {
+    expect(
+      sanitise('gate_shown', { intent: 'practise', email: 'a@b.co' }),
+    ).toEqual({ intent: 'practise' })
+    expect(sanitise('gate_shown', { intent: 'free text' })).toEqual({})
+    expect(sanitise('landing_section_viewed', { section: 'faq' })).toEqual({
+      section: 'faq',
+    })
+    expect(
+      sanitise('demo_started', {
+        twister: 'she-sells-seashells',
+        transcript: 'x',
+      }),
+    ).toEqual({
+      twister: 'she-sells-seashells',
+    })
+    expect(sanitise('demo_unsupported', { anything: 1 })).toEqual({})
+  })
+})

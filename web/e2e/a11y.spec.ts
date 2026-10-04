@@ -8,11 +8,51 @@ type Target = {
   name: string
   path: string
   ready: (page: Page) => Promise<void>
+  /** Serve the signed-out public site (flag on, locked teaser). */
+  publicSite?: boolean
 }
 
 const tab = (page: Page, name: string) => page.getByRole('tab', { name })
 
 const PAGES: Target[] = [
+  {
+    name: 'landing (signed out)',
+    path: '/',
+    publicSite: true,
+    ready: async (p) => {
+      await expect(
+        p.getByRole('heading', { name: /Questions, answered/ }),
+      ).toBeVisible()
+      await expect(
+        p.getByRole('button', { name: 'Tap and say it' }),
+      ).toBeVisible()
+    },
+  },
+  {
+    name: 'browse preview (signed out)',
+    path: '/twisters',
+    publicSite: true,
+    ready: async (p) =>
+      expect(
+        p.getByRole('button', { name: 'Unlock all twisters' }),
+      ).toBeVisible(),
+  },
+  {
+    name: 'twister page (signed out)',
+    path: `/twisters/${TWISTER.slug}`,
+    publicSite: true,
+    ready: async (p) =>
+      expect(
+        p.getByRole('button', { name: 'Practise this twister' }),
+      ).toBeVisible(),
+  },
+  {
+    name: 'privacy',
+    path: '/privacy',
+    publicSite: true,
+    ready: async (p) =>
+      expect(p.getByRole('heading', { name: 'Privacy policy' })).toBeVisible(),
+  },
   {
     name: 'home',
     path: '/',
@@ -92,7 +132,7 @@ const PAGES: Target[] = [
 for (const theme of ['light', 'dark'] as const)
   for (const target of PAGES)
     test(`axe: ${target.name} (${theme})`, async ({ page }) => {
-      await openApp(page, { theme })
+      await openApp(page, { theme, publicSite: target.publicSite })
       await page.goto(target.path)
       await target.ready(page)
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme)

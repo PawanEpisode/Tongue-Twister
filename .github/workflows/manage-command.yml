@@ -25,6 +25,7 @@ on:
     - cron: "7 * * * *" # hourly at :07 — send_reminders (practice reminder e-mails; does nothing while the `reminders` flag is off)
     - cron: "53 * * * *" # hourly at :53 — purge_deleted_accounts (accounts whose 30-day deletion grace period is over)
     - cron: "19 5 * * *" # daily 05:19 UTC — prune_generation_usage (quota ledger rows older than 90 days)
+    - cron: "41 * * * *" # hourly at :41 — refresh_public_stats (landing-page social-proof counters)
     - cron: "*/10 * * * *" # every 10 min — sweep_pending_attempts (re-queue lapsed scoring leases, expire dead jobs; a no-op while no worker is deployed)
 
 # Two runs of the same command must never overlap (they would fight over the same rows).
@@ -74,7 +75,7 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper sync_achievements build_leaderboard purge_deleted_accounts send_reminders prune_generation_usage plan_demand_report"
+          ALLOWED="reconcile_speak_stats sweep_pending_attempts build_pronunciations seed_twisters expire_recordings orphan_sweeper sync_achievements build_leaderboard purge_deleted_accounts send_reminders prune_generation_usage plan_demand_report refresh_public_stats"
 
           if [ -n "${SCHEDULE:-}" ]; then
             case "$SCHEDULE" in
@@ -85,6 +86,7 @@ jobs:
               "53 * * * *")   command=purge_deleted_accounts ;;
               "7 * * * *")    command=send_reminders ;;
               "19 5 * * *")   command=prune_generation_usage ;;
+              "41 * * * *")   command=refresh_public_stats ;;
               "*/10 * * * *") command=sweep_pending_attempts ;;
               *) echo "No command mapped to schedule '$SCHEDULE'" >&2; exit 1 ;;
             esac

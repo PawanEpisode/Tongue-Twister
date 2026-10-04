@@ -23,6 +23,15 @@ Format: lightweight ADRs. Every numeric value below lives in **config** (`settin
 | D17 | Recordings and streaks | A saved recording does not count toward the streak; it only feeds `recorded_1` |
 | D18 | Board names | `public_name` or stable `Player NNNN`; opted-out and under-13 excluded; under-13 viewers get 403 |
 | D19 | Achievement evaluation | In-request, in a savepoint under the Profile lock; state-based; never auto-revoked; 25 achievements |
+| D42 | Signed-out home | A marketing page at `/`; members see the app at the same URLs (supersedes the guest-first part of D12) |
+| D43 | Practising | Needs an account; a bundled, ephemeral demo gives the first win |
+| D44 | Signed-out catalogue | Fixed curated teaser of 12, enforced by the API (`teaser_position`) |
+| D45 | Sign-in gate | One sheet, opened only by user intent; two dismissals switch to an inline nudge |
+| D46 | Demo score | Claimable once per account via `POST /sync/guest/` `kind: demo_claim`; provisional, no XP |
+| D47 | Hint cookie | `tw_m` avoids a landing flash for members; carries no identity |
+| D48 | Social proof | None invented; usage numbers only above a floor |
+| D49 | Rollback | `public_site` flag restores guest-first; legacy paths stay for two releases |
+| D50 | Footer | LinkedIn and a maker credit; no legal links (those sit in the gate, login, privacy band, Account) |
 
 ---
 
@@ -71,6 +80,10 @@ A `focus_sounds` phoneme that is substituted or dropped (CTC substitution test) 
 Create `Plan(code PK, limits jsonb)` with `free` only; `Profile.plan_code` defaults `free`. Introduce Stripe only when a paid tier is justified by cap-hit data.
 
 ## D12 — Guest experience
+
+> Superseded in part by D42-D43 (2026-10): signed-out visitors no longer practise as guests; the old path remains behind the `public_site` flag.
+> Superseded in part by D42-D43: signed-out visitors no longer practise as guests (the code path remains behind the `public_site` flag).
+
 Guests get Read-along, Speak (provisional, local), and local recording download. History lives in IndexedDB. On sign-up the client posts one `POST /sync/guest/` batch (attempts, favourites, preferences) with client-generated UUIDs; server ignores duplicates. Guest attempts are always `provisional`.
 
 ## D13 — Leaderboards (P5)
@@ -153,6 +166,33 @@ Manifest, browser cache, worker cache and every `Attempt.model_version` carry th
 
 ## D41 - Spot-check audio is deleted when the job settles
 Unless the user separately chose to keep the take (existing voice-clip rules), the clip is purged on `done`, `failed` or `expired`. Withdrawing `voice_processing` consent expires queued jobs. Under-13 accounts never reach this path.
+
+## D42 - The signed-out home page is a marketing page
+Logged-out `/` sells the product; members see the app at the same URLs. This supersedes the guest-first part of D12. Full spec: `docs/PRD-public-site.md`.
+
+## D43 - Practising needs an account; a bundled demo gives the first win
+Signed-out visitors can read a twister and use the landing-page demo (bundled, nothing stored server-side). Recording and scored practice start after sign-in.
+
+## D44 - The signed-out catalogue is a fixed curated teaser of 12
+First three per level, repaired so all six sound families appear (`Twister.teaser_position`, enforced by the API: anonymous `GET /twisters/` returns only the 12, page 2 is `401 auth_required`). The set is the same for every visitor.
+
+## D45 - One sign-in sheet, opened only by user intent
+`GateSheet` opens when someone tries something that needs an account (practise, star, unlock). After two dismissals it becomes a small inline nudge. It hands off to `/login` with a return path.
+
+## D46 - The demo score can be claimed once
+`POST /sync/guest/` with `kind: "demo_claim"`: one attempt, re-scored by the server, provisional, no XP, once per account, within `DEMO_CLAIM_MAX_AGE_HOURS`.
+
+## D47 - A hint cookie stops the landing-page flash for members
+`tw_m=1` (rendering hint only, no identity, never trusted for access) lets SSR paint an app skeleton for returning members. Responses carry `Vary: Cookie`.
+
+## D48 - No invented proof
+No testimonials, logos or user counts that are not real. Usage numbers appear only above `PUBLIC_STAT_FLOOR` (default 500) from the hourly `refresh_public_stats` snapshot.
+
+## D49 - `public_site` is the rollback
+Turning the flag off restores the old signed-out experience (guest practice, full list). The legacy guest code paths stay for two releases.
+
+## D50 - The footer has no legal links
+It carries LinkedIn and a maker credit. Privacy and Terms are linked from the sign-in sheet, `/login`, the landing privacy band and Account.
 
 ---
 

@@ -40,8 +40,8 @@ def test_attempt_flow_awards_xp_and_streak(seeded, auth_client):
     assert c.get("/api/v1/me/").data["total_attempts"] == 1
 
 
-def test_marathons_seeded_and_filterable(seeded):
-    r = APIClient().get("/api/v1/twisters/?min_words=100")
+def test_marathons_seeded_and_filterable(seeded, anon_open):
+    r = anon_open.get("/api/v1/twisters/?min_words=100")
     assert r.status_code == 200 and r.data["count"] >= 30
     assert all(t["word_count"] >= 100 for t in r.data["results"])
 

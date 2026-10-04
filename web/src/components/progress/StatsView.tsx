@@ -209,7 +209,10 @@ export function StatsView({
                 })
               }
             >
-              <SelectTrigger id={modeId} className="w-auto py-1.5 whitespace-nowrap">
+              <SelectTrigger
+                id={modeId}
+                className="w-auto py-1.5 whitespace-nowrap"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

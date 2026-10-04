@@ -13,7 +13,9 @@ import {
 } from '#/lib/progress/browseParams'
 import { BrowseFilters } from '#/components/browse/BrowseFilters'
 import { PagedTwisters } from '#/components/TwisterList'
+import UnlockPanel from '#/components/public/UnlockPanel'
 import { Button } from '#/components/ui/button'
+import { usePublicSite } from '#/lib/public/audience'
 import { Input } from '#/components/ui/input'
 import { PageTitle } from '#/components/ui/page-title'
 import { EmptyState } from '#/components/feedback'
@@ -95,6 +97,10 @@ function Browse() {
     nav({ search: {} })
   }
   const counts = facets.data
+  // Signed out with the public site on: the API returns the curated preview and says how big the library is.
+  const first = list.data?.pages[0]
+  const publicSite = usePublicSite()
+  const preview = !signedIn && publicSite && first?.locked === true
 
   return (
     <div>
@@ -133,17 +139,24 @@ function Browse() {
       <PagedTwisters
         query={list}
         empty={
-          <EmptyState
-            title="No twisters match"
-            hint="Try a different search or loosen a filter."
-            action={
-              <Button variant="outline" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            }
-          />
+          preview ? (
+            <UnlockPanel total={first?.library_total ?? 0} shown={0} noMatch />
+          ) : (
+            <EmptyState
+              title="No twisters match"
+              hint="Try a different search or loosen a filter."
+              action={
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              }
+            />
+          )
         }
       />
+      {preview && !!items.length && (
+        <UnlockPanel total={first?.library_total ?? 0} shown={items.length} />
+      )}
     </div>
   )
 }

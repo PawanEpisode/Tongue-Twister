@@ -13,6 +13,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { useFlag } from '#/lib/flags'
+import { useAudience, usePublicSite } from '#/lib/public/audience'
 import { useSummary } from '#/lib/progress/useSummary'
 import { seo } from '#/lib/seo'
 import { api } from '#/lib/api'
@@ -32,8 +33,38 @@ const WeeklyBoard = lazy(() =>
 
 export const Route = createFileRoute('/')({
   head: () => seo({ title: 'Twister — Say it fast. Say it right.', path: '/' }),
-  component: Home,
+  headers: () => ({ Vary: 'Cookie' }),
+  component: HomeRoute,
 })
+
+// Signed-out visitors get the landing page; members never download it.
+const PublicLanding = lazy(
+  () => import('#/components/public/landing/PublicLanding'),
+)
+
+function HomeRoute() {
+  const audience = useAudience()
+  const publicSite = usePublicSite()
+  // The kill switch (`public_site` off) restores the old signed-out home.
+  if (audience === 'member' || !publicSite) return <Home />
+  if (audience === 'pending') return <HomeSkeleton />
+  return (
+    <Suspense fallback={<HomeSkeleton />}>
+      <PublicLanding />
+    </Suspense>
+  )
+}
+
+/** Shown while a returning member's session is restored: the shape of the app, never marketing. */
+function HomeSkeleton() {
+  return (
+    <div className="space-y-6 pt-4" aria-busy aria-label="Loading">
+      <Skeleton className="h-10 w-2/3" />
+      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  )
+}
 
 const LEVELS: {
   d: 1 | 2 | 3 | 4

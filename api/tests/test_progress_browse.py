@@ -82,8 +82,8 @@ def test_status_only_reflects_the_callers_own_progress(progress, auth_client):
     assert listing(other, status="not_started").data["count"] == 205
 
 
-def test_status_needs_a_login(seeded, anon):
-    r = listing(anon, status="mastered")
+def test_status_needs_a_login(seeded, anon_open):
+    r = listing(anon_open, status="mastered")
     assert r.status_code == 400 and error_code(r) == "validation_error"
     assert "Sign in" in str(r.data["error"]["details"]["status"])
 
@@ -101,12 +101,12 @@ def ids(response) -> list[int]:
     return [Twister.objects.get(slug=s).id for s in slugs(response)]
 
 
-def test_default_and_anonymous_recommended_order_is_difficulty_then_id(seeded, anon):
+def test_default_and_anon_openymous_recommended_order_is_difficulty_then_id(seeded, anon_open):
     expected = list(Twister.objects.order_by("difficulty", "id").values_list("slug", flat=True))[
         :24
     ]
-    assert slugs(listing(anon)) == expected
-    assert slugs(listing(anon, sort="recommended")) == expected
+    assert slugs(listing(anon_open)) == expected
+    assert slugs(listing(anon_open, sort="recommended")) == expected
 
 
 def test_recommended_puts_the_mastered_last_when_signed_in(progress):
@@ -128,10 +128,10 @@ def test_recommended_puts_the_mastered_last_when_signed_in(progress):
         ("easiest", lambda t: (t.difficulty, t.id)),
     ],
 )
-def test_each_sort_orders_the_whole_catalogue(seeded, anon, sort, key):
+def test_each_sort_orders_the_whole_catalogue(seeded, anon_open, sort, key):
     Twister.objects.filter(slug="peter-piper").update(word_count=1)  # force ties to be broken by id
     expected = [t.slug for t in sorted(Twister.objects.filter(is_published=True), key=key)][:24]
-    assert slugs(listing(anon, sort=sort)) == expected
+    assert slugs(listing(anon_open, sort=sort)) == expected
 
 
 def test_best_score_sorts_put_unplayed_twisters_last_descending_and_first_ascending(user):
@@ -161,9 +161,9 @@ def test_best_score_sort_uses_only_your_own_scores(user, auth_client):
     assert slugs(listing(other, category="rollers", sort="best_desc")) == [t.slug for t in rollers]
 
 
-def test_best_score_sorts_need_a_login(seeded, anon):
+def test_best_score_sorts_need_a_login(seeded, anon_open):
     for sort in ("best_desc", "best_asc"):
-        r = listing(anon, sort=sort)
+        r = listing(anon_open, sort=sort)
         assert r.status_code == 400 and error_code(r) == "validation_error"
 
 
@@ -173,11 +173,13 @@ def test_unknown_sort_is_a_400(user):
     assert r.status_code == 400 and error_code(r) == "validation_error"
 
 
-def test_sort_wins_over_ordering(seeded, anon):
-    by_ordering = slugs(listing(anon, ordering="-word_count"))
-    both = slugs(listing(anon, ordering="-word_count", sort="shortest"))
-    assert both == slugs(listing(anon, sort="shortest")) and both != by_ordering
-    assert slugs(listing(anon, ordering="-word_count")) == by_ordering  # ordering alone still works
+def test_sort_wins_over_ordering(seeded, anon_open):
+    by_ordering = slugs(listing(anon_open, ordering="-word_count"))
+    both = slugs(listing(anon_open, ordering="-word_count", sort="shortest"))
+    assert both == slugs(listing(anon_open, sort="shortest")) and both != by_ordering
+    assert (
+        slugs(listing(anon_open, ordering="-word_count")) == by_ordering
+    )  # ordering alone still works
 
 
 # --- search alias ---------------------------------------------------------------------------------------
@@ -266,15 +268,15 @@ def test_facets_combine_several_filters(seeded, anon):
     assert r.data["categories"]["poppers"] == expected
 
 
-def test_facets_respect_word_counts_and_search(seeded, anon):
+def test_facets_respect_word_counts_and_search(seeded, anon_open):
     long_ones = Twister.objects.filter(word_count__gte=50)
-    r = facets(anon, min_words=50)
+    r = facets(anon_open, min_words=50)
     assert (
         r.data["total"] == long_ones.count() and sum(r.data["levels"].values()) == long_ones.count()
     )
-    r = facets(anon, q="seashells")
-    assert r.data["total"] == listing(anon, q="seashells").data["count"] > 0
-    assert r.data["total"] == facets(anon, search="seashells").data["total"]
+    r = facets(anon_open, q="seashells")
+    assert r.data["total"] == listing(anon_open, q="seashells").data["count"] > 0
+    assert r.data["total"] == facets(anon_open, search="seashells").data["total"]
 
 
 def test_facets_zero_fill_and_unknown_values(seeded, anon):

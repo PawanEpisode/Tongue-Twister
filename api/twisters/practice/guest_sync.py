@@ -4,11 +4,20 @@ import datetime as dt
 import hashlib
 import json
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from ..models import Favorite, Profile, SyncBatch, SyncKind, Twister, UserPreference
+from ..models import (
+    Favorite,
+    Profile,
+    SignupAttribution,
+    SyncBatch,
+    SyncKind,
+    Twister,
+    UserPreference,
+)
 from ..speak import service
 from .serializers import PreferenceSerializer
 
@@ -37,6 +46,15 @@ class GuestSyncSerializer(serializers.Serializer):
         child=serializers.DictField(), max_length=MAX_ATTEMPTS, default=list
     )
 
+    def validate(self, attrs):
+        if attrs["kind"] == SyncKind.DEMO_CLAIM:
+            # A demo claim is exactly one attempt, nothing else (public site, D46).
+            if len(attrs["attempts"]) != 1:
+                raise serializers.ValidationError({"attempts": "A demo claim carries one attempt."})
+            if attrs["favorites"] or attrs.get("preferences"):
+                raise serializers.ValidationError("A demo claim carries no favourites or settings.")
+        return attrs
+
 
 def _import_preferences(profile: Profile, data: dict | None) -> None:
     """Fresh accounts adopt guest settings; an existing account's settings always win (merge, not overwrite)."""
@@ -56,16 +74,23 @@ def _import_favorites(profile: Profile, slugs: list[str]) -> int:
     return len(new)
 
 
-def _import_attempts(profile: Profile, items: list[dict], now: dt.datetime) -> tuple[int, int]:
-    """Returns (imported, rejected). Guest attempts are re-scored server-side and earn no XP or streak."""
+def _import_attempts(
+    profile: Profile, items: list[dict], now: dt.datetime, *, max_age: dt.timedelta | None = None
+) -> tuple[int, int]:
+    """Returns (imported, rejected). Guest attempts are re-scored server-side and earn no XP or streak.
+    With `max_age` (demo claims) an attempt must carry a timestamp that recent."""
     valid = []
     rejected = 0
     for raw in items:
         item = AttemptImportSerializer(data=raw)
-        if item.is_valid():
-            valid.append(item.validated_data)
-        else:
+        if not item.is_valid():
             rejected += 1
+        elif max_age is not None and not (
+            (made := item.validated_data.get("created_at")) and now - made <= max_age
+        ):
+            rejected += 1
+        else:
+            valid.append(item.validated_data)
     for d in valid:
         d["occurred_at"] = min(now, max(now - MAX_BACKDATE, d.get("created_at", now)))
     imported = 0
@@ -90,6 +115,7 @@ def _import_attempts(profile: Profile, items: list[dict], now: dt.datetime) -> t
 def import_batch(profile: Profile, data: dict) -> tuple[SyncBatch, bool]:
     """Apply a validated payload once per (profile, client_batch_id). Caller holds the profile lock."""
     digest = hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()
+    demo = data["kind"] == SyncKind.DEMO_CLAIM
     batch, created = SyncBatch.objects.get_or_create(
         profile=profile,
         client_batch_id=data["client_batch_id"],
@@ -100,9 +126,24 @@ def import_batch(profile: Profile, data: dict) -> tuple[SyncBatch, bool]:
     now = timezone.now()
     _import_preferences(profile, data.get("preferences"))
     batch.favorites_imported = _import_favorites(profile, data["favorites"])
-    batch.attempts_imported, batch.rejected = _import_attempts(profile, data["attempts"], now)
+    max_age = dt.timedelta(hours=settings.DEMO_CLAIM_MAX_AGE_HOURS) if demo else None
+    batch.attempts_imported, batch.rejected = _import_attempts(
+        profile, data["attempts"], now, max_age=max_age
+    )
     batch.save()
+    if demo and batch.attempts_imported:
+        SignupAttribution.objects.filter(pk=profile.pk).update(demo_claimed=True)
     if profile.guest_migrated_at is None:
         profile.guest_migrated_at = now
         profile.save(update_fields=["guest_migrated_at"])
     return batch, True
+
+
+def demo_already_claimed(profile: Profile, data: dict) -> bool:
+    """A second demo claim under a different batch id: one score per account (the same id is a plain replay)."""
+    return (
+        data["kind"] == SyncKind.DEMO_CLAIM
+        and SyncBatch.objects.filter(profile=profile, kind=SyncKind.DEMO_CLAIM)
+        .exclude(client_batch_id=data["client_batch_id"])
+        .exists()
+    )

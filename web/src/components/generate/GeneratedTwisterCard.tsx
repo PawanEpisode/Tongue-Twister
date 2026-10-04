@@ -1,4 +1,3 @@
-import confetti from 'canvas-confetti'
 import { Link } from '@tanstack/react-router'
 import { Lightbulb } from 'lucide-react'
 import { m, useReducedMotion } from 'motion/react'
@@ -18,16 +17,17 @@ function quoteClass(text: string) {
 
 function celebrate(reduce: boolean | null) {
   if (reduce) return
-  try {
-    confetti({
-      particleCount: 70,
-      spread: 72,
-      origin: { y: 0.7 },
-      colors: readAccentColors(),
-    })
-  } catch {
-    // jsdom and locked-down browsers have no canvas. The card still lands.
-  }
+  // jsdom and locked-down browsers have no canvas. The card still lands.
+  void import('canvas-confetti')
+    .then(({ default: confetti }) =>
+      confetti({
+        particleCount: 70,
+        spread: 72,
+        origin: { y: 0.7 },
+        colors: readAccentColors(),
+      }),
+    )
+    .catch(() => undefined)
 }
 
 /** The reveal: the new line, in quotes, ready to say. */

@@ -3,6 +3,7 @@ import type {
   DailyPayload,
   Facets,
   FeatureFlags,
+  LandingPayload,
   Preferences,
   ScoreCardPublic,
   Twister,
@@ -129,7 +130,36 @@ export const FLAGS = {
   share_links: false,
   achievements: true,
   weekly_boards: false,
+  // The legacy guest experience: most specs exercise the app itself, not the landing page. The public
+  // site specs switch it on with `openApp(page, { publicSite: true })`.
+  public_site: false,
+  landing_demo: true,
 } satisfies FeatureFlags
+
+/** Flags for the signed-out public site. */
+export const PUBLIC_FLAGS = {
+  ...FLAGS,
+  public_site: true,
+} satisfies FeatureFlags
+
+/** What `GET /public/landing/` returns: the teaser, library size and catalogue stats (no usage numbers yet). */
+export const LANDING = {
+  library_total: 205,
+  teaser: TWISTERS,
+  facets: {
+    levels: { '1': 50, '2': 60, '3': 55, '4': 40 },
+    categories: { hissers: 80, poppers: 60, rollers: 65 },
+  },
+  stats: {
+    twisters: 205,
+    categories: 3,
+    levels: 4,
+    practisers: null,
+    attempts: null,
+    as_of: null,
+  },
+  testimonials: [],
+} satisfies LandingPayload
 
 export const PREFERENCES = {
   default_mode: 'speak_score',

@@ -64,6 +64,8 @@ secrets apply on the next workflow run.
 | `WORKER_SHARED_SECRET` | Fly | See above |
 | `POLL_INTERVAL_S`, `MAX_JOB_S`, `FFMPEG_THREADS`, `LOG_LEVEL`, `WORKER_ID`, `WORK_DIR`, `HEALTH_FILE`, `MAX_DOWNLOAD_BYTES`, `MAX_UPLOAD_BYTES`, `SHUTDOWN_GRACE_S` | Fly (`fly.toml` `[env]` or secrets) | `fly.toml` sets `POLL_INTERVAL_S=15`, `FFMPEG_THREADS=1`, `LOG_LEVEL=INFO` |
 | `DJANGO_SETTINGS_MODULE`, `TEST_DATABASE_URL` | CI / local | Test settings and the Postgres CI job; `TEST_DATABASE_URL` is deliberately not `DATABASE_URL` |
+| `PUBLIC_STAT_FLOOR` | Fly (API) | Landing social proof is hidden until the 30-day practiser count reaches this (default 500) |
+| `DEMO_CLAIM_MAX_AGE_HOURS` | Fly (API) | How old a landing-demo attempt may be when claimed at sign-up (default 24) |
 
 ## Rotation procedures
 **General:** (1) generate a new random value (`python -c "import secrets;print(secrets.token_urlsafe(48))"`),

@@ -1,6 +1,9 @@
 import { Star } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import type { Twister } from '#/lib/api'
+import { useAuth } from '#/lib/auth'
+import { useGate } from '#/lib/gate/useGate'
+import { usePublicSite } from '#/lib/public/audience'
 import { useFavorite } from '#/lib/progress/useFavorite'
 import { cn } from '#/lib/utils'
 
@@ -22,13 +25,18 @@ export function FavoriteButton({
     twister.slug,
     twister.is_favorite,
   )
+  // Public site: a signed-out star is a reason to sign up, not a note kept on the device.
+  const { session } = useAuth()
+  const { request } = useGate()
+  const publicSite = usePublicSite()
+  const gated = !session && publicSite
   return (
     <>
       <Button
         type="button"
         variant="ghost"
-        onClick={toggle}
-        aria-pressed={starred}
+        onClick={gated ? () => request({ intent: 'favourite' }) : toggle}
+        aria-pressed={gated ? false : starred}
         aria-label={`${starred ? 'Remove from' : 'Add to'} favourites: ${preview(twister.text)}`}
         title={
           localOnly ? 'Saved on this device — sign in to keep it' : undefined

@@ -16,6 +16,7 @@ import { usePreferences } from '#/lib/preferences'
 import { clampWpm } from '#/lib/readAlong/timeline'
 import { useRecordSupport } from '#/lib/record/useRecordSupport'
 import { seo } from '#/lib/seo'
+import { useAudience, usePublicSite } from '#/lib/public/audience'
 
 const MODE_OF: Record<PracticeMode, ModeKey | undefined> = {
   read_along: 'read',
@@ -46,6 +47,11 @@ function parseSearch(raw: Record<string, unknown>): Search {
     ...(style && { style }),
   }
 }
+
+// Signed-out visitors only: members never download it.
+const GuestTwisterPage = lazy(
+  () => import('#/components/public/GuestTwisterPage'),
+)
 
 // Only one mode is on screen at a time, so the others stay out of the first-load bundle.
 const ReadAlongMode = lazy(() => import('#/components/practice/ReadAlongMode'))
@@ -78,8 +84,24 @@ export const Route = createFileRoute('/twisters/$slug')({
           },
     ),
   validateSearch: parseSearch,
-  component: PracticeHub,
+  component: TwisterRoute,
 })
+
+function TwisterRoute() {
+  const audience = useAudience()
+  const publicSite = usePublicSite()
+  const { slug } = Route.useParams()
+  const loaded = Route.useLoaderData()
+  // Signed out: the twister and one way in. Practising needs an account; the kill switch restores the old page.
+  if (audience === 'guest' && publicSite)
+    return (
+      <Suspense fallback={<PracticeSkeleton />}>
+        <GuestTwisterPage slug={slug} initial={loaded} />
+      </Suspense>
+    )
+  if (audience === 'pending') return <PracticeSkeleton />
+  return <PracticeHub />
+}
 
 function PracticeHub() {
   const { slug } = Route.useParams()

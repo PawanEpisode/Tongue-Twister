@@ -260,6 +260,8 @@ export type GuestAttempt = {
 }
 export type GuestSyncPayload = {
   client_batch_id: string
+  /** `demo_claim`: the one landing-page demo attempt, imported at sign-up (public site, D46). */
+  kind?: 'guest_signup' | 'demo_claim'
   attempts: GuestAttempt[]
   favorites: string[]
 }
@@ -267,6 +269,26 @@ export type GuestSyncResult = {
   attempts_imported: number
   favorites_imported: number
   rejected: number
+}
+/** `GET /public/landing/`: everything the signed-out landing page needs, identical for every visitor. */
+export type LandingPayload = {
+  library_total: number
+  teaser: Twister[]
+  facets: { levels: Record<string, number>; categories: Record<string, number> }
+  stats: {
+    twisters: number
+    categories: number
+    levels: number
+    practisers: number | null
+    attempts: number | null
+    as_of: string | null
+  }
+  testimonials: never[]
+}
+export type AttributionBody = {
+  intent: string
+  first_path: string
+  utm: { source: string; medium: string; campaign: string }
 }
 export type History = {
   count: number
@@ -292,7 +314,13 @@ export type AttemptRow = {
   is_personal_best: boolean
   created_at: string
 }
-export type Page<T> = { count: number; results: T[] }
+export type Page<T> = {
+  count: number
+  results: T[]
+  /** Signed-out callers only: the list is the curated teaser and `library_total` is the full size. */
+  locked?: boolean
+  library_total?: number
+}
 
 // ─── Progress, mastery, achievements, stats and discovery (docs/features/14-06d-build-spec.md §4) ───
 
@@ -947,6 +975,12 @@ export const api = {
       body: JSON.stringify({ voice_asset_id }),
     }),
   flags: () => request<{ flags: FeatureFlags }>('/flags/').then((r) => r.flags),
+  landing: () => request<LandingPayload>('/public/landing/'),
+  attribution: (body: AttributionBody) =>
+    request<unknown>('/me/attribution/', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   syncGuest: (body: GuestSyncPayload) =>
     request<GuestSyncResult>('/sync/guest/', {
       method: 'POST',

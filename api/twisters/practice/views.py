@@ -66,6 +66,16 @@ def sync_guest(request):
     ser = guest_sync.GuestSyncSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
     profile = Profile.objects.select_for_update().get(pk=request.user.pk)
+    if guest_sync.demo_already_claimed(profile, ser.validated_data):
+        return Response(
+            {
+                "attempts_imported": 0,
+                "favorites_imported": 0,
+                "rejected": 1,
+                "details": {"reason": "demo_already_claimed"},
+            },
+            status=status.HTTP_200_OK,
+        )
     batch, created = guest_sync.import_batch(profile, ser.validated_data)
     return Response(
         {

@@ -4,6 +4,7 @@ import {
   DAILY,
   FACETS,
   FLAGS,
+  LANDING,
   GONE_TOKEN,
   PREFERENCES,
   SCORE_CARD,
@@ -51,6 +52,7 @@ export function route(
   if (path === '/twisters/random/') return json(TWISTER)
   if (path === '/daily/') return json(DAILY)
   if (path === '/flags/') return json({ flags: FLAGS })
+  if (path === '/public/landing/') return json(LANDING)
   if (path === '/me/preferences/') return json(PREFERENCES)
   const card = /^\/public\/s\/([^/]+)\/$/.exec(path)
   if (card) {
@@ -75,4 +77,5 @@ export const MOCKED_PREFIXES = [
   '/flags/',
   '/me/preferences/',
   '/public/s/',
+  '/public/landing/',
 ]

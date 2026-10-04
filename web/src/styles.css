@@ -191,3 +191,36 @@ h3 {
     transition: none !important;
   }
 }
+
+/* Public landing: endless marquee. A static, wrapping row when motion is reduced. */
+@keyframes marquee-x {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee-x 60s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    mask-image: none;
+  }
+  .marquee-track {
+    animation: none;
+    width: auto;
+    flex-wrap: wrap;
+  }
+  .marquee-track > [aria-hidden='true'] {
+    display: none;
+  }
+}
+
+/* Public landing: slowly turning chip rings. Still when motion is reduced (global rule above). */
+@keyframes orbit-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.orbit {
+  animation: orbit-turn linear infinite;
+}

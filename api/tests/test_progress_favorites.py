@@ -85,7 +85,7 @@ def test_list_is_paginated(user):
 def test_list_hides_unpublished_twisters_and_other_peoples_favourites(user):
     client, profile = user
     Favorite.objects.create(profile=profile, twister=Twister.objects.get(slug=SLUG))
-    gone = Twister.objects.get(slug="six-sick-sheiks")
+    gone = Twister.objects.get(slug="zebra-zoo")
     Favorite.objects.create(profile=profile, twister=gone)
     Twister.objects.filter(pk=gone.pk).update(is_published=False)
     Favorite.objects.create(

@@ -1,4 +1,3 @@
-import confetti from 'canvas-confetti'
 import { Link } from '@tanstack/react-router'
 import { PartyPopper } from 'lucide-react'
 import { m } from 'motion/react'
@@ -70,25 +69,34 @@ export default function ResultCard({
   const celebrations = useCelebrations()
   useEffect(() => {
     if (score < 80 || !celebrations) return
-    const end = Date.now() + 900
-    const tick = () => {
-      confetti({
-        particleCount: 5,
-        angle: 60,
-        spread: 70,
-        origin: { x: 0, y: 0.7 },
-        colors: readAccentColors(),
-      })
-      confetti({
-        particleCount: 5,
-        angle: 120,
-        spread: 70,
-        origin: { x: 1, y: 0.7 },
-        colors: readAccentColors(),
-      })
-      if (Date.now() < end) requestAnimationFrame(tick)
+    let live = true
+    // Loaded only when there is something to celebrate: it is not part of the page's first load.
+    void import('canvas-confetti').then(({ default: confetti }) => {
+      if (!live) return
+      const end = Date.now() + 900
+      const tick = () => {
+        if (!live) return
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 70,
+          origin: { x: 0, y: 0.7 },
+          colors: readAccentColors(),
+        })
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 70,
+          origin: { x: 1, y: 0.7 },
+          colors: readAccentColors(),
+        })
+        if (Date.now() < end) requestAnimationFrame(tick)
+      }
+      tick()
+    })
+    return () => {
+      live = false
     }
-    tick()
   }, [score, celebrations])
 
   return (

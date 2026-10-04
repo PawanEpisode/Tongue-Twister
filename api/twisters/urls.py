@@ -7,6 +7,7 @@ from .generate import views as generate
 from .media import views as media
 from .practice import views as practice
 from .progress import views as progress
+from .public import views as public_site
 from .reminders import views as reminders
 from .speak import views as speak
 
@@ -65,6 +66,8 @@ urlpatterns = [
     path("internal/scoring-jobs/<uuid:job_id>/result/", speak.scoring_job_result),
     path("csp-report/", csp_report.csp_report, name="csp-report"),
     path("flags/", practice.feature_flags),
+    path("public/landing/", public_site.landing),
+    path("me/attribution/", public_site.attribution),
     path("sync/guest/", practice.sync_guest),
     path("", include(router.urls)),
 ]

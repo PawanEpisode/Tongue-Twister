@@ -77,6 +77,15 @@ def anon(db):
 
 
 @pytest.fixture
+def anon_open(db):
+    """An anonymous client on the legacy full catalogue (the `public_site` kill switch is off)."""
+    from twisters.models import FeatureFlag
+
+    FeatureFlag.objects.filter(code="public_site").update(enabled=False)
+    return APIClient()
+
+
+@pytest.fixture
 def cloud_user(user):
     """(client, profile) who may save to the cloud: 13+, consented, with the cloud and share flags on."""
     from twisters.models import AgeBand, ConsentType, FeatureFlag, UserConsent

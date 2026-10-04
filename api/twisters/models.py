@@ -114,6 +114,11 @@ class Twister(models.Model):
     topic = models.CharField(
         max_length=120, blank=True, help_text="What the owner asked for (generated twisters only)"
     )
+    teaser_position = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="1..12: shown to signed-out visitors, in this order (public site, D44). Blank = members only",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = TwisterQuerySet.as_manager()
@@ -129,6 +134,21 @@ class Twister(models.Model):
                     | Q(visibility="private", owner__isnull=False, is_published=False)
                 ),
                 name="twister_visibility_owner",
+            ),
+            # The signed-out teaser is unique per slot, and only ever holds public, published twisters.
+            models.UniqueConstraint(
+                fields=["teaser_position"],
+                condition=Q(teaser_position__isnull=False),
+                name="twister_teaser_position_unique",
+            ),
+            models.CheckConstraint(
+                condition=Q(teaser_position__isnull=True)
+                | Q(
+                    teaser_position__gte=1,
+                    visibility="public",
+                    owner__isnull=True,
+                ),
+                name="twister_teaser_public_only",
             ),
         ]
 
@@ -742,6 +762,7 @@ class DailyActivity(models.Model):
 class SyncKind(models.TextChoices):
     GUEST_SIGNUP = "guest_signup", "Guest sign-up"
     OFFLINE_QUEUE = "offline_queue", "Offline queue"
+    DEMO_CLAIM = "demo_claim", "Demo score claimed after sign-up"
 
 
 class SyncBatch(models.Model):
@@ -758,7 +779,13 @@ class SyncBatch(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["profile", "client_batch_id"], name="uniq_sync_batch")
+            models.UniqueConstraint(fields=["profile", "client_batch_id"], name="uniq_sync_batch"),
+            # One demo score may be claimed per account (public site, D46).
+            models.UniqueConstraint(
+                fields=["profile"],
+                condition=Q(kind="demo_claim"),
+                name="uniq_demo_claim_per_profile",
+            ),
         ]
 
     def __str__(self):
@@ -783,6 +810,53 @@ class FeatureFlag(models.Model):
 
     def __str__(self):
         return self.code
+
+
+class GateIntent(models.TextChoices):
+    """What a signed-out visitor was doing when they signed up (public site, PRD section 11)."""
+
+    PRACTISE = "practise", "Practise"
+    SAVE_DEMO = "save_demo", "Save demo score"
+    FAVOURITE = "favourite", "Favourite"
+    GENERATE = "generate", "Generate"
+    RECORD = "record", "Record"
+    LOCKED_FILTER = "locked_filter", "Locked filter"
+    LOCKED_NAV = "locked_nav", "Locked page"
+    HERO_CTA = "hero_cta", "Hero button"
+    HEADER_CTA = "header_cta", "Header button"
+    FOOTER_CTA = "footer_cta", "Footer button"
+    DIRECT = "direct", "Direct"
+
+
+class SignupAttribution(models.Model):
+    """First-touch context of an account: which gate or page produced it. Path only (no query), a short UTM
+    triple and the gate intent; no IP, user agent or referrer. Exported and deleted with the profile."""
+
+    profile = models.OneToOneField(
+        Profile, primary_key=True, on_delete=models.CASCADE, related_name="attribution"
+    )
+    intent = models.CharField(max_length=16, choices=GateIntent.choices, default=GateIntent.DIRECT)
+    first_path = models.CharField(max_length=120, blank=True)
+    utm_source = models.CharField(max_length=40, blank=True)
+    utm_medium = models.CharField(max_length=40, blank=True)
+    utm_campaign = models.CharField(max_length=40, blank=True)
+    demo_claimed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.profile_id} via {self.intent}"
+
+
+class PublicStatSnapshot(models.Model):
+    """A number for the public site, computed offline by `refresh_public_stats` so a landing request
+    never aggregates attempts. Shown only above PUBLIC_STAT_FLOOR."""
+
+    key = models.CharField(max_length=24, primary_key=True)
+    value = models.BigIntegerField(default=0)
+    computed_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.key}={self.value}"
 
 
 # --- Speak & Score (ERD 06b) -------------------------------------------------------------------

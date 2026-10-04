@@ -21,11 +21,14 @@ from .models import (
     TwisterVisibility,
     public_twister_q,
 )
+from .practice import flags as feature_flags
 from .progress import boards, browse, daily
+from .public import teaser
 from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer, twister_context
 from .speak import jobs as speak_jobs
 from .speak.queries import best_scores
 from .speak.serializers import AttemptSerializer
+from .throttles import PublicTwisterThrottle
 
 OWNER_ACTIONS = (
     "retrieve",
@@ -33,6 +36,13 @@ OWNER_ACTIONS = (
     "pronunciations",
 )  # the actions that may address a private twister
 ANON_FACET_CACHE = "public, max-age=60, stale-while-revalidate=300"
+TEASER_ONLY = "Sign in to see more twisters."
+
+
+def signed_out_teaser(request) -> bool:
+    """True when this caller gets the curated teaser instead of the whole catalogue (public site, D44):
+    anonymous, and the `public_site` flag is on. Switching the flag off restores the old behaviour."""
+    return not request.user.is_authenticated and feature_flags.enabled("public_site", None)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -64,6 +74,38 @@ class TwisterViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_context(self):
         return {**super().get_serializer_context(), **twister_context(self.request.user)}
+
+    def get_throttles(self):
+        throttles = super().get_throttles()
+        if self.action == "retrieve" and not self.request.user.is_authenticated:
+            throttles.append(PublicTwisterThrottle())
+        return throttles
+
+    def list(self, request, *args, **kwargs):
+        if signed_out_teaser(request):
+            return self._teaser_list(request)
+        return super().list(request, *args, **kwargs)
+
+    def _teaser_list(self, request):
+        """Signed-out callers get the curated teaser only. Filters and search apply inside it; sorting, progress
+        filters and further pages are for members, so the API itself never hands out the whole library."""
+        page = request.query_params.get("page")
+        if page not in (None, "", "1"):
+            raise errors.ApiProblem(status.HTTP_401_UNAUTHORIZED, "auth_required", TEASER_ONLY)
+        queryset = browse.filter_twisters(request, teaser.teaser_queryset())
+        queryset = TwisterSearchFilter().filter_queryset(request, queryset, self)
+        results = self.get_serializer(list(queryset), many=True).data
+        return Response(
+            {
+                "count": len(results),
+                "next": None,
+                "previous": None,
+                "results": results,
+                "library_total": Twister.objects.public().count(),
+                "locked": True,
+            },
+            headers={"Cache-Control": ANON_FACET_CACHE},
+        )
 
     def retrieve(self, request, *args, **kwargs):
         response = super().retrieve(request, *args, **kwargs)

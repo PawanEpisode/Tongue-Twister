@@ -153,6 +153,7 @@ REST_FRAMEWORK = {
         "unsubscribe": "600/min",  # GET|POST /public/unsubscribe/{token}/ per IP (round 2, D27)
         "generate": "3/min",  # POST /generate/ per user (round 2, spec 16 D26)
         "csp_report": "60/min",  # POST /csp-report/ per IP (round 4, spec 07 section 19)
+        "public_twister": "60/min",  # GET /twisters/{slug}/ for signed-out callers, per IP (public site)
     },
     "EXCEPTION_HANDLER": "twisters.errors.exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -422,3 +423,12 @@ GENERATE_MAX_STORED = int(env("GENERATE_MAX_STORED", "50"))
 # Daily usage rows older than this are deleted by `manage.py prune_generation_usage` (round 4).
 GENERATE_USAGE_RETENTION_DAYS = int(env("GENERATE_USAGE_RETENTION_DAYS", "90"))
 QUOTA_HIT_RETENTION_DAYS = int(env("QUOTA_HIT_RETENTION_DAYS", "90"))
+
+# Public site (docs/PRD-public-site.md). Tunable per environment without a migration.
+TEASER_SIZE = 12  # twisters a signed-out visitor sees (D44)
+PUBLIC_STAT_FLOOR = int(
+    env("PUBLIC_STAT_FLOOR", "500")
+)  # usage numbers are shown only above this; below it the API sends null
+DEMO_CLAIM_MAX_AGE_HOURS = int(
+    env("DEMO_CLAIM_MAX_AGE_HOURS", "24")
+)  # a demo score can be claimed for this long after it was made
