@@ -19,7 +19,7 @@ from twisters.models import (
     SyncBatch,
     Twister,
 )
-from twisters.public import teaser
+from twisters.site_public import teaser
 
 EXPECTED_TEASER = [
     "sam-sam-sheep",

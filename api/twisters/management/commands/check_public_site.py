@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from twisters.models import Category, Twister
-from twisters.public import teaser
+from twisters.site_public import teaser
 
 MIN_VALID = 8
 

@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from twisters.models import Attempt, PublicStatSnapshot
-from twisters.public import stats
+from twisters.site_public import stats
 
 
 class Command(BaseCommand):

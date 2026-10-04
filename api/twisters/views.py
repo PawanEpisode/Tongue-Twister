@@ -23,7 +23,7 @@ from .models import (
 )
 from .practice import flags as feature_flags
 from .progress import boards, browse, daily
-from .public import teaser
+from .site_public import teaser
 from .serializers import CategorySerializer, ProfileSerializer, TwisterSerializer, twister_context
 from .speak import jobs as speak_jobs
 from .speak.queries import best_scores
