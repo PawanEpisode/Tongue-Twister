@@ -98,7 +98,6 @@ def test_each_user_gets_their_own_email(takes, mailoutbox, auth_client, storage)
     other = auth_client(sub)
     other.get("/api/v1/me/")
     other_profile = Profile.objects.get(pk=sub)
-    Profile.objects.filter(pk=sub).update(email="other@example.com")
     from twisters.models import AgeBand, ConsentType, UserConsent
 
     Profile.objects.filter(pk=sub).update(age_band=AgeBand.ADULT)
@@ -108,7 +107,10 @@ def test_each_user_gets_their_own_email(takes, mailoutbox, auth_client, storage)
     mine = saved_recording(other, storage)
     expire_in(1, mine["id"])
     assert reminders.remind_expiring() == 3
-    assert sorted(m.to[0] for m in mailoutbox) == sorted(["other@example.com", profile.email])
+    # Each account's sign-in email is refreshed from its token on every request, so compare to the stored one.
+    other_profile.refresh_from_db()
+    profile.refresh_from_db()
+    assert sorted(m.to[0] for m in mailoutbox) == sorted([other_profile.email, profile.email])
 
 
 def test_a_delivery_failure_releases_the_claim_so_the_next_run_retries(

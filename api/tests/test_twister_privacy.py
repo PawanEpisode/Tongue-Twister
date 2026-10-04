@@ -53,9 +53,9 @@ def stranger(owner, auth_client):
 
 
 @pytest.fixture(params=["stranger", "anonymous"])
-def outsider(request, stranger, anon):
-    """Everyone who is not the owner."""
-    return stranger if request.param == "stranger" else anon
+def outsider(request, stranger, anon_open):
+    """Everyone who is not the owner (anonymous on the full catalogue: the teaser has its own tests)."""
+    return stranger if request.param == "stranger" else anon_open
 
 
 def leaks(response, secret: Twister) -> bool:
@@ -430,6 +430,7 @@ ALLOWED = {
     "own.py",
     "export.py",
     "build_pronunciations.py",
+    "check_public_site.py",  # deliberately inspects raw rows to prove no private twister is in the teaser
 }
 RAW_QUERY = re.compile(
     r"(?<![A-Za-z])Twister\.objects\.(?!public\(|visible_to\(|in_bulk\(|create\(|update_or_create\()"

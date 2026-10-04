@@ -378,11 +378,13 @@ describe('isolation', () => {
       .sort()
     expect(hits).toEqual([
       'components/dev/CalibratePanel.tsx',
+      'components/dev/calibrate/RecorderStage.tsx',
       'components/practice/AccurateModePrompt.tsx',
       'components/practice/SpeakAndScore.tsx',
       'lib/api.ts',
       'lib/calibrate/benchmark.ts',
       'lib/calibrate/clip.ts',
+      'lib/calibrate/recorder.ts',
       'lib/calibrate/swapPlan.ts',
     ])
   })

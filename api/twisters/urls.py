@@ -7,8 +7,8 @@ from .generate import views as generate
 from .media import views as media
 from .practice import views as practice
 from .progress import views as progress
-from .site_public import views as public_site
 from .reminders import views as reminders
+from .site_public import views as public_site
 from .speak import views as speak
 
 router = DefaultRouter()
